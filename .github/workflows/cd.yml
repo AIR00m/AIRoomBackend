@@ -38,6 +38,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/springboot-app:latest
+            
             echo "[+] 현재 실행 중인 컨테이너 확인"
             RUNNING=$(docker ps --format '{{.Names}}' | grep springboot || true)
             if [ "$RUNNING" = "springboot-blue" ]; then
@@ -51,9 +52,16 @@ jobs:
               NEW_PORT=8081
               OLD_PORT=8082
             fi
+            echo "[📄] application.yml 복원 (운영용)"
+            echo "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
+            
             echo "[+] 새 컨테이너 실행: $NEW_CONTAINER"
             docker pull $IMAGE
-            docker run -d --name $NEW_CONTAINER -p $NEW_PORT:8080 $IMAGE
+            docker run -d --name $NEW_CONTAINER -p $NEW_PORT:8080 \
+            -v /home/ubuntu/application.yml:/config/application.yml \
+            -e "SPRING_CONFIG_LOCATION=classpath:/,file:/config/application.yml" \
+            $IMAGE            
+            
             echo "[⏳] Health check 중..."
             for i in {1..10}; do
               if curl -s http://localhost:$NEW_PORT/actuator/health | grep UP; then
