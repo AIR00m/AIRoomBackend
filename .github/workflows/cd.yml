@@ -12,7 +12,6 @@ jobs:
   cd:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-      - 
       - name: 🚀 SSH & Blue-Green Deploy with Nginx Dynamic Reload
         uses: appleboy/ssh-action@v1.0.0
         with:
