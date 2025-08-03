@@ -12,6 +12,7 @@ jobs:
   cd:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    steps: # ✅ steps 블록 추가
       - name: 🚀 SSH & Blue-Green Deploy with Nginx Dynamic Reload
         uses: appleboy/ssh-action@v1.0.0
         with:
