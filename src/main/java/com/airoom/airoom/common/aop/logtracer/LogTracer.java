@@ -1,0 +1,83 @@
+package com.airoom.airoom.common.aop.logtracer;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+@Slf4j
+@Component
+public class LogTracer {
+
+    private static final String PREFIX = "-->";
+    private static final String SUFFIX = "<--";
+    private static final String ERR_FIX = "<X-";
+
+    private final ThreadLocal<TraceId> traceIdHolder = new ThreadLocal<>();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public TraceStatus begin(String message, String args){
+        syncTraceId();
+        TraceId traceId = traceIdHolder.get();
+        Long startTimeMs = System.currentTimeMillis();
+        String now = LocalDateTime.now().format(formatter);
+        if(traceId.isFirstLevel()) {
+            log.info("--------------------- [TraceId: {}] start [{}] ---------------------", traceId.getId(), now);
+        }
+        log.info("[{}] [{}] {}{}, args = {}", traceId.getId(), now, addSpace(PREFIX, traceId.getLevel()), message, args);
+        return new TraceStatus(traceId, startTimeMs, message);
+    }
+
+    private void syncTraceId() {
+        TraceId traceId = traceIdHolder.get();
+        if (traceId == null) {
+            traceIdHolder.set(new TraceId());
+        } else {
+            traceIdHolder.set(traceId.createNextId());
+        }
+    }
+
+    public void end(TraceStatus traceStatus){
+        complete(traceStatus, null);
+    }
+
+    public void handleException(TraceStatus traceStatus, Exception ex){
+        complete(traceStatus, ex);
+    }
+
+    private void complete(TraceStatus traceStatus, Exception ex) {
+        Long stopTimeMs = System.currentTimeMillis();
+        Long resultTimeMs = stopTimeMs - traceStatus.getStartTimesMs();
+        TraceId traceId = traceStatus.getTraceId();
+        String now = LocalDateTime.now().format(formatter);
+
+
+        if(ex == null){
+            log.info("[{}] [{}] {}{} time = {}ms", traceId.getId(), now, addSpace(SUFFIX, traceId.getLevel()), traceStatus.getMessage(), resultTimeMs);
+        } else {
+            log.info("[{}] [{}] {}{} time = {}ms ex={}", traceId.getId(), now, addSpace(ERR_FIX, traceId.getLevel()), traceStatus.getMessage(), resultTimeMs, ex.toString());
+        }
+        if(traceId.isFirstLevel()) {
+            log.info("--------------------- [TraceId: {}] end [{}], Time: {} ms ---------------------", traceId.getId(), now, resultTimeMs);
+        }
+        releaseTraceId();
+    }
+
+    private void releaseTraceId() {
+        TraceId traceId = traceIdHolder.get();
+        if (traceId.isFirstLevel()) {
+            traceIdHolder.remove();
+        } else {
+            traceIdHolder.set(traceId.createPrevId());
+        }
+    }
+
+    private String addSpace(String prefix, int level) {
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i< level; i++){
+            sb.append((i==level-1) ? "|" + prefix : "|   ");
+        }
+        return sb.toString();
+    }
+}
