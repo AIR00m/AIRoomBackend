@@ -42,8 +42,8 @@ jobs:
             docker pull $IMAGE
             docker run -d --name $NEW_CONTAINER -p $NEW_PORT:8080 \
             -v /home/ubuntu/application.yml:/config/application.yml \
-            -e "SPRING_CONFIG_LOCATION=classpath:/,file:/config/application.yml" \
-            $IMAGE            
+            -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
+            $IMAGE        
             
             echo "[⏳] Health check 중..."
             for i in {1..10}; do
