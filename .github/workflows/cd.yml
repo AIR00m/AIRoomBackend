@@ -5,8 +5,6 @@ on:
     workflows: [ "CI" ]
     types:
       - completed
-    branches:
-      - develop
 
 jobs:
   cd:
@@ -17,37 +15,22 @@ jobs:
       - name: 🔽 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: 🔄 EC2로 infra 설정 파일 복사 (docker-compose.yml, prometheus.yml)
+      - name: 🔄 EC2로 infra 설정 파일 복사
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
-          source: "docker/docker-compose.yml,docker/prometheus.yml"
+          source: |
+            docker/docker-compose.yml,
+            docker/prometheus.yml,
+            docker/logstash/logstash.conf,
+            docker/grafana/provisioning/datasources/datasource.yml
           target: "/home/ubuntu/compose/infra"
           overwrite: true
+          strip_components: 2  # ✅ docker/ 하위 구조 정리
 
-      - name: 🔄 EC2로 logstash.conf 복사
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          source: "docker/logstash/logstash.conf"
-          target: "/home/ubuntu/compose/infra/logstash"
-          overwrite: true
-
-      - name: 🔄 Grafana datasource.yml 복사
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          source: "docker/grafana/provisioning/datasources/datasource.yml"
-          target: "/home/ubuntu/compose/infra/grafana/provisioning/datasources"
-          overwrite: true
-
-      - name: 🚀 SSH & Blue-Green Deploy with Nginx Dynamic Reload
+      - name: 🚀 SSH & Blue-Green Deploy with Nginx + Infra 재배포
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -55,7 +38,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/springboot-app:latest
-            
+
             echo "[+] 현재 실행 중인 컨테이너 확인"
             RUNNING=$(docker ps --format '{{.Names}}' | grep springboot || true)
             if [ "$RUNNING" = "springboot-blue" ]; then
@@ -69,16 +52,17 @@ jobs:
               NEW_PORT=8081
               OLD_PORT=8082
             fi
+
             echo "[📄] application.yml 복원 (운영용)"
             echo "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
-            
+
             echo "[+] 새 컨테이너 실행: $NEW_CONTAINER"
             docker pull $IMAGE
             docker run -d --name $NEW_CONTAINER -p $NEW_PORT:8080 \
-            -v /home/ubuntu/application.yml:/config/application.yml \
-            -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
-            $IMAGE        
-            
+              -v /home/ubuntu/application.yml:/config/application.yml \
+              -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
+              $IMAGE
+
             echo "[⏳] Health check 중..."
             for i in {1..10}; do
               if curl -s http://localhost:$NEW_PORT/actuator/health | grep UP; then
@@ -94,16 +78,20 @@ jobs:
                 exit 1
               fi
             done
-            
+
             echo "[⚙️] Nginx 프록시 포트 수정 ($NEW_PORT)"
             sudo sed -i "s/localhost:$OLD_PORT/localhost:$NEW_PORT/" /etc/nginx/conf.d/reverse.conf
             sudo nginx -t && sudo systemctl reload nginx
-            
+
             echo "[🧹] 이전 컨테이너 종료 및 삭제: $OLD_CONTAINER"
             docker stop $OLD_CONTAINER || true
             docker rm $OLD_CONTAINER || true
-            
+
             echo "[🔧] Infra 서비스 구성 적용"
             cd /home/ubuntu/compose/infra
-            docker compose -f docker-compose.yml down
-            docker compose -f docker-compose.yml up -d
+
+            echo "[🧼] 기존 Infra 컨테이너 종료"
+            docker compose down --remove-orphans
+
+            echo "[♻️] 변경된 docker-compose.yml 반영"
+            docker compose up -d --force-recreate
