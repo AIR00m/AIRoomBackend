@@ -15,7 +15,16 @@ jobs:
       - name: 🔽 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: 📂 rsync로 docker/ 전체 EC2에 복사 (완전 덮어쓰기)
+      - name: 📦 docker/ 폴더 전송
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          source: "docker"
+          target: "/home/ubuntu"
+
+      - name: 📂 rsync로 /compose/infra/에 덮어쓰기
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -23,7 +32,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             mkdir -p /home/ubuntu/compose/infra
-            rsync -avz --delete ./docker/ /home/ubuntu/compose/infra/
+            rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/
 
       - name: 🚀 SSH & Blue-Green Deploy with Nginx + Infra 재배포
         uses: appleboy/ssh-action@v1.0.0
