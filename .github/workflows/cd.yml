@@ -12,7 +12,38 @@ jobs:
   cd:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    steps: # ✅ steps 블록 추가
+
+    steps:
+      - name: 🔽 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🔄 EC2로 infra 설정 파일 복사 (docker-compose.yml, prometheus.yml)
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          source: "docker/docker-compose.yml,docker/prometheus.yml"
+          target: "/home/ubuntu/compose/infra"
+
+      - name: 🔄 EC2로 logstash.conf 복사
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          source: "docker/logstash/logstash.conf"
+          target: "/home/ubuntu/compose/infra/logstash"
+
+      - name: 🔄 Grafana datasource.yml 복사
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          source: "docker/grafana/provisioning/datasources/datasource.yml"
+          target: "/home/ubuntu/compose/infra/grafana/provisioning/datasources"
+
       - name: 🚀 SSH & Blue-Green Deploy with Nginx Dynamic Reload
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -60,9 +91,16 @@ jobs:
                 exit 1
               fi
             done
+            
             echo "[⚙️] Nginx 프록시 포트 수정 ($NEW_PORT)"
             sudo sed -i "s/localhost:$OLD_PORT/localhost:$NEW_PORT/" /etc/nginx/conf.d/reverse.conf
             sudo nginx -t && sudo systemctl reload nginx
+            
             echo "[🧹] 이전 컨테이너 종료 및 삭제: $OLD_CONTAINER"
             docker stop $OLD_CONTAINER || true
             docker rm $OLD_CONTAINER || true
+            
+            echo "[🔧] Infra 서비스 구성 적용"
+            cd /home/ubuntu/compose/infra
+            docker compose -f docker-compose.yml down
+            docker compose -f docker-compose.yml up -d
