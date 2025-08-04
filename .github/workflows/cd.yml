@@ -2,7 +2,7 @@ name: CD
 
 on:
   workflow_run:
-    workflows: [ "CI" ]
+    workflows: ["CI"]
     types:
       - completed
 
@@ -15,20 +15,15 @@ jobs:
       - name: 🔽 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: 🔄 EC2로 infra 설정 파일 복사
-        uses: appleboy/scp-action@v0.1.4
+      - name: 📂 rsync로 docker/ 전체 EC2에 복사 (완전 덮어쓰기)
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
-          source: |
-            docker/docker-compose.yml,
-            docker/prometheus.yml,
-            docker/logstash/logstash.conf,
-            docker/grafana/provisioning/datasources/datasource.yml
-          target: "/home/ubuntu/compose/infra"
-          overwrite: true
-          strip_components: 2  # ✅ docker/ 하위 구조 정리
+          script: |
+            mkdir -p /home/ubuntu/compose/infra
+            rsync -avz --delete ./docker/ /home/ubuntu/compose/infra/
 
       - name: 🚀 SSH & Blue-Green Deploy with Nginx + Infra 재배포
         uses: appleboy/ssh-action@v1.0.0
@@ -87,11 +82,7 @@ jobs:
             docker stop $OLD_CONTAINER || true
             docker rm $OLD_CONTAINER || true
 
-            echo "[🔧] Infra 서비스 구성 적용"
+            echo "[🔧] Infra 서비스 재배포"
             cd /home/ubuntu/compose/infra
-
-            echo "[🧼] 기존 Infra 컨테이너 종료"
             docker compose down --remove-orphans
-
-            echo "[♻️] 변경된 docker-compose.yml 반영"
             docker compose up -d --force-recreate
