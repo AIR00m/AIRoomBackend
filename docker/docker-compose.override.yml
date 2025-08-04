@@ -1,0 +1,8 @@
+services:
+  kafka:
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://localhost:9092,BROKER://kafka:29092
+
+  kafka-exporter:
+    environment:
+      KAFKA_SERVER: localhost:9092
