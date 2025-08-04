@@ -25,6 +25,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "docker/docker-compose.yml,docker/prometheus.yml"
           target: "/home/ubuntu/compose/infra"
+          overwrite: true
 
       - name: 🔄 EC2로 logstash.conf 복사
         uses: appleboy/scp-action@v0.1.4
@@ -34,6 +35,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "docker/logstash/logstash.conf"
           target: "/home/ubuntu/compose/infra/logstash"
+          overwrite: true
 
       - name: 🔄 Grafana datasource.yml 복사
         uses: appleboy/scp-action@v0.1.4
@@ -43,6 +45,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "docker/grafana/provisioning/datasources/datasource.yml"
           target: "/home/ubuntu/compose/infra/grafana/provisioning/datasources"
+          overwrite: true
 
       - name: 🚀 SSH & Blue-Green Deploy with Nginx Dynamic Reload
         uses: appleboy/ssh-action@v1.0.0
