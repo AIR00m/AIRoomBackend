@@ -31,9 +31,16 @@ public class Exam extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private RetryType examRetryType;
+    private RetryType examRetryType = RetryType.N;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Subject examSubject;
+
+    @PrePersist
+    public void prePersist() {
+        if (examRetryType == null) {
+            examRetryType = RetryType.N;
+        }
+    }
 }
