@@ -8,7 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -25,22 +25,27 @@ public class Exam extends BaseEntity {
     @Column(nullable = false)
     private Integer examProblemCount;
 
-    private Timestamp examStartTime;
+    private LocalDateTime examStartTime;
 
-    private Timestamp examEndTime;
+    private LocalDateTime examEndTime;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private RetryType examRetryType = RetryType.N;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Subject examSubject;
+    @Builder.Default
+    private Subject examSubject = Subject.MATH;
 
     @PrePersist
     public void prePersist() {
         if (examRetryType == null) {
             examRetryType = RetryType.N;
+        }
+        if (examSubject == null) {
+            examSubject = Subject.MATH;
         }
     }
 }
