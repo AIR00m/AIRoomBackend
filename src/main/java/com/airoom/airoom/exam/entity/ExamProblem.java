@@ -42,4 +42,7 @@ public class ExamProblem extends BaseEntity {
 
     @Column(nullable = false)
     private String epComment; //문제 해설
+
+    @Column(nullable = false)
+    private Integer epUnit; //문제 단원
 }
