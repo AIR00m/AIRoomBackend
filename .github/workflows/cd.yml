@@ -97,6 +97,8 @@ jobs:
               $IMAGE
 
             echo "[⏳] Health check 대기..."
+            echo $NEW_PORT
+            echo curl -s http://localhost:$NEW_PORT/actuator/health | grep UP
             for i in {1..10}; do
               if curl -s http://localhost:$NEW_PORT/actuator/health | grep UP; then
                 echo "✅ Health check 성공"
@@ -109,7 +111,8 @@ jobs:
                 echo $NEW_CONTAINER
                 docker logs --tail=200 $NEW_CONTAINER || true
                 docker exec -it springboot-green curl -s http://localhost:8080/actuator/health
-                docker rm -f $NEW_CONTAINER || true
+                docker stop $NEW_CONTAINER || true
+                docker rm $NEW_CONTAINER || true
                 exit 1
               fi
             done
@@ -122,7 +125,8 @@ jobs:
             # 이전 컨테이너가 있다면 네트워크에서 alias 충돌 방지를 위해 분리 후 제거
             if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
               docker network disconnect core-services-net $OLD_CONTAINER || true
-              docker rm -f $OLD_CONTAINER || true
+              docker stop $OLD_CONTAINER || true
+              docker rm $OLD_CONTAINER || true
             fi
 
             echo "[✅] 배포 완료: $NEW_CONTAINER on :$NEW_PORT"
