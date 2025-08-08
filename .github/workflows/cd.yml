@@ -3,13 +3,17 @@ name: CD
 on:
   workflow_run:
     workflows: [ "CI" ]
-    types:
-      - completed
+    types: [ completed ]
+
+concurrency:
+  group: cd-${{ github.event.workflow_run.head_branch || github.ref_name || 'default' }}
+  # cancel-in-progress: false  # 직렬 처리(큐잉). 명시 안 해도 기본 false
 
 jobs:
   cd:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: 🔽 Checkout Repository
@@ -41,18 +45,12 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # core-services-net 외부 네트워크 보장
             docker network create core-services-net || true
-
             cd /home/ubuntu/compose/infra
-
-            # 최신 이미지 받기
             docker compose pull || true
-
-            # 인프라 재기동 (down 금지: 모니터링 공백 방지)
             docker compose up -d --force-recreate
 
-      - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치
+      - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치 (직렬락/큐잉)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -61,10 +59,18 @@ jobs:
           script: |
             set -Eeuo pipefail
 
+            # === 배포 락 (최대 15분 대기) ===
+            LOCKFILE=/var/lock/springboot-cd.lock
+            sudo mkdir -p /var/lock || true
+            exec 200>"$LOCKFILE"
+            flock -w 900 200 || { echo "⏳ 다른 배포 대기 타임아웃(15m) → 종료"; exit 1; }
+            trap 'flock -u 200' EXIT
+            # ==============================
+
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/springboot-app:latest
 
             echo "[+] 현재 실행 중인 springboot 컨테이너 확인"
-            RUNNING=$(docker ps --format '{{.Names}}' | grep -E '^springboot-(blue|green)$' || true)
+            RUNNING=$(docker ps --format '{{.Names}}' | grep -E '^springboot-(blue|green)$' | head -n1 || true)
             if [ "$RUNNING" = "springboot-blue" ]; then
               NEW_CONTAINER="springboot-green"
               OLD_CONTAINER="springboot-blue"
@@ -80,11 +86,30 @@ jobs:
             echo "[📄] 운영용 application.yml 복원"
             echo "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
 
-            echo "[🌐] core-services-net 네트워크 보장"
+            echo "[🌐] core-services-net 보장"
             docker network create core-services-net >/dev/null 2>&1 || true
 
-            echo "[⬇️] 앱 이미지 Pull"
+            echo "[⬇️] 이미지 Pull"
             docker pull $IMAGE
+
+            # === 동일 이미지면 스킵(Idempotent) ===
+            NEW_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE | awk -F'@' '{print $2}' || true)
+            OLD_DIGEST=""
+            if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
+              OLD_IMAGE_ID=$(docker inspect --format='{{.Image}}' $OLD_CONTAINER 2>/dev/null || true)
+              # 컨테이너 이미지의 digest 추출(없을 수도 있음)
+              OLD_DIGEST=$(docker inspect --format='{{join .RepoDigests ","}}' $OLD_IMAGE_ID 2>/dev/null | grep -o 'sha256:[0-9a-f]\+' | head -n1 || true)
+            fi
+
+            if [ -n "$NEW_DIGEST" ] && [ -n "$OLD_DIGEST" ] && [ "$NEW_DIGEST" = "$OLD_DIGEST" ]; then
+              echo "ℹ️ 기존과 동일한 이미지(digest=$NEW_DIGEST) → 배포 스킵"
+              exit 0
+            fi
+            # ====================================
+
+            # 혹시 이전 실패 잔재가 있으면 제거
+            docker stop $NEW_CONTAINER
+            docker rm $NEW_CONTAINER >/dev/null 2>&1 || true
 
             echo "[🆕] 새 컨테이너 실행: $NEW_CONTAINER (alias: springboot)"
             docker run -d --name $NEW_CONTAINER \
@@ -97,22 +122,16 @@ jobs:
               $IMAGE
 
             echo "[⏳] Health check (Docker HEALTHCHECK 상태로 대기)"
-            # healthy 될 때까지 최대 ~120초 대기 (2s x 60)
             HEALTH_OK=0
             for i in {1..60}; do
               STATUS=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' $NEW_CONTAINER 2>/dev/null || echo "")
-              if [ "$STATUS" = "healthy" ]; then
-                HEALTH_OK=1
-                break
-              fi
-              echo "⏱ waiting health... ($i/60) status=$STATUS"
-              sleep 2
+              if [ "$STATUS" = "healthy" ]; then HEALTH_OK=1; break; fi
+              echo "⏱ waiting health... ($i/60) status=$STATUS"; sleep 2
             done
-
             if [ "$HEALTH_OK" -ne 1 ]; then
               echo "❌ Health check 실패 → 롤백"
               docker logs --tail=200 $NEW_CONTAINER || true
-              docker stop $NEW_CONTAINER || true
+              docker stop $NEW_CONTAINER
               docker rm $NEW_CONTAINER || true
               exit 1
             fi
@@ -125,7 +144,7 @@ jobs:
             echo "[🧹] 이전 컨테이너 정리"
             if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
               docker network disconnect core-services-net $OLD_CONTAINER || true
-              docker stop $OLD_CONTAINER || true
+              docker stop $OLD_CONTAINER
               docker rm $OLD_CONTAINER || true
             fi
 
