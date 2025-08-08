@@ -106,6 +106,7 @@ jobs:
               sleep 3
               if [ $i -eq 10 ]; then
                 echo "❌ Health check 실패 → 롤백"
+                echo $NEW_CONTAINER
                 docker logs --tail=200 $NEW_CONTAINER || true
                 docker exec -it springboot-green curl -s http://43.200.2.244:8080/actuator/health
                 docker rm -f $NEW_CONTAINER || true
