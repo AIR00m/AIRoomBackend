@@ -108,8 +108,8 @@ jobs:
             # ====================================
 
             # 혹시 이전 실패 잔재가 있으면 제거
-            docker stop $NEW_CONTAINER
-            docker rm $NEW_CONTAINER >/dev/null 2>&1 || true
+            docker stop $NEW_CONTAINER >/dev/null 2>&1 || true
+            docker rm   $NEW_CONTAINER >/dev/null 2>&1 || true
 
             echo "[🆕] 새 컨테이너 실행: $NEW_CONTAINER (alias: springboot)"
             docker run -d --name $NEW_CONTAINER \
@@ -143,9 +143,9 @@ jobs:
 
             echo "[🧹] 이전 컨테이너 정리"
             if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
-              docker network disconnect core-services-net $OLD_CONTAINER || true
-              docker stop $OLD_CONTAINER
-              docker rm $OLD_CONTAINER || true
+            docker network disconnect core-services-net $OLD_CONTAINER >/dev/null 2>&1 || true
+            docker stop $OLD_CONTAINER >/dev/null 2>&1 || true
+            docker rm   $OLD_CONTAINER >/dev/null 2>&1 || true
             fi
 
             echo "[✅] 배포 완료: $NEW_CONTAINER on :$NEW_PORT"
