@@ -25,20 +25,5 @@ public class Student extends Member{
 
     private Integer studentClassNo;
 
-    public StudentDto convertToStudent(){
-        return StudentDto.builder()
-                .memberId(super.getMemberId())
-                .memberPw(super.getMemberPw())
-                .memberName(super.getMemberName())
-                .memberAge(super.getMemberAge())
-                .memberSchool(super.getMemberSchool())
-                .memberEmail(super.getMemberEmail())
-                .memberGender(super.getMemberGender())
-                .memberGrade(super.getMemberGrade())
-                .memberClass(super.getMemberClass())
-                .memberClassNo(studentClassNo)
-                .build();
-    }
-
 
 }

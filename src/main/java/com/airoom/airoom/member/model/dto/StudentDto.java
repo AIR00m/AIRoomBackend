@@ -18,26 +18,15 @@ import lombok.experimental.SuperBuilder;
 
 public class StudentDto {
 
-    @NotBlank(message = "ID는 필수 값입니다.")
-    @Column(unique = true, nullable = false, length = 8)
     private String memberId;
-    @NotBlank(message = "비밀번호는 필수 값입니다.")
     private String memberPw;
-    @NotBlank(message = "이름은 필수 값입니다.")
     private String memberName;
-    @NotBlank
     private Integer memberAge;
-    @NotBlank
     private String memberSchool;
-    @NotBlank
     private String memberEmail;
-    @NotBlank
     private Gender memberGender;
-    @NotBlank
     private Grade memberGrade;
-    @NotBlank
     private Integer memberClass;
-    @NotBlank
     private Integer memberClassNo;
 
     public Student convertToStudent() {

@@ -23,7 +23,7 @@ public class Member extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long memerNo;
+    private Long memberNo;
     @Column(unique = true, nullable = false, length = 8)
     private String memberId;
     @Column(nullable = false)
