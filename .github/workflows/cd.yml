@@ -94,8 +94,6 @@ jobs:
               -v /home/ubuntu/application.yml:/config/application.yml \
               -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
               -e "SERVER_ADDRESS=0.0.0.0" \
-              -e "MANAGEMENT_SERVER_ADDRESS=0.0.0.0" \
-              -e "MANAGEMENT_SERVER_PORT=8080" \
               $IMAGE
 
             echo "[⏳] Health check (Docker HEALTHCHECK 상태로 대기)"
