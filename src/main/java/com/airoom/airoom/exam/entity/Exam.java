@@ -23,21 +23,21 @@ public class Exam extends BaseEntity {
     private Long examNo;
 
     @Column(nullable = false)
-    private Integer examProblemCount;
+    private Integer examProblemCount; //시험 문제수
 
-    private LocalDateTime examStartTime;
+    private LocalDateTime examStartTime; //시험 시작시간
 
-    private LocalDateTime examEndTime;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private RetryType examRetryType = RetryType.N;
+    private LocalDateTime examEndTime; //시험 종료시간
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private Subject examSubject = Subject.MATH;
+    private RetryType examRetryType = RetryType.N; //시험 재응시여부
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Subject examSubject = Subject.MATH; //시험 과목
 
     @PrePersist
     public void prePersist() {
