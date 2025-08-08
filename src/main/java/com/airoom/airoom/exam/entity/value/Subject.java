@@ -1,17 +1,15 @@
 package com.airoom.airoom.exam.entity.value;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
+@RequiredArgsConstructor
 public enum Subject {
-    MATH("math"),
-    ENGLISH("english");
+    MATH("수학"),
+    ENGLISH("영어");
 
     private final String value;
-
-    Subject(String value) {
-        this.value = value;
-    }
 
     public static Subject fromValue(String value) {
         for (Subject type : Subject.values()) {

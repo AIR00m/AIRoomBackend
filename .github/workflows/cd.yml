@@ -2,7 +2,7 @@ name: CD
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: [ "CI" ]
     types:
       - completed
 
@@ -34,17 +34,37 @@ jobs:
             mkdir -p /home/ubuntu/compose/infra
             rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/
 
-      - name: 🚀 SSH & Blue-Green Deploy with Nginx + Infra 재배포
+      - name: 🧩 Infra 먼저 업데이트 (compose up -d, down 금지)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
+            # core-services-net 외부 네트워크 보장
+            docker network create core-services-net || true
+
+            cd /home/ubuntu/compose/infra
+
+            # 최신 이미지 받기
+            docker compose pull || true
+
+            # 인프라 재기동 (down 금지: 모니터링 공백 방지)
+            docker compose up -d --force-recreate
+
+      - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            set -e
+
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/springboot-app:latest
 
-            echo "[+] 현재 실행 중인 컨테이너 확인"
-            RUNNING=$(docker ps --format '{{.Names}}' | grep springboot || true)
+            echo "[+] 현재 실행 중인 springboot 컨테이너 확인"
+            RUNNING=$(docker ps --format '{{.Names}}' | grep -E '^springboot-(blue|green)$' || true)
             if [ "$RUNNING" = "springboot-blue" ]; then
               NEW_CONTAINER="springboot-green"
               OLD_CONTAINER="springboot-blue"
@@ -57,41 +77,61 @@ jobs:
               OLD_PORT=8082
             fi
 
-            echo "[📄] application.yml 복원 (운영용)"
+            echo "[📄] 운영용 application.yml 복원"
             echo "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
 
-            echo "[+] 새 컨테이너 실행: $NEW_CONTAINER"
+            echo "[🌐] core-services-net 네트워크 보장"
+            docker network create core-services-net || true
+
+            echo "[⬇️] 앱 이미지 Pull"
             docker pull $IMAGE
-            docker run -d --name $NEW_CONTAINER -p $NEW_PORT:8080 \
+
+            echo "[🆕] 새 컨테이너 실행: $NEW_CONTAINER (alias: springboot)"
+            # 활성 버전에만 'springboot' alias 부여 (Prometheus 타깃 고정용)
+            docker run -d --name $NEW_CONTAINER \
+              --network core-services-net \
+              --network-alias springboot \
+              -p $NEW_PORT:8080 \
               -v /home/ubuntu/application.yml:/config/application.yml \
               -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
               $IMAGE
 
-            echo "[⏳] Health check 중..."
+            echo "[⏳] Health check 대기..."
             for i in {1..10}; do
-              if curl -s http://localhost:$NEW_PORT/actuator/health | grep UP; then
+              if curl -sf http://43.200.2.244:$NEW_PORT/actuator/health | grep -q UP; then
                 echo "✅ Health check 성공"
                 break
               fi
-              echo "⏱ Waiting..."
+              echo "⏱ Waiting ($i/10)..."
               sleep 3
               if [ $i -eq 10 ]; then
                 echo "❌ Health check 실패 → 롤백"
-                docker stop $NEW_CONTAINER
-                docker rm $NEW_CONTAINER
+                docker logs --tail=200 $NEW_CONTAINER || true
+                docker exec -it springboot-green curl -s http://43.200.2.244:8080/actuator/health
+                docker rm -f $NEW_CONTAINER || true
                 exit 1
               fi
             done
 
-            echo "[⚙️] Nginx 프록시 포트 수정 ($NEW_PORT)"
+            echo "[🔀] Nginx 프록시 포트 $OLD_PORT → $NEW_PORT 스위치"
             sudo sed -i "s/localhost:$OLD_PORT/localhost:$NEW_PORT/" /etc/nginx/conf.d/reverse.conf
             sudo nginx -t && sudo systemctl reload nginx
 
-            echo "[🧹] 이전 컨테이너 종료 및 삭제: $OLD_CONTAINER"
-            docker stop $OLD_CONTAINER || true
-            docker rm $OLD_CONTAINER || true
+            echo "[🧹] 이전 컨테이너 alias 충돌 방지 및 종료"
+            # 이전 컨테이너가 있다면 네트워크에서 alias 충돌 방지를 위해 분리 후 제거
+            if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
+              docker network disconnect core-services-net $OLD_CONTAINER || true
+              docker rm -f $OLD_CONTAINER || true
+            fi
 
-            echo "[🔧] Infra 서비스 재배포"
-            cd /home/ubuntu/compose/infra
-            docker compose down --remove-orphans
-            docker compose up -d --force-recreate
+            echo "[✅] 배포 완료: $NEW_CONTAINER on :$NEW_PORT"
+
+      - name: 🧽 이미지 정리
+        if: always()
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            docker image prune -f || true
