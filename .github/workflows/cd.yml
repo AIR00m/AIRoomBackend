@@ -98,7 +98,7 @@ jobs:
 
             echo "[⏳] Health check 대기..."
             for i in {1..10}; do
-              if curl -sf http://43.200.2.244:$NEW_PORT/actuator/health | grep -q UP; then
+              if curl -sf http://localhost:$NEW_PORT/actuator/health | grep UP; then
                 echo "✅ Health check 성공"
                 break
               fi
@@ -108,7 +108,7 @@ jobs:
                 echo "❌ Health check 실패 → 롤백"
                 echo $NEW_CONTAINER
                 docker logs --tail=200 $NEW_CONTAINER || true
-                docker exec -it springboot-green curl -s http://43.200.2.244:8080/actuator/health
+                docker exec -it springboot-green curl -s http://localhost:8080/actuator/health
                 docker rm -f $NEW_CONTAINER || true
                 exit 1
               fi
