@@ -1,5 +1,5 @@
-# 1단계: Base image
-FROM openjdk:17
+# Debian 계열 (apt 사용 가능)
+FROM openjdk:17-slim
 
 # 2단계: curl 설치 (Ubuntu/Debian 계열)
 RUN apt-get update \
