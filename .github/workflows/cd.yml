@@ -3,13 +3,22 @@ name: CD
 on:
   workflow_run:
     workflows: [ "CI" ]
-    types:
-      - completed
+    types: [ completed ]
+
+concurrency:
+  group: cd-${{ github.event.workflow_run.head_branch || github.ref_name || 'default' }}
+  # cancel-in-progress: false  # 직렬 처리(큐잉). 명시 안 해도 기본 false
 
 jobs:
   cd:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&            
+        github.event.workflow_run.head_branch == 'develop'      
+      }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: 🔽 Checkout Repository
@@ -41,30 +50,32 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # core-services-net 외부 네트워크 보장
             docker network create core-services-net || true
-
             cd /home/ubuntu/compose/infra
-
-            # 최신 이미지 받기
             docker compose pull || true
-
-            # 인프라 재기동 (down 금지: 모니터링 공백 방지)
             docker compose up -d --force-recreate
 
-      - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치
+      - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치 (직렬락/큐잉)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-            set -e
+            set -Eeuo pipefail
+
+            # === 배포 락 (최대 15분 대기) ===
+            LOCKFILE=/var/lock/springboot-cd.lock
+            sudo mkdir -p /var/lock || true
+            exec 200>"$LOCKFILE"
+            flock -w 900 200 || { echo "⏳ 다른 배포 대기 타임아웃(15m) → 종료"; exit 1; }
+            trap 'flock -u 200' EXIT
+            # ==============================
 
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/springboot-app:latest
 
             echo "[+] 현재 실행 중인 springboot 컨테이너 확인"
-            RUNNING=$(docker ps --format '{{.Names}}' | grep -E '^springboot-(blue|green)$' || true)
+            RUNNING=$(docker ps --format '{{.Names}}' | grep -E '^springboot-(blue|green)$' | head -n1 || true)
             if [ "$RUNNING" = "springboot-blue" ]; then
               NEW_CONTAINER="springboot-green"
               OLD_CONTAINER="springboot-blue"
@@ -80,48 +91,67 @@ jobs:
             echo "[📄] 운영용 application.yml 복원"
             echo "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
 
-            echo "[🌐] core-services-net 네트워크 보장"
-            docker network create core-services-net || true
+            echo "[🌐] core-services-net 보장"
+            docker network create core-services-net >/dev/null 2>&1 || true
 
-            echo "[⬇️] 앱 이미지 Pull"
+            echo "[⬇️] 이미지 Pull"
             docker pull $IMAGE
 
+            # === 동일 이미지면 스킵(Idempotent) ===
+            NEW_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE | awk -F'@' '{print $2}' || true)
+            OLD_DIGEST=""
+            if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
+              OLD_IMAGE_ID=$(docker inspect --format='{{.Image}}' $OLD_CONTAINER 2>/dev/null || true)
+              # 컨테이너 이미지의 digest 추출(없을 수도 있음)
+              OLD_DIGEST=$(docker inspect --format='{{join .RepoDigests ","}}' $OLD_IMAGE_ID 2>/dev/null | grep -o 'sha256:[0-9a-f]\+' | head -n1 || true)
+            fi
+
+            if [ -n "$NEW_DIGEST" ] && [ -n "$OLD_DIGEST" ] && [ "$NEW_DIGEST" = "$OLD_DIGEST" ]; then
+              echo "ℹ️ 기존과 동일한 이미지(digest=$NEW_DIGEST) → 배포 스킵"
+              exit 0
+            fi
+            # ====================================
+
+            # 혹시 이전 실패 잔재가 있으면 제거
+            docker stop $NEW_CONTAINER >/dev/null 2>&1 || true
+            docker rm   $NEW_CONTAINER >/dev/null 2>&1 || true
+
             echo "[🆕] 새 컨테이너 실행: $NEW_CONTAINER (alias: springboot)"
-            # 활성 버전에만 'springboot' alias 부여 (Prometheus 타깃 고정용)
             docker run -d --name $NEW_CONTAINER \
               --network core-services-net \
               --network-alias springboot \
               -p $NEW_PORT:8080 \
               -v /home/ubuntu/application.yml:/config/application.yml \
               -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
+              -e "SERVER_ADDRESS=0.0.0.0" \
               $IMAGE
 
-            echo "[⏳] Health check 대기..."
-            for i in {1..10}; do
-              if curl -sf http://localhost:$NEW_PORT/actuator/health | grep -q UP; then
-                echo "✅ Health check 성공"
-                break
-              fi
-              echo "⏱ Waiting ($i/10)..."
-              sleep 3
-              if [ $i -eq 10 ]; then
-                echo "❌ Health check 실패 → 롤백"
-                docker logs --tail=200 $NEW_CONTAINER || true
-                docker exec -it springboot-green curl -s http://localhost:8080/actuator/health
-                docker rm -f $NEW_CONTAINER || true
-                exit 1
-              fi
+            echo "[⏳] Health check (Docker HEALTHCHECK 상태로 대기)"
+            # 5분까지 대기 (5s x 60)
+            HEALTH_OK=0
+            for i in {1..60}; do
+            STATUS=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' $NEW_CONTAINER 2>/dev/null || echo "")
+            if [ "$STATUS" = "healthy" ]; then HEALTH_OK=1; break; fi
+            echo "⏱ waiting health... ($i/60) status=$STATUS"; sleep 5
             done
+            if [ "$HEALTH_OK" -ne 1 ]; then
+              echo "❌ Health check 실패 → 롤백"
+              docker logs --tail=200 $NEW_CONTAINER || true
+              docker stop $NEW_CONTAINER
+              docker rm $NEW_CONTAINER || true
+              exit 1
+            fi
+            echo "✅ Health check 성공"
 
             echo "[🔀] Nginx 프록시 포트 $OLD_PORT → $NEW_PORT 스위치"
             sudo sed -i "s/localhost:$OLD_PORT/localhost:$NEW_PORT/" /etc/nginx/conf.d/reverse.conf
             sudo nginx -t && sudo systemctl reload nginx
 
-            echo "[🧹] 이전 컨테이너 alias 충돌 방지 및 종료"
-            # 이전 컨테이너가 있다면 네트워크에서 alias 충돌 방지를 위해 분리 후 제거
+            echo "[🧹] 이전 컨테이너 정리"
             if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
-              docker network disconnect core-services-net $OLD_CONTAINER || true
-              docker rm -f $OLD_CONTAINER || true
+            docker network disconnect core-services-net $OLD_CONTAINER >/dev/null 2>&1 || true
+            docker stop $OLD_CONTAINER >/dev/null 2>&1 || true
+            docker rm   $OLD_CONTAINER >/dev/null 2>&1 || true
             fi
 
             echo "[✅] 배포 완료: $NEW_CONTAINER on :$NEW_PORT"
