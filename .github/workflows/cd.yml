@@ -122,11 +122,12 @@ jobs:
               $IMAGE
 
             echo "[⏳] Health check (Docker HEALTHCHECK 상태로 대기)"
+            # 5분까지 대기 (5s x 60)
             HEALTH_OK=0
             for i in {1..60}; do
-              STATUS=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' $NEW_CONTAINER 2>/dev/null || echo "")
-              if [ "$STATUS" = "healthy" ]; then HEALTH_OK=1; break; fi
-              echo "⏱ waiting health... ($i/60) status=$STATUS"; sleep 2
+            STATUS=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' $NEW_CONTAINER 2>/dev/null || echo "")
+            if [ "$STATUS" = "healthy" ]; then HEALTH_OK=1; break; fi
+            echo "⏱ waiting health... ($i/60) status=$STATUS"; sleep 5
             done
             if [ "$HEALTH_OK" -ne 1 ]; then
               echo "❌ Health check 실패 → 롤백"
