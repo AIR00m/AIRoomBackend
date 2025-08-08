@@ -4,6 +4,8 @@ services:
     container_name: kafka
     ports:
       - "9092:9092"
+    networks:
+      - core-services-net
     environment:
       CLUSTER_ID: '9cdc8119cb39c45f0efa6da8e2220058020c7433e3ba3a3ce11a8006a18cb336'
       KAFKA_ADVERTISED_LISTENERS: 'EXTERNAL://172.31.0.93:9092,BROKER://kafka:29092'
@@ -16,11 +18,14 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
 
+
   # Redis
   redis:
     image: redis:7.0
     ports:
       - "6379:6379"
+    networks:
+      - core-services-net
 
 
   kafka-exporter:
@@ -28,10 +33,12 @@ services:
     ports:
       - "9308:9308"
     environment:
-      KAFKA_SERVER: 172.31.0.93:9092
+      KAFKA_SERVER: kafka:29092
     depends_on:
       - kafka
     restart: always
+    networks:
+      - core-services-net
 
   redis-exporter:
     image: oliver006/redis_exporter
@@ -39,6 +46,8 @@ services:
       - "9121:9121"
     depends_on:
       - redis
+    networks:
+      - core-services-net
 
   # Elasticsearch
   elasticsearch:
@@ -54,6 +63,8 @@ services:
         hard: -1
     volumes:
       - esdata:/usr/share/elasticsearch/data
+    networks:
+      - core-services-net
 
   # Logstash
   logstash:
@@ -64,6 +75,8 @@ services:
       - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     depends_on:
       - elasticsearch
+    networks:
+      - core-services-net
 
   # Kibana
   kibana:
@@ -74,6 +87,8 @@ services:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     depends_on:
       - elasticsearch
+    networks:
+      - core-services-net
 
   # Prometheus
   prometheus:
@@ -85,6 +100,8 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - core-services-net
 
   # Grafana
   grafana:
@@ -95,17 +112,21 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - core-services-net
 
   # Node Exporter (for system metrics)
   node-exporter:
     image: prom/node-exporter
     ports:
       - "9100:9100"
+    networks:
+      - core-services-net
 
 volumes:
   esdata:
   grafana-data:
 
 networks:
-  default:
-    name: monitoring-net
+  core-services-net:
+    external: true
