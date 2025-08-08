@@ -97,25 +97,20 @@ jobs:
               $IMAGE
 
             echo "[⏳] Health check 대기..."
-            echo $NEW_PORT
-            curl -s http://localhost:$NEW_PORT/actuator/health
-            for i in {1..10}; do
-              if curl -s http://localhost:$NEW_PORT/actuator/health | grep UP; then
-                echo "✅ Health check 성공"
-                break
-              fi
-              echo "⏱ Waiting ($i/10)..."
-              sleep 3
-              if [ $i -eq 10 ]; then
-                echo "❌ Health check 실패 → 롤백"
-                echo $NEW_CONTAINER
-                docker logs --tail=200 $NEW_CONTAINER || true
-                docker exec -it springboot-green curl -s http://localhost:8080/actuator/health
-                docker stop $NEW_CONTAINER || true
-                docker rm $NEW_CONTAINER || true
-                exit 1
-              fi
-            done
+            sleep 300
+            if curl -s http://localhost:$NEW_PORT/actuator/health | grep UP; then
+              echo "✅ Health check 성공"
+              break
+            fi
+            if [ $i -eq 10 ]; then
+              echo "❌ Health check 실패 → 롤백"
+              echo $NEW_CONTAINER
+              docker logs --tail=200 $NEW_CONTAINER || true
+              docker exec -it springboot-green curl -s http://localhost:8080/actuator/health
+              docker stop $NEW_CONTAINER || true
+              docker rm $NEW_CONTAINER || true
+              exit 1
+            fi
 
             echo "[🔀] Nginx 프록시 포트 $OLD_PORT → $NEW_PORT 스위치"
             sudo sed -i "s/localhost:$OLD_PORT/localhost:$NEW_PORT/" /etc/nginx/conf.d/reverse.conf
