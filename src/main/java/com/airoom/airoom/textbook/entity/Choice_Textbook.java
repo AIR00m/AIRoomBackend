@@ -4,20 +4,15 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
 @Entity
-@Table(name = "CHOICE_TEXTBOOK")
-@SequenceGenerator(name = "seqChoiceTextbook", sequenceName = "CHOICE_TEXTBOOK_SEQ", allocationSize = 1, initialValue = 1)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Choice_Textbook {
     @Id
-    @GeneratedValue(generator = "seqChoiceTextbook",strategy = GenerationType.SEQUENCE)
-    @Column(name = "CHOICE_NO")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer choiceNo;
-    @Column(name = "CHOICE_GRADE")
     private String choiceGrade;
-    @Column(name = "CHOICE_SCHOOL")
     private String choiceSchool;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TEXTBOOK_NO", nullable = false)
