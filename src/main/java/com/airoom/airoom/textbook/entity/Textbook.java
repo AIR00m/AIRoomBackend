@@ -11,6 +11,7 @@ import lombok.*;
 public class Textbook {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "TEXTBOOK_NO")
     private Long textbookNo;
     @Enumerated(EnumType.STRING)
     private SUBJECT textbookSubject;
