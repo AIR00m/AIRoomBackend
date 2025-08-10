@@ -1,8 +1,8 @@
 package com.airoom.airoom.notification.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
-import com.airoom.airoom.notification.model.dto.NotificationType;
-import com.airoom.airoom.notification.model.dto.ReadType;
+import com.airoom.airoom.notification.entity.value.NotificationType;
+import com.airoom.airoom.notification.entity.value.ReadType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
