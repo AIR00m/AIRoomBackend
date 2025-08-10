@@ -67,6 +67,9 @@ jobs:
           script: |
             set -Eeuo pipefail
 
+            # 인프라 pull 직후 대역폭/IO 완화
+            sleep 5
+
             # === 배포 락 (최대 15분 대기, 권한 보정) ===
             sudo mkdir -p /var/lock || true
             sudo touch /var/lock/springboot-cd.lock || true
@@ -97,30 +100,45 @@ jobs:
               docker network create core-services-net >/dev/null 2>&1
             fi
 
-            echo "[⬇️] 이미지 Pull"
-            docker pull "$IMAGE"
+            # --- 원격 digest 선확인 → 동일 시 pull/배포 스킵 ---
+            # jq 없으면 설치(최초 1회)
+            if ! command -v jq >/dev/null 2>&1; then
+              sudo apt-get update -y && sudo apt-get install -y jq
+            fi
 
-            # === 동일 이미지면 스킵 (digest 우선, 폴백 ImageID) ===
-            NEW_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | awk -F'@' '{print $2}')"
-            OLD_DIGEST=""; OLD_IMAGE_ID=""
+            echo "[🧮] 원격 digest 확인"
+            REMOTE_DIGEST="$(docker manifest inspect "$IMAGE" 2>/dev/null | jq -r '.Descriptor.digest // .manifests[0].digest // empty')"
+
+            OLD_IMAGE_ID=""; OLD_DIGEST=""
             if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
               OLD_IMAGE_ID="$(docker inspect --format='{{.Image}}' "$OLD_CONTAINER" 2>/dev/null || true)"
               OLD_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$OLD_IMAGE_ID" 2>/dev/null | awk -F'@' '{print $2}' || true)"
             fi
 
-            if [ -n "$NEW_DIGEST" ] && [ -n "$OLD_DIGEST" ] && [ "$NEW_DIGEST" = "$OLD_DIGEST" ]; then
-              echo "ℹ️ 기존과 동일한 이미지(digest=$NEW_DIGEST) → 배포 스킵"
+            if [ -n "$REMOTE_DIGEST" ] && [ -n "$OLD_DIGEST" ] && [ "$REMOTE_DIGEST" = "$OLD_DIGEST" ]; then
+              echo "ℹ️ 원격/로컬 digest 동일($REMOTE_DIGEST) → pull/배포 스킵"
               exit 0
             fi
 
-            if [ -z "$NEW_DIGEST" ] && [ -n "$OLD_IMAGE_ID" ]; then
-              NEW_IMAGE_ID="$(docker inspect --format='{{.Id}}' "$IMAGE" 2>/dev/null || true)"
-              if [ -n "$NEW_IMAGE_ID" ] && [ "$NEW_IMAGE_ID" = "$OLD_IMAGE_ID" ]; then
-                echo "ℹ️ 기존과 동일한 이미지(ImageID) → 배포 스킵"
-                exit 0
-              fi
+            echo "[⬇️] 이미지 Pull (타임아웃+재시도)"
+            pull_with_retry() {
+              local tries=5
+              local wait=15
+              for i in $(seq 1 $tries); do
+                echo "[pull] attempt $i/$tries"
+                if timeout 600 docker pull "$IMAGE"; then
+                  return 0
+                fi
+                echo "[pull] failed. sleep ${wait}s then retry..."
+                sleep "$wait"
+                wait=$((wait+15))
+              done
+              return 1
+            }
+            if ! pull_with_retry; then
+              echo "❌ 이미지 pull 실패(재시도 초과)"; exit 1
             fi
-            # ============================================
+            # ---------------------------------------------------
 
             # 혹시 이전 실패 잔재가 있으면 제거
             docker stop "$NEW_CONTAINER" >/dev/null 2>&1 || true
@@ -134,7 +152,7 @@ jobs:
               -v /home/ubuntu/application.yml:/config/application.yml \
               -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
               -e "SERVER_ADDRESS=0.0.0.0" \
-              -e "MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED=true" \  # 프로브 강제 활성 (yml 미설정 대비)
+              -e "MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED=true" \
               "$IMAGE"
 
             # ✅ 부팅 안정형 헬스체크: liveness → readiness (404면 즉시 넘어감), 백오프 포함
