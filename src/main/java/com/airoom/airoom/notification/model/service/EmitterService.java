@@ -14,7 +14,7 @@ import java.io.IOException;
 @Slf4j
 public class EmitterService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+//    private final RedisTemplate<String, Object> redisTemplate;
     private final EmitterRepository emitterRepository;
 
     public SseEmitter connectEmitter(Long memberNo) {
