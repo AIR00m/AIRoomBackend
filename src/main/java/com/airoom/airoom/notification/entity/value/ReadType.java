@@ -1,4 +1,4 @@
-package com.airoom.airoom.notification.model.dto;
+package com.airoom.airoom.notification.entity.value;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
