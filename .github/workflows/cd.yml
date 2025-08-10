@@ -4,12 +4,11 @@ on:
   workflow_run:
     workflows: [ "CI" ]
     types: [ completed ]
-    branches: [ develop ]
-
+    branches: [ develop ]          # develop에 push된 CI 완료일 때만 트리거
 
 concurrency:
   group: cd-${{ github.event.workflow_run.head_branch || github.ref_name || 'default' }}
-  # cancel-in-progress: false  # 직렬 처리(큐잉). 기본 false
+  # cancel-in-progress: false
 
 jobs:
   cd:
@@ -35,7 +34,7 @@ jobs:
           source: "docker"
           target: "/home/ubuntu"
 
-      - name: 📂 rsync로 /compose/infra/에 덮어쓰기
+      - name: 🧩 Infra 먼저 업데이트 (조용히, down 금지)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -43,12 +42,20 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           command_timeout: 30m
           script: |
-            docker network create core-services-net || true
+            set -Eeuo pipefail
+
+            # 네트워크 존재 시 생성 스킵(조용히)
+            if ! docker network inspect core-services-net >/dev/null 2>&1; then
+              docker network create core-services-net >/dev/null 2>&1
+            fi
+
             mkdir -p /home/ubuntu/compose/infra
-            rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/
+            rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/ 2>&1
+
             cd /home/ubuntu/compose/infra
-            docker compose pull || true
-            docker compose up -d --force-recreate
+            # 진행바/소음 줄이기
+            docker compose pull --quiet 2>&1 || true
+            docker compose up -d --force-recreate 2>&1
 
       - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치 (직렬락/큐잉)
         uses: appleboy/ssh-action@v1.0.0
@@ -71,23 +78,24 @@ jobs:
 
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/springboot-app:latest
 
-            # 🔍 현재 Nginx가 바라보는 포트로 롤 결정 (reverse.conf 안의 proxy_pass)
+            # 🔍 현재 Nginx가 바라보는 포트 기준 롤 결정
             CURRENT_PORT=$(grep -oE 'localhost:808[12]' /etc/nginx/conf.d/reverse.conf | head -n1 | cut -d: -f2 || true)
             if [ "$CURRENT_PORT" = "8081" ]; then
-              # 현재 8081(blue) 서비스 중 → green 신규
               NEW_CONTAINER="springboot-green"; OLD_CONTAINER="springboot-blue"
               NEW_PORT=8082; OLD_PORT=8081
             else
-              # 현재 8082(green) 또는 미설정 → blue 신규
               NEW_CONTAINER="springboot-blue"; OLD_CONTAINER="springboot-green"
               NEW_PORT=8081; OLD_PORT=8082
             fi
 
             echo "[📄] 운영용 application.yml 복원"
+            # 개행 안전하게 복원
             printf '%s' "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
 
             echo "[🌐] core-services-net 보장"
-            docker network create core-services-net >/dev/null 2>&1 || true
+            if ! docker network inspect core-services-net >/dev/null 2>&1; then
+              docker network create core-services-net >/dev/null 2>&1
+            fi
 
             echo "[⬇️] 이미지 Pull"
             docker pull "$IMAGE"
@@ -126,29 +134,37 @@ jobs:
               -v /home/ubuntu/application.yml:/config/application.yml \
               -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
               -e "SERVER_ADDRESS=0.0.0.0" \
+              -e "MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED=true" \  # 프로브 강제 활성 (yml 미설정 대비)
               "$IMAGE"
 
-            # ✅ 부팅 안정형 헬스체크: liveness → readiness, 유예+백오프+폴백 포함
+            # ✅ 부팅 안정형 헬스체크: liveness → readiness (404면 즉시 넘어감), 백오프 포함
             echo "[⏳] Health check (phase1=liveness, phase2=readiness)"
             sleep 3
-
             HEALTH_OK=0
 
             CONTEXT_PATH=$(docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' "$NEW_CONTAINER" \
               | grep -E '^SERVER_SERVLET_CONTEXT_PATH=' | cut -d'=' -f2- || true)
             if [ -z "${CONTEXT_PATH:-}" ]; then CONTEXT_PATH=""; fi
 
-            # Phase 1: LIVENESS
+            # Phase 1: LIVENESS (404면 바로 Phase2)
             LIVENESS_URL="http://localhost:$NEW_PORT${CONTEXT_PATH}/actuator/health/liveness"
             for i in {1..60}; do
-              BODY=$(curl -fsS "$LIVENESS_URL" || true)
-              if echo "$BODY" | grep -q '"status"\s*:\s*"UP"'; then
+              RESP=$(curl -sS -w " HTTP_STATUS:%{http_code}" "$LIVENESS_URL" || true)
+              STATUS="${RESP##*HTTP_STATUS:}"
+              BODY="${RESP% HTTP_STATUS:*}"
+
+              if [ "$STATUS" = "200" ] && echo "$BODY" | grep -q '"status"\s*:\s*"UP"'; then
                 echo "✅ Liveness OK"; break
               fi
+              if [ "$STATUS" = "404" ]; then
+                echo "ℹ️ /health/liveness 미구성(404) → readiness 단계로 진행"
+                break
+              fi
+
               if [ $((i % 6)) -eq 0 ]; then
                 echo "[hint] 부팅 중일 수 있음. 최근 로그:"; docker logs --tail=20 "$NEW_CONTAINER" || true
               fi
-              echo "⏱ waiting liveness... ($i/60)"; sleep 3
+              echo "⏱ waiting liveness... ($i/60), status=$STATUS"; sleep 3
             done
 
             # Phase 2: READINESS (점진 백오프)
@@ -160,7 +176,7 @@ jobs:
               if echo "$BODY" | grep -q '"status"\s*:\s*"UP"'; then
                 HEALTH_OK=1; echo "✅ Readiness OK"; break
               fi
-              # readiness 없을 때 폴백: /health
+              # readiness 없으면 /health로 폴백
               if [ $((ATTEMPTS % 5)) -eq 0 ]; then
                 FB=$(curl -fsS "http://localhost:$NEW_PORT${CONTEXT_PATH}/actuator/health" || true)
                 if echo "$FB" | grep -q '"status"\s*:\s*"UP"'; then
@@ -168,7 +184,7 @@ jobs:
                 fi
               fi
               echo "⏱ waiting readiness... ($ATTEMPTS/$MAX_ATTEMPTS)"; sleep $SLEEP
-              if [ $SLEEP -lt 8 ] ; then SLEEP=$((SLEEP+1)); fi
+              if [ $SLEEP -lt 8 ]; then SLEEP=$((SLEEP+1)); fi
             done
 
             if [ "$HEALTH_OK" -ne 1 ]; then
