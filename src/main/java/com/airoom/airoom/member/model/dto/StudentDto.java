@@ -1,15 +1,12 @@
 package com.airoom.airoom.member.model.dto;
 
 import com.airoom.airoom.member.entity.Gender;
-import com.airoom.airoom.member.entity.Grade;
+import com.airoom.airoom.common.value.Grade;
 import com.airoom.airoom.member.entity.Student;
-import jakarta.persistence.Column;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Getter
 @AllArgsConstructor

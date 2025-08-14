@@ -2,7 +2,7 @@ package com.airoom.airoom.exam.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.exam.entity.value.RetryType;
-import com.airoom.airoom.exam.entity.value.Subject;
+import com.airoom.airoom.common.value.Subject;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;

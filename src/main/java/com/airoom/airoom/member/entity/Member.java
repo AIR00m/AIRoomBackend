@@ -1,15 +1,13 @@
 package com.airoom.airoom.member.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
+import com.airoom.airoom.common.value.Grade;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @MappedSuperclass

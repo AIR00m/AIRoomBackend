@@ -1,7 +1,7 @@
 package com.airoom.airoom.member.model.dto;
 
 import com.airoom.airoom.member.entity.Gender;
-import com.airoom.airoom.member.entity.Grade;
+import com.airoom.airoom.common.value.Grade;
 import com.airoom.airoom.member.entity.Teacher;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
