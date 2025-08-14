@@ -15,21 +15,25 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE Student SET deleted_at = NOW() WHERE member_no = ?")
+@SQLDelete(sql = "UPDATE ClASSROOM SET deleted_at = NOW() WHERE class_room_no = ?")
 @SQLRestriction("deleted_at IS NULL")
-public class ClassRoom extends BaseEntity {
-
+public class Classroom extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long classRoomNo;
 
-    private Long classRoomId;
     @Column(nullable = false)
     private String classRoomSchool;
+
     @Column(nullable = false)
     private Grade classRoomGrade;
+
     @Column(nullable = false)
     private String classRoomClass;
+
     @Column(nullable = false)
     private Integer classRoomYear;
+
     @Column(nullable = false)
     private Semester classRoomSemester;
 

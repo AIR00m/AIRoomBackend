@@ -13,7 +13,7 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE Student SET deleted_at = NOW() WHERE member_no = ?")
+@SQLDelete(sql = "UPDATE GROUP SET deleted_at = NOW() WHERE groud_id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Group extends BaseEntity {
     @Id
@@ -22,10 +22,10 @@ public class Group extends BaseEntity {
 
     private String groupName;
 
-    // 클래스룸 학생의 고유번호를 참조 하지 않고 단독으로
+    // 클래스룸 학생의 고유번호를 참조 하지 않고 단독으로 넣어주는 방식으로 사용
     private Integer groupLeaderNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ClASSROOM_NO")
-    private ClassRoom classRoom;
+    private Classroom classroom;
 }
