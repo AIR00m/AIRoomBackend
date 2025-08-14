@@ -2,7 +2,6 @@ package com.airoom.airoom.member.model.dto;
 
 import com.airoom.airoom.member.entity.Gender;
 import com.airoom.airoom.common.value.Grade;
-import com.airoom.airoom.member.entity.Teacher;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,18 +24,6 @@ public class TeacherDto {
     private Grade memberGrade;
     private Integer memberClass;
 
-    public Teacher convertToStudent() {
-        return Teacher.builder()
-                .memberId(memberId)
-                .memberPw(memberPw)
-                .memberName(memberName)
-                .memberAge(memberAge)
-                .memberSchool(memberSchool)
-                .memberEmail(memberEmail)
-                .memberGender(memberGender)
-                .memberGrade(memberGrade)
-                .memberClass(memberClass)
-                .build();
-    }
+
 }
 

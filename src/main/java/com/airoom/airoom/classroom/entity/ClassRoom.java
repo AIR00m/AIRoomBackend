@@ -1,8 +1,8 @@
-package com.airoom.airoom.member.entity;
+package com.airoom.airoom.classroom.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.common.value.Grade;
-import com.airoom.airoom.common.value.MemberRole;
+import com.airoom.airoom.common.value.Semester;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -17,28 +17,22 @@ import org.hibernate.annotations.SQLRestriction;
 // Soft Delete 방식
 @SQLDelete(sql = "UPDATE Student SET deleted_at = NOW() WHERE member_no = ?")
 @SQLRestriction("deleted_at IS NULL")
-// Hibernate 6에서 추가된 모든 SELECT가 실행이 될때 자동으로 WHERE 조건 추가
+public class ClassRoom extends BaseEntity {
 
-public class Member extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long memberNo;
+
+    private Long classRoomId;
     @Column(nullable = false)
-    private String memberId;
+    private String classRoomSchool;
     @Column(nullable = false)
-    private String memberName;
+    private Grade classRoomGrade;
     @Column(nullable = false)
-    private Integer memberAge;
+    private String classRoomClass;
     @Column(nullable = false)
-    private String memberSchool;
+    private Integer classRoomYear;
     @Column(nullable = false)
-    private String memberEmail;
-    @Column(nullable = false)
-    private Gender memberGender;
-    private Grade memberGrade;
-    private Integer memberClass;
-    private String memberImage;
-    @Column(nullable = false)
-    private MemberRole memberType;
+    private Semester classRoomSemester;
+
+
 
 }
