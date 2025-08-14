@@ -25,10 +25,8 @@ public class ExamProblem extends BaseEntity {
 
     private String epImageUrl; //시험문제이미지 URL
 
-    @Column(nullable = false)
     private String epParagraph; //시험문제 지문
 
-    @Column(nullable = false)
     private String epExample; //시험문제 보기
 
     @Enumerated(EnumType.STRING)
@@ -38,7 +36,6 @@ public class ExamProblem extends BaseEntity {
     @Column(nullable = false)
     private String epAnswer; //시험문제 정답
 
-    @Column(nullable = false)
     private String epComment; //시험문제 해설
 
     @ManyToOne(fetch = FetchType.LAZY)

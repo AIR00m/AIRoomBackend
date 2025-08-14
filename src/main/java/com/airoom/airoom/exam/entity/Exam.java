@@ -1,5 +1,6 @@
 package com.airoom.airoom.exam.entity;
 
+import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.exam.entity.value.RetryType;
 import com.airoom.airoom.common.value.Subject;
@@ -38,6 +39,10 @@ public class Exam extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private Subject examSubject = Subject.MATH; //시험 과목
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CLASSROOM_TEACHER_NO")
+    private ClassroomTeacher classroomTeacher;
 
     @PrePersist
     public void prePersist() {
