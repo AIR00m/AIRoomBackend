@@ -2,7 +2,6 @@ package com.airoom.airoom.classroom.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.member.entity.Member;
-import com.airoom.airoom.textbook.entity.Textbook;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -15,19 +14,22 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE Student SET deleted_at = NOW() WHERE member_no = ?")
+@SQLDelete(sql = "UPDATE CLASSROOM_STUDENT SET deleted_at = NOW() WHERE CLASSROOM_STUDENT_NO = ?")
 @SQLRestriction("deleted_at IS NULL")
-public class ClassRoomTeacher extends BaseEntity {
+public class ClassroomStudent extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long classRoomTeacherId;
+    private Long classRoomStudentNo;
+
     @ManyToOne
     @JoinColumn(name = "CLASSROOM_NO")
-    private ClassRoom classRoom;
+    private Classroom classRoom;
+
     @ManyToOne
     @JoinColumn(name ="MEMBER_NO")
-    private Member teacher;
+    private Member student;
+
     @ManyToOne
-    @JoinColumn(name = "TEXTBOOK_NO")
-    private Textbook textbook;
+    @JoinColumn(name = "GROUP_NO")
+    private Group group;
 }

@@ -13,6 +13,9 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE UNIT SET DELETED_AT = NOW() WHERE UNIT_NO = ?")
 @AllArgsConstructor
+/**
+ * 단원 엔티티
+ */
 public class Unit extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
