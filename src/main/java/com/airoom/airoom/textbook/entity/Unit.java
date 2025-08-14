@@ -15,27 +15,24 @@ import org.hibernate.annotations.SQLRestriction;
 public class Unit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long unitNo;
+    private Long unitNo; //단원 고유번호
 
     @Column(nullable = false)
-    private String unitTitle;
+    private String unitTitle; //단원명
 
     @Column(nullable = false)
-    private Integer unitNum;
+    private Integer unitNum; //단원번호
 
     @Column(nullable = false)
-    private Integer unitStart;
+    private Integer unitPages; //단원 총페이지 수
 
     @Column(nullable = false)
-    private Integer unitEnd;
+    private String unitPdfUrl; //단원PDF URL
 
     @Column(nullable = false)
-    private String unitPdfUrl;
-
-    @Column(nullable = false)
-    private String unitImageUrl;
+    private String unitImageUrl; //단원이미지 URL
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TEXTBOOK_NO", nullable = false)
-    private Textbook textbook;
+    private Textbook textbook; //교재
 }
