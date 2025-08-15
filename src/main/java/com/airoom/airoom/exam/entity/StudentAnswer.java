@@ -26,7 +26,6 @@ public class StudentAnswer {
     @Column(nullable = false)
     private boolean saIsCorrect; //정답여부
 
-    @Column(nullable = false)
     private LocalDateTime saSolvingTime; //풀이시간
 
     @ManyToOne(fetch = FetchType.LAZY)
