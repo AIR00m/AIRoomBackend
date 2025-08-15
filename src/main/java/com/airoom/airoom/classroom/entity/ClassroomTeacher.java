@@ -20,17 +20,17 @@ import org.hibernate.annotations.SQLRestriction;
 public class ClassroomTeacher extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long classroomTeacherNo;
+    private Long classroomTeacherNo; // 클래스룸 선생님 고유번호
 
     @ManyToOne
     @JoinColumn(name = "CLASSROOM_NO")
-    private Classroom classroom;
+    private Classroom classroom; // 클래스룸 고유 번호
 
     @ManyToOne
     @JoinColumn(name ="MEMBER_NO")
-    private Member teacher;
+    private Member teacher;// 회원 고유 번호 (선생님)
 
     @ManyToOne
     @JoinColumn(name = "TEXTBOOK_NO")
-    private Textbook textbook;
+    private Textbook textbook; // 교재 고유 번호
 }
