@@ -1,34 +1,37 @@
-package com.airoom.airoom.textbook.entity;
+package com.airoom.airoom.chat.entity;
 
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
+import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE DRAWING SET DELETED_AT = NOW() WHERE DRAWING_NO = ?")
+@SQLDelete(sql = "UPDATE CHAT_ROOM SET DELETED_AT = NOW() WHERE CR_NO = ?")
 @AllArgsConstructor
 /**
- * 그림판 엔티티
+ * 채팅방 엔티티
  */
-public class Drawing extends BaseEntity {
+public class ChatRoom extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long drawingNo; //그림판 고유번호
+    private Long crNo; //채팅방 고유번호
 
-    private String drawingData; //그림정보
+    private String lastMessage; //채팅방 마지막메시지
 
-    private String drawingPage; //단원 페이지번호
+    private LocalDateTime lastMessageTime; //채팅방 마지막메시지 시간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UNIT_NO", nullable = false)
-    private Unit unit; //단원
+    @JoinColumn(name = "CLASSROOM_TEACHER_NO")
+    private ClassroomTeacher classroomTeacher; //클래스룸 교사
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLASSROOM_STUDENT_NO")
