@@ -1,8 +1,7 @@
 package com.airoom.airoom.exam.entity;
 
+import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.common.Entity.BaseEntity;
-import com.airoom.airoom.exam.entity.value.RetryType;
-import com.airoom.airoom.common.value.Subject;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -20,7 +19,7 @@ import java.time.LocalDateTime;
 public class Exam extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long examNo;
+    private Long examNo; //시험 고유번호
 
     @Column(nullable = false)
     private Integer examProblemCount; //시험 문제수
@@ -29,23 +28,7 @@ public class Exam extends BaseEntity {
 
     private LocalDateTime examEndTime; //시험 종료시간
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private RetryType examRetryType = RetryType.N; //시험 재응시여부
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private Subject examSubject = Subject.MATH; //시험 과목
-
-    @PrePersist
-    public void prePersist() {
-        if (examRetryType == null) {
-            examRetryType = RetryType.N;
-        }
-        if (examSubject == null) {
-            examSubject = Subject.MATH;
-        }
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CLASSROOM_TEACHER_NO")
+    private ClassroomTeacher classroomTeacher; //클래스룸교사 고유번호
 }

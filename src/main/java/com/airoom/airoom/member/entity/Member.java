@@ -2,37 +2,43 @@ package com.airoom.airoom.member.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.common.value.Grade;
+import com.airoom.airoom.common.value.MemberRole;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
+@Entity
 @Getter
-@MappedSuperclass
+// JPA는 기본 생성자로 생성 | 개발자의 무분별한 생성을 막기 위해
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
-@SuperBuilder
-// @EntityListeners(AuditingEntityListener.class)
-// 언제, 누구에 의해 만들어지고 수정되었는지 JPA가 알아서 관리 하도록
+@AllArgsConstructor
+@Builder
+// Soft Delete 방식
+@SQLDelete(sql = "UPDATE Student SET deleted_at = NOW() WHERE member_no = ?")
+@SQLRestriction("deleted_at IS NULL")
+// Hibernate 6에서 추가된 모든 SELECT가 실행이 될때 자동으로 WHERE 조건 추가
 
 public class Member extends BaseEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long memberNo;
-    @Column(unique = true, nullable = false, length = 8)
+    @Column(nullable = false)
     private String memberId;
     @Column(nullable = false)
-    private String memberPw;
     private String memberName;
+    @Column(nullable = false)
     private Integer memberAge;
+    @Column(nullable = false)
     private String memberSchool;
+    @Column(nullable = false)
     private String memberEmail;
-    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Gender memberGender;
-    @Enumerated(EnumType.STRING)
     private Grade memberGrade;
     private Integer memberClass;
+    private String memberImage;
+    @Column(nullable = false)
+    private MemberRole memberType;
+
 }

@@ -46,4 +46,11 @@ public class Textbook extends BaseEntity {
 
     @Column(nullable = false)
     private String textbookImageUrl; //교재 이미지 URL
+
+    @PrePersist
+    public void prePersist() {
+        if (textbookSubject == null) {
+            textbookSubject = Subject.MATH;
+        }
+    }
 }
