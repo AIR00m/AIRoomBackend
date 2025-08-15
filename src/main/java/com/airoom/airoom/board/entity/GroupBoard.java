@@ -25,7 +25,7 @@ public class GroupBoard extends Board{
     // 모둠 게시판 제목
 
     @ManyToOne
-    @JoinColumn(name = "CLASSROOM_NO")
+    @JoinColumn(name = "CLASSROOM_GROUP_NO")
     private Group group;
     // 클래스룸 모둠 고유 번호
 

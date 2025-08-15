@@ -36,6 +36,6 @@ public class Comment extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private GroupBoard groupBoard;
-
+    // 그룹 게시판 고유번호
 
 }

@@ -1,5 +1,6 @@
 package com.airoom.airoom.board.entity;
 
+import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -16,7 +17,7 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 
 
-public class AssignTarget extends Board {
+public class AssignTarget extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
