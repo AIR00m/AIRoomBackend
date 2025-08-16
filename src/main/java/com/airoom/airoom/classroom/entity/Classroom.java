@@ -20,15 +20,20 @@ import org.hibernate.annotations.SQLRestriction;
 public class Classroom extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long classroomNo;
+    private Long classroomNo; // 클래스룸 고유 번호
+
     @Column(nullable = false)
-    private String classroomSchool;
+    private String classroomSchool; // 클래스룸 학교 이름
+
     @Column(nullable = false)
-    private Grade classroomGrade;
+    private Grade classroomGrade; // 클래스룸 학년
+
     @Column(nullable = false)
-    private String classroomClass;
+    private String classroomClass; // 클래스룸 반
+
     @Column(nullable = false)
-    private Integer classroomYear;
+    private Integer classroomYear; // 클래스룸 년도
+
     @Column(nullable = false)
-    private Semester classroomSemester;
+    private Semester classroomSemester; // 클래스룸 학기
 }

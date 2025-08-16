@@ -15,30 +15,40 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE Student SET deleted_at = NOW() WHERE member_no = ?")
+@SQLDelete(sql = "UPDATE MEMBER SET deleted_at = NOW() WHERE member_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 // Hibernate 6에서 추가된 모든 SELECT가 실행이 될때 자동으로 WHERE 조건 추가
 
 public class Member extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long memberNo;
+    private Long memberNo; // 회원 고유 번호
+
     @Column(nullable = false)
-    private String memberId;
+    private String memberId; // 회원 아이디
+
     @Column(nullable = false)
-    private String memberName;
+    private String memberName; // 회원 패스 워드
+
     @Column(nullable = false)
-    private Integer memberAge;
+    private Integer memberAge; // 회원 나이
+
     @Column(nullable = false)
-    private String memberSchool;
+    private String memberSchool; // 회원 소속 학교
+
     @Column(nullable = false)
-    private String memberEmail;
+    private String memberEmail; // 회원 이메일
+
     @Column(nullable = false)
-    private Gender memberGender;
-    private Grade memberGrade;
-    private Integer memberClass;
-    private String memberImage;
+    private Gender memberGender; // 회원 성별
+
+    private Grade memberGrade; // 회원 학년
+
+    private Integer memberClass; // 회원 반
+
+    private String memberImage; //회원 프로필 사진
+
     @Column(nullable = false)
-    private MemberRole memberType;
+    private MemberRole memberType; // 회원 타입(선생님, 학생)
 
 }

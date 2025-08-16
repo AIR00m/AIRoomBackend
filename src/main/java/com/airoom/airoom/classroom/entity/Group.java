@@ -18,14 +18,14 @@ import org.hibernate.annotations.SQLRestriction;
 public class Group extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long groupNo;
+    private Long groupNo; // 그룹 고유번호
 
-    private String groupName;
+    private String groupName; // 그룹 이름
 
     // 클래스룸 학생의 고유번호를 참조 하지 않고 단독으로
-    private Integer groupLeaderNo;
+    private Integer groupLeaderNo; // 그룹장 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ClASSROOM_NO")
-    private Classroom classroom;
+    private Classroom classroom; // 클래스룸 고유번호
 }
