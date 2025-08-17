@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 public class MemberController {
 
-    private final MemberService memberService;
+//    private final MemberService memberService;
 
     // 학생 회원가입
 //    @PostMapping("/signup/student")
