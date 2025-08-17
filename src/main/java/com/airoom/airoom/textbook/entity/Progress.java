@@ -1,7 +1,6 @@
 package com.airoom.airoom.textbook.entity;
 
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
-import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -12,25 +11,24 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE DRAWING SET DELETED_AT = NOW() WHERE DRAWING_NO = ?")
+@SQLDelete(sql = "UPDATE PROGRESS SET DELETED_AT = NOW() WHERE PROGRESS_NO = ?")
 @AllArgsConstructor
 /**
- * 그림판 엔티티
+ * 진도 엔티티
  */
-public class Drawing extends BaseEntity {
+public class Progress {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long drawingNo; //그림판 고유번호
+    private Long progressNo; //진도 고유번호
 
-    private String drawingData; //그림정보
-
-    private String drawingPage; //단원 페이지번호
+    @Column(nullable = false)
+    private Integer progressLastPage; //진도 마지막페이지
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UNIT_NO", nullable = false)
-    private Unit unit; //단원
+    @JoinColumn(name = "UNIT_NO")
+    private Unit unit;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLASSROOM_STUDENT_NO")
-    private ClassroomStudent classroomStudent; //클래스룸 학생
+    private ClassroomStudent classroomStudent;
 }

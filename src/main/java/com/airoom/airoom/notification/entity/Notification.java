@@ -1,8 +1,9 @@
 package com.airoom.airoom.notification.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
-import com.airoom.airoom.notification.model.dto.NotificationType;
-import com.airoom.airoom.notification.model.dto.ReadType;
+import com.airoom.airoom.member.entity.Member;
+import com.airoom.airoom.notification.entity.value.NotificationType;
+import com.airoom.airoom.notification.entity.value.ReadType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -27,19 +28,20 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private String notificationContent;
 
-//    @ManyToOne
-//    private MEMBER recipient;
+    private String notificationUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private NotificationType notificationType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private ReadType notificationReadType=ReadType.N;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private NotificationType notificationType;
-
-    private String notificationUrl;
+    @ManyToOne
+    @JoinColumn(name = "MEMBER_NO")
+    private Member member;
 
     //디폴트값설정
     @PrePersist
