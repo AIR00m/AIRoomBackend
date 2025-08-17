@@ -20,6 +20,7 @@ public class ExamUnit {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "EXAM_NO")
+    @Setter
     private Exam exam; //시험
 
     @ManyToOne(fetch = FetchType.LAZY)
