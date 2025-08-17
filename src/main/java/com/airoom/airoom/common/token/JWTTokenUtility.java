@@ -3,8 +3,6 @@ package com.airoom.airoom.common.token;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.JwtTokenizer;
 import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
