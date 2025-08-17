@@ -1,4 +1,4 @@
-package com.airoom.airoom.exam.entity.value;
+package com.airoom.airoom.common.value;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,8 @@
-package com.bs.boot.myboardrest.project.config.token;
+package com.airoom.airoom.common.token;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
@@ -52,6 +54,7 @@ public class JWTTokenUtility {
 
 
     public static Claims verifyToken(String token) {
+        // 주석을 추가d
 
         if (token == null || !token.startsWith("Bearer ")) {
             // contains로 하게 되면 중간에 포함된것도 true
@@ -87,3 +90,4 @@ public class JWTTokenUtility {
     }
 
 }
+
