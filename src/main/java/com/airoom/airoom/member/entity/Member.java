@@ -43,8 +43,10 @@ public class Member extends BaseEntity {
     private String memberEmail; // 회원 이메일
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Gender memberGender; // 회원 성별
 
+    @Enumerated(EnumType.STRING)
     private Grade memberGrade; // 회원 학년
 
     private Integer memberClass; // 회원 반
@@ -52,6 +54,7 @@ public class Member extends BaseEntity {
     private String memberImage; //회원 프로필 사진
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private MemberRole memberType; // 회원 타입(선생님, 학생)
 
 }
