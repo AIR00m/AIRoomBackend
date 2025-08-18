@@ -20,11 +20,11 @@ public class ExamUnit extends BaseEntity {
     private Long euNo; //시험단원 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EXAM_NO")
+    @JoinColumn(name = "exam_no")
     @Setter
     private Exam exam; //시험
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UNIT_NO")
+    @JoinColumn(name = "unit_no")
     private Unit unit; //단원
 }

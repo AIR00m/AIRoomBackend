@@ -30,7 +30,7 @@ public class AssignTarget extends BaseEntity {
     // 모둠과제여부
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="BOARD_NO")
+    @JoinColumn(name="assign_board_no")
     private AssignBoard assignBoard;
     // 과제 고유 번호
 

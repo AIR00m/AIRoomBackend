@@ -29,11 +29,12 @@ public class ChatMessage extends BaseEntity {
     @Builder.Default
     private Boolean cmIsRead = false; //채팅 읽음 여부
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private MemberRole cmWriterType; //채팅 작성자 타입
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CR_NO")
+    @JoinColumn(name = "cr_no")
     private ChatRoom chatRoom; //채팅방
 
     @PrePersist

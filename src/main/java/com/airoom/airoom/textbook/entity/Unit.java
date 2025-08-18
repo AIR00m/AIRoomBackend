@@ -37,6 +37,6 @@ public class Unit extends BaseEntity {
     private String unitImageUrl; //단원이미지 URL
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TEXTBOOK_NO", nullable = false)
+    @JoinColumn(name = "textbook_no", nullable = false)
     private Textbook textbook; //교재
 }

@@ -26,6 +26,6 @@ public class ClassroomGroup extends BaseEntity {
     private Integer groupLeaderNo; // 그룹장 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ClASSROOM_NO")
+    @JoinColumn(name = "classroom_no")
     private Classroom classroom; // 클래스룸 고유번호
 }

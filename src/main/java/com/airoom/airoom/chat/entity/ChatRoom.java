@@ -30,10 +30,10 @@ public class ChatRoom extends BaseEntity {
     private LocalDateTime lastMessageTime; //채팅방 마지막메시지 시간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_TEACHER_NO")
+    @JoinColumn(name = "classroom_teacher_no")
     private ClassroomTeacher classroomTeacher; //클래스룸 교사
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_STUDENT_NO")
+    @JoinColumn(name = "classroom_student_no")
     private ClassroomStudent classroomStudent; //클래스룸 학생
 }

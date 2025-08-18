@@ -30,7 +30,7 @@ public class Textbook extends BaseEntity {
     @Column(nullable = false)
     private String textbookPublisher; //교재 출판사
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private Subject textbookSubject = Subject.MATH; //교재 과목
@@ -38,10 +38,12 @@ public class Textbook extends BaseEntity {
     @Column(nullable = false)
     private String textbookPdfUrl; //교재 PDF URL
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private Grade textbookGrade; //교재 대상학년
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private Semester textbookSemester; //교재 대상학기
 
     @Column(nullable = false)

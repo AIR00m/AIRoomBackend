@@ -29,6 +29,6 @@ public class AiChatRoom extends BaseEntity {
     private LocalDateTime lastQuestionTime; //AI 채팅방 마지막메시지 시간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "MEMBER_NO")
+    @JoinColumn(name = "member_no")
     private Member member; //회원
 }

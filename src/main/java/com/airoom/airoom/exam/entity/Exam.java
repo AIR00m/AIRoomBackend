@@ -34,7 +34,7 @@ public class Exam extends BaseEntity {
     private LocalDateTime examEndTime; //시험 종료시간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_NO")
+    @JoinColumn(name = "classroom_no")
     private Classroom classroom; //클래스룸 고유번호
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "exam")

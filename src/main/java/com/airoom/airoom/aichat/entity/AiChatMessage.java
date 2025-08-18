@@ -26,10 +26,11 @@ public class AiChatMessage extends BaseEntity {
     @Column(nullable = false)
     private String acmContent; //AI 채팅메시지 내용
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private MessageType acmType; //AI 채팅메시지 타입(QUESTION, ANSWER)
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ACR_NO")
+    @JoinColumn(name = "acr_no")
     private AiChatRoom aiChatRoom; //AI 채팅방
 }
