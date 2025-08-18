@@ -33,7 +33,7 @@ public class ExamProblem extends BaseEntity {
     private String epExample; //시험문제 보기
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private ProblemLevel epLevel; //시험문제 난이도
 
     @Column(nullable = false)

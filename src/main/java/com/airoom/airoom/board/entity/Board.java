@@ -27,6 +27,7 @@ public abstract class Board extends BaseEntity {
     // 게시판 내용
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
     private BoardType boardType;
     // GROUP(모둠),ASSIGN(과제),SUBJECT(과목),HOMEWORK(과제 제출) 게시판이 존재한다.
 

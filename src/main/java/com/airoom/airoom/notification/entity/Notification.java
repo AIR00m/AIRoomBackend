@@ -31,11 +31,11 @@ public class Notification extends BaseEntity {
     private String notificationUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private NotificationType notificationType;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     @Builder.Default
     private ReadType notificationReadType=ReadType.N;
 
