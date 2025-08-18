@@ -28,7 +28,10 @@ public class Member extends BaseEntity {
     private String memberId; // 회원 아이디
 
     @Column(nullable = false)
-    private String memberName; // 회원 패스 워드
+    private String memberPwd; // 회원 패스워드
+    
+    @Column(nullable = false)
+    private String memberName; // 회원 이름
 
     @Column(nullable = false)
     private Integer memberAge; // 회원 나이
