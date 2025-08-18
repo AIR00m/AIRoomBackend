@@ -35,7 +35,7 @@ public class Comment extends BaseEntity {
     // 회원 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_no")
+    @JoinColumn(name = "group_board_no")
     private GroupBoard groupBoard;
     // 그룹 게시판 고유번호
 
