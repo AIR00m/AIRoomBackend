@@ -21,15 +21,15 @@ public class ClassroomStudent extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long classRoomStudentNo; // 클래스룸 학생 고유 번호
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLASSROOM_NO")
     private Classroom classRoom; // 클래스룸 고유 번호
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name ="MEMBER_NO")
-    private Member student; // 회원 고유번호(학생_
+    private Member student; // 회원 고유번호(학생)
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "GROUP_NO")
     private ClassroomGroup classroomGroup; // 모둠 고유번호
 }
