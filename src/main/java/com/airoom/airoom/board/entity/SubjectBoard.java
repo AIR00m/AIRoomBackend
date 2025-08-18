@@ -18,7 +18,7 @@ public class SubjectBoard extends Board{
     // 과목 게시판 (예시 페이지에서 게시판 아이콘을 클릭했을 때 나오는 게시판)
 
     @Column(name = "SB_TITLE")
-    private String SubjectBoardTitle;
+    private String subjectBoardTitle;
     // 과목게시판 제목
 
     @Column(name = "SB_FOCUS_TYPE")
