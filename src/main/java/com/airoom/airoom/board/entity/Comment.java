@@ -14,13 +14,13 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE Comment SET deleted_at = NOW() WHERE comment_no = ?")
+@SQLDelete(sql = "UPDATE comment SET deleted_at = NOW() WHERE comment_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Comment extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long commentNo;
-    // 댓글 고유 번호호
+    // 댓글 고유 번호
 
     @Column(nullable = false)
     private String commentContent;

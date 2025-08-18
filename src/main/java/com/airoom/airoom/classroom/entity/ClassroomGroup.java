@@ -13,9 +13,9 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE GROUP SET deleted_at = NOW() WHERE GROUP_NO = ?")
+@SQLDelete(sql = "UPDATE classroom_group SET deleted_at = NOW() WHERE group_no = ?")
 @SQLRestriction("deleted_at IS NULL")
-public class Group extends BaseEntity {
+public class ClassroomGroup extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long groupNo; // 그룹 고유번호

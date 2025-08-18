@@ -14,7 +14,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE TEXTBOOK SET DELETED_AT = NOW() WHERE TEXTBOOK_NO = ?")
+@SQLDelete(sql = "UPDATE textbook SET deleted_at = NOW() WHERE textbook_no = ?")
 @AllArgsConstructor
 /**
  * 교재 엔티티

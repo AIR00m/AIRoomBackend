@@ -15,7 +15,7 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE CLASSROOM SET deleted_at = NOW() WHERE CLASSROOM_NO = ?")
+@SQLDelete(sql = "UPDATE classroom SET deleted_at = NOW() WHERE classroom_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Classroom extends BaseEntity {
     @Id

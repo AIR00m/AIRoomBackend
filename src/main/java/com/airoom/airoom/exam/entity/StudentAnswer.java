@@ -1,6 +1,7 @@
 package com.airoom.airoom.exam.entity;
 
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
+import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -13,9 +14,9 @@ import java.time.LocalDateTime;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE STUDENT_ANSWER SET DELETED_AT = NOW() WHERE SA_NO = ?")
+@SQLDelete(sql = "UPDATE student_answer SET deleted_at = NOW() WHERE sa_no = ?")
 @AllArgsConstructor
-public class StudentAnswer {
+public class StudentAnswer extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long saNo; //학생응답 고유번호

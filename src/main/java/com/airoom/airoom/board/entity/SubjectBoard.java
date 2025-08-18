@@ -12,7 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE SubjectBoard SET deleted_at = NOW() WHERE board_no = ?")
+@SQLDelete(sql = "UPDATE subject_board SET deleted_at = NOW() WHERE board_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class SubjectBoard extends Board{
     // 과목 게시판 (예시 페이지에서 게시판 아이콘을 클릭했을 때 나오는 게시판)

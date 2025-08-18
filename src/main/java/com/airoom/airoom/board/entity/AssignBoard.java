@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE AssignBoard SET deleted_at = NOW() WHERE board_no = ?")
+@SQLDelete(sql = "UPDATE assign_board SET deleted_at = NOW() WHERE board_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class AssignBoard extends Board{
     // 과제 게시판

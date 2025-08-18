@@ -13,12 +13,9 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE AssignTarget SET deleted_at = NOW() WHERE assign_target_no = ?")
+@SQLDelete(sql = "UPDATE assign_target SET deleted_at = NOW() WHERE assign_target_no = ?")
 @SQLRestriction("deleted_at IS NULL")
-
-
 public class AssignTarget extends BaseEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long assignTargetNo;

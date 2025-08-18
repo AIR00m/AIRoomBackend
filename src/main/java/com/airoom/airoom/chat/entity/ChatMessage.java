@@ -12,7 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE CHAT_MESSAGE SET DELETED_AT = NOW() WHERE CM_NO = ?")
+@SQLDelete(sql = "UPDATE chat_message SET deleted_at = NOW() WHERE cm_no = ?")
 @AllArgsConstructor
 /**
  * 채팅 메시지 엔티티

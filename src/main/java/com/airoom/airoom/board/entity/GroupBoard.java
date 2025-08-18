@@ -1,13 +1,10 @@
 package com.airoom.airoom.board.entity;
 
-import com.airoom.airoom.classroom.entity.Classroom;
-import com.airoom.airoom.classroom.entity.Group;
+import com.airoom.airoom.classroom.entity.ClassroomGroup;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-
-import java.util.List;
 
 @Entity
 @Getter
@@ -16,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE GroupBoard SET deleted_at = NOW() WHERE board_no = ?")
+@SQLDelete(sql = "UPDATE group_board SET deleted_at = NOW() WHERE board_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class GroupBoard extends Board{
 
@@ -26,7 +23,7 @@ public class GroupBoard extends Board{
 
     @ManyToOne
     @JoinColumn(name = "CLASSROOM_GROUP_NO")
-    private Group group;
+    private ClassroomGroup classroomGroup;
     // 클래스룸 모둠 고유 번호
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)

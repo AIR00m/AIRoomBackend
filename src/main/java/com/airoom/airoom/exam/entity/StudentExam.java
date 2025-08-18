@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE STUDENT_EXAM SET DELETED_AT = NOW() WHERE SE_NO = ?")
+@SQLDelete(sql = "UPDATE student_exam SET deleted_at = NOW() WHERE se_no = ?")
 @AllArgsConstructor
 /**
  * 학생 시험 엔티티

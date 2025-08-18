@@ -12,7 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE DRAWING SET DELETED_AT = NOW() WHERE DRAWING_NO = ?")
+@SQLDelete(sql = "UPDATE drawing SET deleted_at = NOW() WHERE drawing_no = ?")
 @AllArgsConstructor
 /**
  * 그림판 엔티티

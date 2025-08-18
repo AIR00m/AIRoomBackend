@@ -1,6 +1,5 @@
 package com.airoom.airoom.board.entity;
 
-import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -13,7 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE Homework SET deleted_at = NOW() WHERE board_no = ?")
+@SQLDelete(sql = "UPDATE homework SET deleted_at = NOW() WHERE board_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 
 public class Homework extends Board {

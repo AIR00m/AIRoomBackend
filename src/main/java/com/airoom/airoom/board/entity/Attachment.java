@@ -13,7 +13,7 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE AssignBoard SET deleted_at = NOW() WHERE board_no = ?")
+@SQLDelete(sql = "UPDATE attachment SET deleted_at = NOW() WHERE attach_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Attachment extends BaseEntity {
     @Id

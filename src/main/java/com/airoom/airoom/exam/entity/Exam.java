@@ -16,7 +16,7 @@ import java.util.List;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE EXAM SET DELETED_AT = NOW() WHERE EXAM_NO = ?")
+@SQLDelete(sql = "UPDATE exam SET deleted_at = NOW() WHERE exam_no = ?")
 @AllArgsConstructor
 public class Exam extends BaseEntity {
     @Id

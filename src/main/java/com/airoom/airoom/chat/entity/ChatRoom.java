@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE CHAT_ROOM SET DELETED_AT = NOW() WHERE CR_NO = ?")
+@SQLDelete(sql = "UPDATE chat_room SET deleted_at = NOW() WHERE cr_no = ?")
 @AllArgsConstructor
 /**
  * 채팅방 엔티티
