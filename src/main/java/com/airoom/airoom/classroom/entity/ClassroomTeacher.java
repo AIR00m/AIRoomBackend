@@ -22,15 +22,15 @@ public class ClassroomTeacher extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long classroomTeacherNo; // 클래스룸 선생님 고유번호
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLASSROOM_NO")
     private Classroom classroom; // 클래스룸 고유 번호
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name ="MEMBER_NO")
     private Member teacher;// 회원 고유 번호 (선생님)
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TEXTBOOK_NO")
     private Textbook textbook; // 교재 고유 번호
 }

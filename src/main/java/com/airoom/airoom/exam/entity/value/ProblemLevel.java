@@ -1,5 +1,6 @@
 package com.airoom.airoom.exam.entity.value;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -11,6 +12,8 @@ public enum ProblemLevel {
     LOW(1, "하");
 
     private final int rank;
+
+    @JsonValue
     private final String label;
 
     public static ProblemLevel fromLabel(String label) {

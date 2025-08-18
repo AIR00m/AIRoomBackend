@@ -20,7 +20,7 @@ public class SwaggerConfig {
     public GroupedOpenApi groupedOpenApi() {
         return GroupedOpenApi.builder()
                 .group("api-definition")
-                .pathsToMatch("/api/**")
+                .pathsToMatch("/**")
                 .packagesToScan("com.airoom.airoom")
                 .build();
     }
