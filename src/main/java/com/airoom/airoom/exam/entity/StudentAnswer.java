@@ -30,10 +30,20 @@ public class StudentAnswer extends BaseEntity {
     private LocalDateTime saSolvingTime; //풀이시간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CEP_NO")
+    @JoinColumn(name = "cep_no")
     private CreatedExamProblem createdExamProblem;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_STUDENT_NO")
+    @JoinColumn(name = "classroom_student_no")
     private ClassroomStudent classroomStudent;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exam_no")
+    private Exam exam;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ep_no")
+    private ExamProblem examProblem;
+
+
 }

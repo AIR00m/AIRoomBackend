@@ -5,10 +5,9 @@ import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 
@@ -32,13 +31,13 @@ public abstract class Board extends BaseEntity {
     // GROUP(모둠),ASSIGN(과제),SUBJECT(과목),HOMEWORK(과제 제출) 게시판이 존재한다.
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "MEMBER_NO")
+    @JoinColumn(name = "member_no")
     private Member member;
     // 회원 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
     // Optional = false 이 관계는 null이 될 수 없다.
-    @JoinColumn(name = "CLASSROOM_NO")
+    @JoinColumn(name = "classroom_no")
     private Classroom classroom;
     // 클래스룸 고유번호
 

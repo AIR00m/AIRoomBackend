@@ -22,14 +22,14 @@ public class ClassroomStudent extends BaseEntity {
     private Long classRoomStudentNo; // 클래스룸 학생 고유 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_NO")
+    @JoinColumn(name = "classroom_no")
     private Classroom classRoom; // 클래스룸 고유 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name ="MEMBER_NO")
+    @JoinColumn(name ="member_no")
     private Member student; // 회원 고유번호(학생)
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "GROUP_NO")
+    @JoinColumn(name = "group_no")
     private ClassroomGroup classroomGroup; // 모둠 고유번호
 }

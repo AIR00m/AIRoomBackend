@@ -26,10 +26,10 @@ public class Progress extends BaseEntity {
     private Integer progressLastPage; //진도 마지막페이지
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UNIT_NO")
+    @JoinColumn(name = "unit_no")
     private Unit unit;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_STUDENT_NO")
+    @JoinColumn(name = "classroom_student_no")
     private ClassroomStudent classroomStudent;
 }

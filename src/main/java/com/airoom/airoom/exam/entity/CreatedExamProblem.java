@@ -22,10 +22,10 @@ public class CreatedExamProblem extends BaseEntity {
     private Integer cepQuestionOrder;  //시험출제문제 문항순서
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EXAM_NO")
+    @JoinColumn(name = "exam_no")
     private Exam exam; //시험
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EP_NO")
+    @JoinColumn(name = "ep_no")
     private ExamProblem examProblem; //시험 문제
 }

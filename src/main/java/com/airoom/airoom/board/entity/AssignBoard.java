@@ -25,12 +25,12 @@ public class AssignBoard extends Board{
     private LocalDateTime assignEnd;
     // 과제 제출 마감일
 
-    @Column(name = "ASSIGN_TITLE", nullable = false)
+    @Column(name = "assign_title", nullable = false)
     private String assignBoardTitle;
     // 과제 게시판 제목
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "ATTACH_NO")
+    @JoinColumn(name = "attach_no")
     private Attachment attachment;
     // 단일 파일
 }

@@ -36,11 +36,11 @@ public class StudentExam extends BaseEntity {
     private LocalDateTime seEndTime; //학생시험 종료시간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EXAM_NO")
+    @JoinColumn(name = "exam_no")
     private Exam exam; //시험
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_STUDENT_NO")
+    @JoinColumn(name = "classroom_student_no")
     private ClassroomStudent classroomStudent; //클래스룸 학생
 
     @PrePersist

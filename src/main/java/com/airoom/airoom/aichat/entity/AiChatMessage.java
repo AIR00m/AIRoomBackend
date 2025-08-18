@@ -30,6 +30,6 @@ public class AiChatMessage extends BaseEntity {
     private MessageType acmType; //AI 채팅메시지 타입(QUESTION, ANSWER)
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ACR_NO")
+    @JoinColumn(name = "acr_no")
     private AiChatRoom aiChatRoom; //AI 채팅방
 }

@@ -26,6 +26,7 @@ public class Classroom extends BaseEntity {
     private String classroomSchool; // 클래스룸 학교 이름
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Grade classroomGrade; // 클래스룸 학년
 
     @Column(nullable = false)
@@ -35,5 +36,6 @@ public class Classroom extends BaseEntity {
     private Integer classroomYear; // 클래스룸 년도
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Semester classroomSemester; // 클래스룸 학기
 }

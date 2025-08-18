@@ -40,7 +40,7 @@ public class Notification extends BaseEntity {
     private ReadType notificationReadType=ReadType.N;
 
     @ManyToOne
-    @JoinColumn(name = "MEMBER_NO")
+    @JoinColumn(name = "member_no")
     private Member member;
 
     //디폴트값설정

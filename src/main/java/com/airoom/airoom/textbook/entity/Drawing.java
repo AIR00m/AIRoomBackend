@@ -27,10 +27,10 @@ public class Drawing extends BaseEntity {
     private String drawingPage; //단원 페이지번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UNIT_NO", nullable = false)
+    @JoinColumn(name = "unit_no", nullable = false)
     private Unit unit; //단원
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_STUDENT_NO")
+    @JoinColumn(name = "classroom_student_no")
     private ClassroomStudent classroomStudent; //클래스룸 학생
 }

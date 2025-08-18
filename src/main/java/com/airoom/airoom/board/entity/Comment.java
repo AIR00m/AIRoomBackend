@@ -30,11 +30,12 @@ public class Comment extends BaseEntity {
     // 부모 댓글 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "MEMBER_NO")
+    @JoinColumn(name = "member_no")
     private Member member;
     // 회원 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_no")
     private GroupBoard groupBoard;
     // 그룹 게시판 고유번호
 

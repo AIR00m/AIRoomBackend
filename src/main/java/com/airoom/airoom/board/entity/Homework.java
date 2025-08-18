@@ -24,12 +24,12 @@ public class Homework extends Board {
     // 과제 점수
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "ASSIGN_TARGET_NO", nullable = false)
+    @JoinColumn(name = "assign_target_no", nullable = false)
     private AssignTarget assignTarget;
     // 과제 대상
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "ATTACH_NO", unique = true)
+    @JoinColumn(name = "attach_no", unique = true)
     private Attachment attachment;
     // 한 개의 homework 당 파일 1개를 위해서 unique
     // 단일 파일)

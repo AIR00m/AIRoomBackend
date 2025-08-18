@@ -22,12 +22,12 @@ public class GroupBoard extends Board{
     // 모둠 게시판 제목
 
     @ManyToOne
-    @JoinColumn(name = "CLASSROOM_GROUP_NO")
+    @JoinColumn(name = "group_no")
     private ClassroomGroup classroomGroup;
     // 클래스룸 모둠 고유 번호
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "ATTACH_NO")
+    @JoinColumn(name = "attach_no")
     private Attachment attachment;
     // 한 개의 GroupBoard 당 파일 1개를 위해서 unique
     // 단일 파일)
