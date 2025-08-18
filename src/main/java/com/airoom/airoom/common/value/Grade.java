@@ -1,4 +1,4 @@
-package com.airoom.airoom.member.entity;
+package com.airoom.airoom.common.value;
 
 public enum Grade {
     FIRST(1),

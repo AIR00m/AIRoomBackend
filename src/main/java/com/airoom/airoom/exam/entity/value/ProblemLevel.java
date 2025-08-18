@@ -6,11 +6,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum ProblemLevel {
-    HIGHEST(5, "최상"),
-    HIGH(4, "상"),
-    MEDIUM(3, "중"),
-    LOW(2, "하"),
-    LOWEST(1, "최하");
+    HIGH(3, "상"),
+    MEDIUM(2, "중"),
+    LOW(1, "하");
 
     private final int rank;
     private final String label;

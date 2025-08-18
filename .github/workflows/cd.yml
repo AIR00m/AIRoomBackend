@@ -3,13 +3,23 @@ name: CD
 on:
   workflow_run:
     workflows: [ "CI" ]
-    types:
-      - completed
+    types: [ completed ]
+    branches: [ develop ]          # develop에 push된 CI 완료일 때만 트리거
+
+concurrency:
+  group: cd-${{ github.event.workflow_run.head_branch || github.ref_name || 'default' }}
+  # cancel-in-progress: false
 
 jobs:
   cd:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'develop'
+      }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: 🔽 Checkout Repository
@@ -24,104 +34,199 @@ jobs:
           source: "docker"
           target: "/home/ubuntu"
 
-      - name: 📂 rsync로 /compose/infra/에 덮어쓰기
+      - name: 🧩 Infra 먼저 업데이트 (조용히, down 금지)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
+          command_timeout: 30m
           script: |
-            mkdir -p /home/ubuntu/compose/infra
-            rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/
+            set -Eeuo pipefail
 
-      - name: 🧩 Infra 먼저 업데이트 (compose up -d, down 금지)
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            # core-services-net 외부 네트워크 보장
-            docker network create core-services-net || true
+            # 네트워크 존재 시 생성 스킵(조용히)
+            if ! docker network inspect core-services-net >/dev/null 2>&1; then
+              docker network create core-services-net >/dev/null 2>&1
+            fi
+
+            mkdir -p /home/ubuntu/compose/infra
+            rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/ 2>&1
 
             cd /home/ubuntu/compose/infra
+            # 진행바/소음 줄이기
+            docker compose pull --quiet 2>&1 || true
+            docker compose up -d --force-recreate 2>&1
 
-            # 최신 이미지 받기
-            docker compose pull || true
-
-            # 인프라 재기동 (down 금지: 모니터링 공백 방지)
-            docker compose up -d --force-recreate
-
-      - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치
+      - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치 (직렬락/큐잉)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
+          command_timeout: 30m
           script: |
-            set -e
+            set -Eeuo pipefail
+
+            # 인프라 pull 직후 대역폭/IO 완화
+            sleep 5
+
+            # === 배포 락 (최대 15분 대기, 권한 보정) ===
+            sudo mkdir -p /var/lock || true
+            sudo touch /var/lock/springboot-cd.lock || true
+            sudo chown "$USER":"$USER" /var/lock/springboot-cd.lock || true
+            exec 200>/var/lock/springboot-cd.lock
+            flock -w 900 200 || { echo "⏳ 다른 배포 대기 타임아웃(15m) → 종료"; exit 1; }
+            trap 'flock -u 200' EXIT
+            # =========================================
 
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/springboot-app:latest
 
-            echo "[+] 현재 실행 중인 springboot 컨테이너 확인"
-            RUNNING=$(docker ps --format '{{.Names}}' | grep -E '^springboot-(blue|green)$' || true)
-            if [ "$RUNNING" = "springboot-blue" ]; then
-              NEW_CONTAINER="springboot-green"
-              OLD_CONTAINER="springboot-blue"
-              NEW_PORT=8082
-              OLD_PORT=8081
+            # 🔍 현재 Nginx가 바라보는 포트 기준 롤 결정
+            CURRENT_PORT=$(grep -oE 'localhost:808[12]' /etc/nginx/conf.d/reverse.conf | head -n1 | cut -d: -f2 || true)
+            if [ "$CURRENT_PORT" = "8081" ]; then
+              NEW_CONTAINER="springboot-green"; OLD_CONTAINER="springboot-blue"
+              NEW_PORT=8082; OLD_PORT=8081
             else
-              NEW_CONTAINER="springboot-blue"
-              OLD_CONTAINER="springboot-green"
-              NEW_PORT=8081
-              OLD_PORT=8082
+              NEW_CONTAINER="springboot-blue"; OLD_CONTAINER="springboot-green"
+              NEW_PORT=8081; OLD_PORT=8082
             fi
 
             echo "[📄] 운영용 application.yml 복원"
-            echo "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
+            # 개행 안전하게 복원
+            printf '%s' "${{ secrets.CD_YML }}" | base64 -d > /home/ubuntu/application.yml
 
-            echo "[🌐] core-services-net 네트워크 보장"
-            docker network create core-services-net || true
+            echo "[🌐] core-services-net 보장"
+            if ! docker network inspect core-services-net >/dev/null 2>&1; then
+              docker network create core-services-net >/dev/null 2>&1
+            fi
 
-            echo "[⬇️] 앱 이미지 Pull"
-            docker pull $IMAGE
+            # --- 원격 digest 선확인 → 동일 시 pull/배포 스킵 ---
+            # jq 없으면 설치(최초 1회)
+            if ! command -v jq >/dev/null 2>&1; then
+              sudo apt-get update -y && sudo apt-get install -y jq
+            fi
+
+            echo "[🧮] 원격 digest 확인"
+            REMOTE_DIGEST="$(docker manifest inspect "$IMAGE" 2>/dev/null | jq -r '.Descriptor.digest // .manifests[0].digest // empty')"
+
+            OLD_IMAGE_ID=""; OLD_DIGEST=""
+            if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
+              OLD_IMAGE_ID="$(docker inspect --format='{{.Image}}' "$OLD_CONTAINER" 2>/dev/null || true)"
+              OLD_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$OLD_IMAGE_ID" 2>/dev/null | awk -F'@' '{print $2}' || true)"
+            fi
+
+            if [ -n "$REMOTE_DIGEST" ] && [ -n "$OLD_DIGEST" ] && [ "$REMOTE_DIGEST" = "$OLD_DIGEST" ]; then
+              echo "ℹ️ 원격/로컬 digest 동일($REMOTE_DIGEST) → pull/배포 스킵"
+              exit 0
+            fi
+
+            echo "[⬇️] 이미지 Pull (타임아웃+재시도)"
+            pull_with_retry() {
+              local tries=5
+              local wait=15
+              for i in $(seq 1 $tries); do
+                echo "[pull] attempt $i/$tries"
+                if timeout 600 docker pull "$IMAGE"; then
+                  return 0
+                fi
+                echo "[pull] failed. sleep ${wait}s then retry..."
+                sleep "$wait"
+                wait=$((wait+15))
+              done
+              return 1
+            }
+            if ! pull_with_retry; then
+              echo "❌ 이미지 pull 실패(재시도 초과)"; exit 1
+            fi
+            # ---------------------------------------------------
+
+            # 혹시 이전 실패 잔재가 있으면 제거
+            docker stop "$NEW_CONTAINER" >/dev/null 2>&1 || true
+            docker rm   "$NEW_CONTAINER" >/dev/null 2>&1 || true
 
             echo "[🆕] 새 컨테이너 실행: $NEW_CONTAINER (alias: springboot)"
-            # 활성 버전에만 'springboot' alias 부여 (Prometheus 타깃 고정용)
-            docker run -d --name $NEW_CONTAINER \
+            docker run -d --name "$NEW_CONTAINER" \
               --network core-services-net \
               --network-alias springboot \
               -p $NEW_PORT:8080 \
               -v /home/ubuntu/application.yml:/config/application.yml \
               -e "SPRING_CONFIG_LOCATION=file:/config/application.yml" \
-              $IMAGE
+              -e "SERVER_ADDRESS=0.0.0.0" \
+              -e "MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED=true" \
+              "$IMAGE"
 
-            echo "[⏳] Health check 대기..."
-            for i in {1..10}; do
-              if curl -sf http://43.200.2.244:$NEW_PORT/actuator/health | grep -q UP; then
-                echo "✅ Health check 성공"
+            # ✅ 부팅 안정형 헬스체크: liveness → readiness (404면 즉시 넘어감), 백오프 포함
+            echo "[⏳] Health check (phase1=liveness, phase2=readiness)"
+            sleep 3
+            HEALTH_OK=0
+
+            CONTEXT_PATH=$(docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' "$NEW_CONTAINER" \
+              | grep -E '^SERVER_SERVLET_CONTEXT_PATH=' | cut -d'=' -f2- || true)
+            if [ -z "${CONTEXT_PATH:-}" ]; then CONTEXT_PATH=""; fi
+
+            # Phase 1: LIVENESS (404면 바로 Phase2)
+            LIVENESS_URL="http://localhost:$NEW_PORT${CONTEXT_PATH}/actuator/health/liveness"
+            for i in {1..60}; do
+              RESP=$(curl -sS -w " HTTP_STATUS:%{http_code}" "$LIVENESS_URL" || true)
+              STATUS="${RESP##*HTTP_STATUS:}"
+              BODY="${RESP% HTTP_STATUS:*}"
+
+              if [ "$STATUS" = "200" ] && echo "$BODY" | grep -q '"status"\s*:\s*"UP"'; then
+                echo "✅ Liveness OK"; break
+              fi
+              if [ "$STATUS" = "404" ]; then
+                echo "ℹ️ /health/liveness 미구성(404) → readiness 단계로 진행"
                 break
               fi
-              echo "⏱ Waiting ($i/10)..."
-              sleep 3
-              if [ $i -eq 10 ]; then
-                echo "❌ Health check 실패 → 롤백"
-                docker logs --tail=200 $NEW_CONTAINER || true
-                docker exec -it springboot-green curl -s http://43.200.2.244:8080/actuator/health
-                docker rm -f $NEW_CONTAINER || true
-                exit 1
+
+              if [ $((i % 6)) -eq 0 ]; then
+                echo "[hint] 부팅 중일 수 있음. 최근 로그:"; docker logs --tail=20 "$NEW_CONTAINER" || true
               fi
+              echo "⏱ waiting liveness... ($i/60), status=$STATUS"; sleep 3
             done
 
-            echo "[🔀] Nginx 프록시 포트 $OLD_PORT → $NEW_PORT 스위치"
-            sudo sed -i "s/localhost:$OLD_PORT/localhost:$NEW_PORT/" /etc/nginx/conf.d/reverse.conf
-            sudo nginx -t && sudo systemctl reload nginx
+            # Phase 2: READINESS (점진 백오프)
+            READINESS_URL="http://localhost:$NEW_PORT${CONTEXT_PATH}/actuator/health/readiness"
+            ATTEMPTS=0; MAX_ATTEMPTS=60; SLEEP=3
+            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              ATTEMPTS=$((ATTEMPTS+1))
+              BODY=$(curl -fsS "$READINESS_URL" || true)
+              if echo "$BODY" | grep -q '"status"\s*:\s*"UP"'; then
+                HEALTH_OK=1; echo "✅ Readiness OK"; break
+              fi
+              # readiness 없으면 /health로 폴백
+              if [ $((ATTEMPTS % 5)) -eq 0 ]; then
+                FB=$(curl -fsS "http://localhost:$NEW_PORT${CONTEXT_PATH}/actuator/health" || true)
+                if echo "$FB" | grep -q '"status"\s*:\s*"UP"'; then
+                  HEALTH_OK=1; echo "✅ Health OK (fallback)"; break
+                fi
+              fi
+              echo "⏱ waiting readiness... ($ATTEMPTS/$MAX_ATTEMPTS)"; sleep $SLEEP
+              if [ $SLEEP -lt 8 ]; then SLEEP=$((SLEEP+1)); fi
+            done
 
-            echo "[🧹] 이전 컨테이너 alias 충돌 방지 및 종료"
-            # 이전 컨테이너가 있다면 네트워크에서 alias 충돌 방지를 위해 분리 후 제거
+            if [ "$HEALTH_OK" -ne 1 ]; then
+              echo "❌ Health check 실패 → 롤백"
+              docker logs --tail=200 "$NEW_CONTAINER" || true
+              docker stop "$NEW_CONTAINER" >/dev/null 2>&1 || true
+              docker rm   "$NEW_CONTAINER" >/dev/null 2>&1 || true
+              exit 1
+            fi
+
+            # 🔀 실제 Nginx 스위치 (현재 포트와 다를 때만 교체)
+            if grep -q "localhost:$OLD_PORT" /etc/nginx/conf.d/reverse.conf; then
+              echo "[🔀] Nginx 프록시 포트 $OLD_PORT → $NEW_PORT 스위치"
+              sudo sed -i "s/localhost:$OLD_PORT/localhost:$NEW_PORT/" /etc/nginx/conf.d/reverse.conf
+              sudo nginx -t && sudo systemctl reload nginx
+            else
+              echo "ℹ️ Nginx는 이미 :$NEW_PORT를 바라보고 있음 → 스위치 생략"
+            fi
+
+            echo "[🧹] 이전 컨테이너 정리"
             if docker ps -a --format '{{.Names}}' | grep -q "^$OLD_CONTAINER$"; then
-              docker network disconnect core-services-net $OLD_CONTAINER || true
-              docker rm -f $OLD_CONTAINER || true
+              docker network disconnect core-services-net "$OLD_CONTAINER" >/dev/null 2>&1 || true
+              docker stop "$OLD_CONTAINER" >/dev/null 2>&1 || true
+              docker rm   "$OLD_CONTAINER" >/dev/null 2>&1 || true
             fi
 
             echo "[✅] 배포 완료: $NEW_CONTAINER on :$NEW_PORT"
@@ -133,5 +238,6 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
+          command_timeout: 30m
           script: |
             docker image prune -f || true

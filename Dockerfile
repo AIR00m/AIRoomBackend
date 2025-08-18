@@ -1,10 +1,14 @@
-# 1단계: Base image
-FROM openjdk:17
+# Debian 계열 (apt 사용 가능)
+FROM openjdk:17-slim
 
-# 2단계: JAR 파일 복사
+# curl 설치
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# JAR 복사
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
 
-
-# 3단계: 앱 실행
+# ✅ HEALTHCHECK 제거!
 ENTRYPOINT ["java", "-jar", "/app.jar"]

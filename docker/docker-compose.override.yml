@@ -15,3 +15,7 @@ services:
       - redis
     environment:
       REDIS_ADDR: redis://redis:6379
+
+  elasticsearch:
+    environment:
+      - xpack.security.enabled=false
