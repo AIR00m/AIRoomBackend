@@ -49,8 +49,10 @@ public class SecurityConfig {
         // 허용할 Http 메소드를 입력해준다.
         corsConfiguration.setAllowedHeaders(List.of("Authorization","Content-Type"));
         // 브라우저 요청 해더에 보내도 되는 것 Authorization -> JWT / JSON -> Content-Type
-        corsConfiguration.setExposedHeaders(List.of("Authorization"));
+
+//        corsConfiguration.setExposedHeaders(List.of("Authorization")); -> Refresh Token에서 필요없음
         // 응답 해더 중 JS 코드 볼 수 있게 해주는 것
+
         corsConfiguration.setAllowCredentials(true);
         // refresh 토큰을 같이 사용하는 경우 HttpOnly-> 쿠키이므로 허용해야지 사용이 가능함
         // 모두 헤더/ 바디로 넣어서 할 수 있는 방식도 존재 한다.

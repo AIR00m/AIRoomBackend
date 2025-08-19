@@ -2,6 +2,7 @@ package com.airoom.airoom.member.model.service;
 
 import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.member.entity.Member;
+import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
 import com.airoom.airoom.member.model.repository.MemberRepository;
 import jakarta.transaction.Transactional;
@@ -60,7 +61,17 @@ public class AuthService {
             // 여기서 왜 한번 더 중복 체크를 하는 거?
             // DB Unique 제약조건 위반 시 진짜로 발생하는 예외
         }
+
     }
-
-
+    // 아이디/비밀번호 검증 로직
+    public Member authenticate(String id, String pwd){
+        // null 과 isBlank 보는 이유 Blank(id=""형태), null(id 가 존재하지 않는것을 체크)
+        Member member = memberRepository.findMemberByMemberId(id)
+                .orElseThrow(()->new IllegalArgumentException("아이디와 비밀번호가 맞지 않습니다."));
+        
+        if(!passwordEncoder.matches(pwd, member.getMemberPwd())){
+            throw new IllegalArgumentException("아이디와 비밀번호가 맞지 않습니다.");
+        }
+        return member;
+    }
 }
