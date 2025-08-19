@@ -1,5 +1,6 @@
 package com.airoom.airoom.attach.model.dto;
 
+import com.airoom.airoom.board.BoardType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class AttachmentDto {
+    private Long boardNo;
+    private BoardType boardType;
     private String originalName;
     private String savedName;
     private String s3Key;

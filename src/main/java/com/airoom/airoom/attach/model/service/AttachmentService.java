@@ -17,31 +17,24 @@ public class AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
 
-    public void saveAll(List<AttachmentDto> attachments, Long boardNo, BoardType boardType) {
-        try {
-            List<Attachment> entities = attachments.stream()
-                    .map(dto -> Attachment.builder()
-                            .boardNo(boardNo)
-                            .boardType(boardType)
-                            .originalName(dto.getOriginalName())
-                            .savedName(dto.getSavedName())
-                            .s3Key(dto.getS3Key())
-                            .build())
-                    .toList();
-
-            attachmentRepository.saveAll(entities);
-        }catch (Exception e){
-            throw new IllegalStateException("첨부파일 저장 중 오류 발생", e);
-        }
+    public void saveAttachment(AttachmentDto dto) {
+        Attachment attachment = Attachment.builder()
+                .boardNo(dto.getBoardNo())
+                .boardType(dto.getBoardType())
+                .originalName(dto.getOriginalName())
+                .savedName(dto.getSavedName())
+                .s3Key(dto.getS3Key())
+                .build();
+        attachmentRepository.save(attachment);
     }
 
-    public void deleteByBoard(Long boardNo, BoardType boardType){
-        attachmentRepository.deleteByBoardNoAndBoardType(boardNo,boardType);
+    public void deleteByBoard(Long boardNo, BoardType boardType) {
+        attachmentRepository.deleteByBoardNoAndBoardType(boardNo, boardType);
     }
 
     @Transactional(readOnly = true)
-    public List<Attachment> findByBoard(Long boardNo, BoardType boardType){
-        return attachmentRepository.findByBoardNoAndBoardType(boardNo,boardType);
+    public List<Attachment> findByBoard(Long boardNo, BoardType boardType) {
+        return attachmentRepository.findByBoardNoAndBoardType(boardNo, boardType);
     }
 
 }
