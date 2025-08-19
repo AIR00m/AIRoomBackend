@@ -17,5 +17,5 @@ public class SubjectBoardRequest {
     private Long classroomNo;
     private Long memberNo;
 
-    private List<AttachmentDto> attachments;
+    private List<Long> deleteAttachments;
 }
