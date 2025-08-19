@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE STUDENT_EXAM SET DELETED_AT = NOW() WHERE SE_NO = ?")
+@SQLDelete(sql = "UPDATE student_exam SET deleted_at = NOW() WHERE se_no = ?")
 @AllArgsConstructor
 /**
  * 학생 시험 엔티티
@@ -36,11 +36,11 @@ public class StudentExam extends BaseEntity {
     private LocalDateTime seEndTime; //학생시험 종료시간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EXAM_NO")
+    @JoinColumn(name = "exam_no")
     private Exam exam; //시험
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLASSROOM_STUDENT_NO")
+    @JoinColumn(name = "classroom_student_no")
     private ClassroomStudent classroomStudent; //클래스룸 학생
 
     @PrePersist

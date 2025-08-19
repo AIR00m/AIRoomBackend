@@ -14,7 +14,10 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLRestriction("DELETED_AT IS NULL")
-@SQLDelete(sql = "UPDATE EXAM_PROBLEM SET DELETED_AT = NOW() WHERE EP_NO = ?")
+@SQLDelete(sql = "UPDATE exam_problem SET deleted_at = NOW() WHERE ep_no = ?")
+@Table(indexes = {
+        @Index(name = "IDX_EXAM_PROBLEM_UNIT_LEVEL_DEL",  columnList = "ep_level, unit_no, deleted_at")
+})
 public class ExamProblem extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,7 +33,7 @@ public class ExamProblem extends BaseEntity {
     private String epExample; //시험문제 보기
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private ProblemLevel epLevel; //시험문제 난이도
 
     @Column(nullable = false)
@@ -39,6 +42,6 @@ public class ExamProblem extends BaseEntity {
     private String epComment; //시험문제 해설
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UNIT_NO", nullable = false)
+    @JoinColumn(name = "unit_no", nullable = false)
     private Unit unit; //시험문제 단원
 }

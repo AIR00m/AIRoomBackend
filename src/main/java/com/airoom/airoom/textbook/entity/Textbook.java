@@ -14,7 +14,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE TEXTBOOK SET DELETED_AT = NOW() WHERE TEXTBOOK_NO = ?")
+@SQLDelete(sql = "UPDATE textbook SET deleted_at = NOW() WHERE textbook_no = ?")
 @AllArgsConstructor
 /**
  * 교재 엔티티
@@ -30,7 +30,7 @@ public class Textbook extends BaseEntity {
     @Column(nullable = false)
     private String textbookPublisher; //교재 출판사
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private Subject textbookSubject = Subject.MATH; //교재 과목
@@ -38,10 +38,12 @@ public class Textbook extends BaseEntity {
     @Column(nullable = false)
     private String textbookPdfUrl; //교재 PDF URL
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private Grade textbookGrade; //교재 대상학년
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private Semester textbookSemester; //교재 대상학기
 
     @Column(nullable = false)

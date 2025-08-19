@@ -12,7 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE CHAT_MESSAGE SET DELETED_AT = NOW() WHERE CM_NO = ?")
+@SQLDelete(sql = "UPDATE chat_message SET deleted_at = NOW() WHERE cm_no = ?")
 @AllArgsConstructor
 /**
  * 채팅 메시지 엔티티
@@ -29,11 +29,12 @@ public class ChatMessage extends BaseEntity {
     @Builder.Default
     private Boolean cmIsRead = false; //채팅 읽음 여부
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private MemberRole cmWriterType; //채팅 작성자 타입
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CR_NO")
+    @JoinColumn(name = "cr_no")
     private ChatRoom chatRoom; //채팅방
 
     @PrePersist

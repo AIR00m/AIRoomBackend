@@ -11,7 +11,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE UNIT SET DELETED_AT = NOW() WHERE UNIT_NO = ?")
+@SQLDelete(sql = "UPDATE unit SET deleted_at = NOW() WHERE unit_no = ?")
 @AllArgsConstructor
 /**
  * 단원 엔티티
@@ -37,6 +37,6 @@ public class Unit extends BaseEntity {
     private String unitImageUrl; //단원이미지 URL
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TEXTBOOK_NO", nullable = false)
+    @JoinColumn(name = "textbook_no", nullable = false)
     private Textbook textbook; //교재
 }

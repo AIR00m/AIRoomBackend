@@ -15,7 +15,7 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE MEMBER SET deleted_at = NOW() WHERE member_no = ?")
+@SQLDelete(sql = "UPDATE member SET deleted_at = NOW() WHERE member_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 // Hibernate 6에서 추가된 모든 SELECT가 실행이 될때 자동으로 WHERE 조건 추가
 
@@ -28,7 +28,10 @@ public class Member extends BaseEntity {
     private String memberId; // 회원 아이디
 
     @Column(nullable = false)
-    private String memberName; // 회원 패스 워드
+    private String memberPwd; // 회원 패스워드
+    
+    @Column(nullable = false)
+    private String memberName; // 회원 이름
 
     @Column(nullable = false)
     private Integer memberAge; // 회원 나이
@@ -39,16 +42,20 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private String memberEmail; // 회원 이메일
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private Gender memberGender; // 회원 성별
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
     private Grade memberGrade; // 회원 학년
 
     private Integer memberClass; // 회원 반
 
     private String memberImage; //회원 프로필 사진
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     private MemberRole memberType; // 회원 타입(선생님, 학생)
 
 }
