@@ -28,7 +28,7 @@ public class Classroom extends BaseEntity {
     @Column(nullable = false)
     private String classroomSchool; // 클래스룸 학교 이름
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, columnDefinition = "enum('FIRST','SECOND','THIRD','FOURTH','FIFTH','SIXTH')", length = 10)
     @Enumerated(EnumType.STRING)
     private Grade classroomGrade; // 클래스룸 학년
 
