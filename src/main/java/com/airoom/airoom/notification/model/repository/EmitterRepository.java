@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EmitterRepository {
 
     //private final Map<Long, Object> lastEventCache = new ConcurrentHashMap<>();
-    //브라우저가 연결이 끊겼다가 다시 연결되었을때 놓친 알림을 재전송하려고 마지막에 보낸 알림을 백업?
+    //브라우저가 연결이 끊겼다가 다시 연결되었을때 놓친 알림을 재전송하려고 마지막에 보낸 알림을 백업하는 map
     private final Map<Long, SseEmitter> sseEmitterMap = new ConcurrentHashMap<>();
 
     //SSE는 이벤트 발생시 전송을 위해 저장해놔야함. SSE는 쉽게 끊기고 생명주기가 짧아서 DB에 저장하기 부적합함
