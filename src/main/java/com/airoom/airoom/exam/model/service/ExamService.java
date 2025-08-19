@@ -48,10 +48,56 @@ public class ExamService {
         return savedExam.getExamNo();
     }
 
+    /**
+     * 난이도, 단원별 랜덤 문제 출제
+     */
+    @Transactional(readOnly = true)
+    public CreateExamProblemsResponse getExamProblemsByLevelAndUnit(final CreateExamProblemsRequest request) {
+        List<ExamProblemResponse> examProblemResponseList = new ArrayList<>();
+        for (ExamProblemRequest examProblemRequest : request.examProblemRequestList()) {
+            Long unitNo = examProblemRequest.unitNo();
+            addRandomProblemsByUnitAndLevelWithCount(examProblemRequest, examProblemResponseList, unitNo);
+        }
+        return new CreateExamProblemsResponse(examProblemResponseList);
+    }
+
+    /**
+     * 시험문제 교체
+     */
+    public ExamProblemResponse replaceExamProblem(final ReplaceExamProblemRequest request) {
+        ExamProblem target = loadExamProblem(request.epNo());
+        return getRandomExamProblemByUnitAndLevelExcludingSelf(target);
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 메소드 추출
+     */
+
+    private ExamProblemResponse getRandomExamProblemByUnitAndLevelExcludingSelf(ExamProblem examProblem) {
+        ProblemLevel level = examProblem.getEpLevel();
+        Unit unit = examProblem.getUnit();
+        List<ExamProblemResponse> examProblemResponseList = examProblemRepository.findRandomByUnitAndLevelExcludingSelf(unit.getUnitNo(), level, examProblem.getEpNo(), PageRequest.of(0, 1));
+        return examProblemResponseList.get(0);
+    }
+
+    private ExamProblem loadExamProblem(Long epNo) {
+        return examProblemRepository.findById(epNo).orElseThrow(
+                () -> new IllegalArgumentException("잘못된 시험문제 고유번호입니다. : " + epNo)
+        );
+    }
+
     private void addClassroomStudentToExam(List<Long> classroomStudentNoList, Classroom classroom, Exam exam) {
         //요청받은 학생고유번호
         HashSet<Long> targetStudentIds = new HashSet<>(classroomStudentNoList);
-        
+
         //실제 Classroom 학생 고유번호
         Set<Long> actualStudentIds = classroom.getClassroomStudentList().stream()
                 .map(ClassroomStudent::getClassRoomStudentNo)
@@ -73,24 +119,11 @@ public class ExamService {
                 .forEach(exam::addStudentExam);
     }
 
-    /**
-     * 난이도, 단원별 랜덤 문제 출제
-     */
-    @Transactional(readOnly = true)
-    public CreateExamProblemsResponse getExamProblemsByLevelAndUnit(final CreateExamProblemsRequest request) {
-        List<ExamProblemResponse> examProblemResponseList = new ArrayList<>();
-        for (ExamProblemRequest examProblemRequest : request.examProblemRequestList()) {
-            Long unitNo = examProblemRequest.unitNo();
-            addRandomProblemsByUnitAndLevelWithCount(examProblemRequest, examProblemResponseList, unitNo);
-        }
-        return new CreateExamProblemsResponse(examProblemResponseList);
-    }
-
     private void addRandomProblemsByUnitAndLevelWithCount(ExamProblemRequest examProblemRequest, List<ExamProblemResponse> examProblemResponseList, Long unitNo) {
         for (Map.Entry<ProblemLevel, Integer> entry : examProblemRequest.problemCountsByLevel().entrySet()) {
             ProblemLevel problemLevel = entry.getKey();
             Integer count = entry.getValue();
-            examProblemResponseList.addAll(examProblemRepository.findRandomExamProblemByUnitAndLevel(unitNo, problemLevel, PageRequest.of(0, count)));
+            examProblemResponseList.addAll(examProblemRepository.findRandomExamProblemsByUnitAndLevel(unitNo, problemLevel, PageRequest.of(0, count)));
         }
     }
 
