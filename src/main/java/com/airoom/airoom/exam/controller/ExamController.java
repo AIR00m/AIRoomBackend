@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/exam")
@@ -20,10 +22,16 @@ public class ExamController implements ExamControllerSwagger {
      * 시험 생성
      */
     @PostMapping
-    public ResponseEntity<Long> createExam(
+    public ResponseEntity<Void> createExam(
             @Valid @RequestBody final CreateExamRequest request
     ) {
-        return null;
+        Long examId;
+        try {
+            examId = examService.createExam(request);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+        return ResponseEntity.created(URI.create("/exam/" + examId)).build();
     }
 
 
@@ -84,7 +92,8 @@ public class ExamController implements ExamControllerSwagger {
      * 시험별 시험문제 조회
      */
     @Override
-    public void getExamProblems() {
+    @GetMapping("/examProblems/{examNo}")
+    public void getExamProblems(@PathVariable Long examNo) {
 
     }
 
@@ -92,6 +101,7 @@ public class ExamController implements ExamControllerSwagger {
      * 시험문제 채점
      */
     @Override
+    @PostMapping("/check")
     public void markExamProblems() {
 
     }
@@ -100,7 +110,8 @@ public class ExamController implements ExamControllerSwagger {
      * 시험 삭제
      */
     @Override
-    public void deleteExam() {
+    @DeleteMapping("/{examNo}")
+    public void deleteExam(@PathVariable Long examNo) {
 
     }
 

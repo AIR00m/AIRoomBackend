@@ -17,7 +17,7 @@ public interface ExamControllerSwagger {
             summary = "시험 생성 API",
             description = "새로운 시험을 생성합니다."
     )
-    public ResponseEntity<Long> createExam(
+    public ResponseEntity<Void> createExam(
             @RequestBody @Valid final CreateExamRequest request
     );
 
@@ -62,7 +62,7 @@ public interface ExamControllerSwagger {
             summary = "시험별 시험문제 조회 API",
             description = "시험별 시험문제를 조회합니다."
     )
-    public void getExamProblems();
+    public void getExamProblems(@PathVariable Long examNo);
     
     @Operation(
             summary = "시험문제 채점 API",
@@ -74,7 +74,7 @@ public interface ExamControllerSwagger {
             summary = "시험 삭제 API",
             description = "시험을 삭제합니다."
     )
-    public void deleteExam();
+    public void deleteExam(@PathVariable Long examNo);
     
     
 }
