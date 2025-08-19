@@ -49,11 +49,20 @@ public class ExamController implements ExamControllerSwagger {
     }
 
     /**
-     * 시험별 시험문제 조회
+     * 시험출제문제 전체조회 = 시험 상세조회
      */
     @Override
     @GetMapping("/examProblems/{examNo}")
-    public void getExamProblems(@PathVariable Long examNo) {
+    public ExamDetailResponse getExamProblems(@PathVariable Long examNo) {
+        return examService.getExamProblems(examNo);
+    }
+
+    /**
+     * 시험문제 채점
+     */
+    @Override
+    @PostMapping("/submit/{studentExamNo}")
+    public void markAndSubmitExamProblems(@PathVariable Long studentExamNo) {
 
     }
 
@@ -87,16 +96,6 @@ public class ExamController implements ExamControllerSwagger {
     public void getExamsAll(
             @PathVariable final Integer classroomNo
     ) {
-
-    }
-
-
-    /**
-     * 시험문제 채점
-     */
-    @Override
-    @PostMapping("/check")
-    public void markExamProblems() {
 
     }
 

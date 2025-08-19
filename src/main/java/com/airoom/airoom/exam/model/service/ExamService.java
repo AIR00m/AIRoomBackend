@@ -6,9 +6,9 @@ import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.exam.entity.*;
 import com.airoom.airoom.exam.entity.value.ProblemLevel;
 import com.airoom.airoom.exam.model.dto.*;
+import com.airoom.airoom.exam.model.repository.CreatedExamProblemRepository;
 import com.airoom.airoom.exam.model.repository.ExamProblemRepository;
 import com.airoom.airoom.exam.model.repository.ExamRepository;
-import com.airoom.airoom.exam.model.repository.StudentExamRepository;
 import com.airoom.airoom.textbook.entity.Unit;
 import com.airoom.airoom.textbook.model.repository.UnitRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class ExamService {
     private final ExamProblemRepository examProblemRepository;
     private final ClassroomRepository classroomRepository;
     private final UnitRepository unitRepository;
-    private final StudentExamRepository studentExamRepository;
+    private final CreatedExamProblemRepository createdExamProblemRepository;
 
     /**
      * 시험 생성
@@ -67,6 +67,13 @@ public class ExamService {
     public ExamProblemResponse replaceExamProblem(final ReplaceExamProblemRequest request) {
         ExamProblem target = loadExamProblem(request.epNo());
         return getRandomExamProblemByUnitAndLevelExcludingSelf(target);
+    }
+
+    /**
+     * 시험출제문제 전체조회 = 시험 상세조회
+     */
+    public ExamDetailResponse getExamProblems(final Long examNo) {
+        return new ExamDetailResponse(examNo, createdExamProblemRepository.findCreatedExamProblemsByExamNo(examNo));
     }
 
 

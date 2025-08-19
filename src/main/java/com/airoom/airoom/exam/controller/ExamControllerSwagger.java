@@ -36,7 +36,14 @@ public interface ExamControllerSwagger {
             summary = "시험별 시험문제 조회 API",
             description = "시험별 시험문제를 조회합니다."
     )
-    public void getExamProblems(@PathVariable Long examNo);
+    public ExamDetailResponse getExamProblems(@PathVariable Long examNo);
+
+    @Operation(
+            summary = "시험문제 풀이 제출 및 채점 API",
+            description = "시험문제 풀이를 제출 및 채점합니다."
+    )
+    public void markAndSubmitExamProblems(@PathVariable Long studentExamNo);
+
 
     @Operation(
             summary = "미완료 시험 조회 API",
@@ -61,12 +68,6 @@ public interface ExamControllerSwagger {
     public void getExamsAll(
             @PathVariable final Integer classroomNo
     );
-
-    @Operation(
-            summary = "시험문제 채점 API",
-            description = "시험문제를 채점합니다."
-    )
-    public void markExamProblems();
 
     @Operation(
             summary = "시험 삭제 API",
