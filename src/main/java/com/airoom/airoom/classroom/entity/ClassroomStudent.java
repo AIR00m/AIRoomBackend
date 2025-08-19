@@ -23,6 +23,7 @@ public class ClassroomStudent extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_no")
+    @Setter
     private Classroom classRoom; // 클래스룸 고유 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
