@@ -3,7 +3,7 @@ package com.airoom.airoom.exam.model.dto;
 import com.airoom.airoom.exam.entity.value.ProblemLevel;
 
 public record ExamProblemDetailResponse(
-        Long questionOrder, //시험출제문제 문항번호
+        Integer questionOrder, //시험출제문제 문항번호
         Long cepNo, //시험출제문제 고유번호
         Long epNo, //시험문제 고유번호
         ProblemLevel epLevel, //시험문제 난이도 ex) 상,중,하

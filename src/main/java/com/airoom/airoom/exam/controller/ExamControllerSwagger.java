@@ -33,8 +33,8 @@ public interface ExamControllerSwagger {
 
 
     @Operation(
-            summary = "시험별 시험문제 조회 API",
-            description = "시험별 시험문제를 조회합니다."
+            summary = "시험출제문제 전체조회 API",
+            description = "시험출제문제를 전체조회합니다."
     )
     public ExamDetailResponse getExamProblems(@PathVariable Long examNo);
 

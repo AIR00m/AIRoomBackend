@@ -73,7 +73,11 @@ public class ExamService {
      * 시험출제문제 전체조회 = 시험 상세조회
      */
     public ExamDetailResponse getExamProblems(final Long examNo) {
-        return new ExamDetailResponse(examNo, createdExamProblemRepository.findCreatedExamProblemsByExamNo(examNo));
+        List<ExamProblemDetailResponse> examProblemDetailResponseList = createdExamProblemRepository.findCreatedExamProblemsByExamNo(examNo);
+        if (examProblemDetailResponseList == null || examProblemDetailResponseList.isEmpty()) {
+            throw new IllegalArgumentException("잘못된 시험고유번호 입니다. : " + examNo);
+        }
+        return new ExamDetailResponse(examNo, examProblemDetailResponseList);
     }
 
 
