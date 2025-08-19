@@ -16,11 +16,11 @@ public class AgentDownloadController {
     private String filePath;
 
     // 운영: 클래스패스에 포함된 바이너리로 내려줌 (우선순위 2)
-    @Value("${agent.download.classpath:agent/SecureAgent-0.9.1.exe}")
+    @Value("${agent.download.classpath:agent/SecureAgent-0.9.2.exe}")
     private String classpathFile;
 
     // 노출 파일명
-    @Value("${agent.download.filename:SecureAgent-0.9.1.exe}")
+    @Value("${agent.download.filename:SecureAgent-0.9.2.exe}")
     private String downloadName;
 
     @GetMapping("/agent")
