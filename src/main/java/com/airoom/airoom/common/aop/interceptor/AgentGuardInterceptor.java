@@ -9,10 +9,19 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) throws Exception {
         String uri = req.getRequestURI();
-        // install/agent-required/login 등은 예외 처리
-        if (uri.startsWith("/install") || uri.startsWith("/agent-required") || uri.startsWith("/login") || uri.startsWith("/api/agent")) {
+
+        // 예외 경로: 설치/안내/로그인/에이전트 API/다운로드/정적
+        if (uri.startsWith("/install")
+                || uri.startsWith("/agent-required")
+                || uri.startsWith("/login")
+                || uri.startsWith("/api/agent")
+                || uri.startsWith("/download")
+                || uri.startsWith("/assets")        // Vite 정적
+                || uri.startsWith("/favicon")       // 파비콘
+                || uri.startsWith("/error")) {      // 에러 페이지
             return true;
         }
+
         HttpSession session = req.getSession(false);
         Boolean verified = (session == null) ? null : (Boolean) session.getAttribute("AGENT_VERIFIED");
         if (verified == null || !verified) {
@@ -21,4 +30,5 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
         }
         return true;
     }
+
 }
