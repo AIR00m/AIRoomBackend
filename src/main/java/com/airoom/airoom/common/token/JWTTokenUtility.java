@@ -56,7 +56,7 @@ public class JWTTokenUtility {
 
 
     public static Claims verifyToken(String token) {
-        // 주석을 추가d
+        // 주석을 추가
 
         if (token == null || !token.startsWith("Bearer ")) {
             // contains로 하게 되면 중간에 포함된것도 true
