@@ -8,6 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -42,13 +43,20 @@ public class Classroom extends BaseEntity {
     private Semester classroomSemester; // 클래스룸 학기
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "classRoom")
-    private List<ClassroomStudent> classroomStudentList;
+    @Builder.Default
+    private List<ClassroomStudent> classroomStudentList = new ArrayList<>();
 
     public void addClassroomStudent(ClassroomStudent classroomStudent) {
         if (classroomStudent != null) {
-            classroomStudent.getClassRoom().removeClassroomStudent(classroomStudent);
-            classroomStudentList.add(classroomStudent);
+            Classroom prev = classroomStudent.getClassRoom();
+            if (prev != null && prev != this) {
+                prev.removeClassroomStudent(classroomStudent);
+            }
             classroomStudent.setClassRoom(this);
+
+            if (!classroomStudentList.contains(classroomStudent)) {
+                classroomStudentList.add(classroomStudent);
+            }
         }
     }
 

@@ -1,17 +1,16 @@
 package com.airoom.airoom.exam.controller;
 
-import com.airoom.airoom.exam.model.dto.CreateExamProblemsRequest;
-import com.airoom.airoom.exam.model.dto.CreateExamProblemsResponse;
-import com.airoom.airoom.exam.model.dto.CreateExamRequest;
-import com.airoom.airoom.exam.model.dto.ReplaceExamProblemRequest;
+import com.airoom.airoom.exam.model.dto.*;
 import com.airoom.airoom.exam.model.service.ExamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/exam")
@@ -25,13 +24,7 @@ public class ExamController implements ExamControllerSwagger {
     public ResponseEntity<Void> createExam(
             @Valid @RequestBody final CreateExamRequest request
     ) {
-        Long examId;
-        try {
-            examId = examService.createExam(request);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-        return ResponseEntity.created(URI.create("/exam/" + examId)).build();
+        return ResponseEntity.created(URI.create("/exam/" + examService.createExam(request))).build();
     }
 
 
@@ -49,9 +42,18 @@ public class ExamController implements ExamControllerSwagger {
      * 시험문제 교체
      */
     @PostMapping("/problem")
-    public void replaceExamProblem(
+    public ResponseEntity<ExamProblemResponse> replaceExamProblem(
             @Valid @RequestBody final ReplaceExamProblemRequest request
     ) {
+        return ResponseEntity.ok(examService.replaceExamProblem(request));
+    }
+
+    /**
+     * 시험별 시험문제 조회
+     */
+    @Override
+    @GetMapping("/examProblems/{examNo}")
+    public void getExamProblems(@PathVariable Long examNo) {
 
     }
 
@@ -88,14 +90,6 @@ public class ExamController implements ExamControllerSwagger {
 
     }
 
-    /**
-     * 시험별 시험문제 조회
-     */
-    @Override
-    @GetMapping("/examProblems/{examNo}")
-    public void getExamProblems(@PathVariable Long examNo) {
-
-    }
 
     /**
      * 시험문제 채점

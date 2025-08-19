@@ -51,9 +51,16 @@ public class Exam extends BaseEntity {
 
     public void addExamUnit(ExamUnit examUnit) {
         if (examUnit != null) {
-            examUnit.getExam().removeExamUnit(examUnit);
-            examUnitList.add(examUnit);
+            Exam prevExam = examUnit.getExam();
+            if (prevExam != null && prevExam != this) {
+                prevExam.removeExamUnit(examUnit);
+            }
+
             examUnit.setExam(this);
+
+            if (!examUnitList.contains(examUnit)) {
+                examUnitList.add(examUnit);
+            }
         }
     }
 
@@ -65,9 +72,16 @@ public class Exam extends BaseEntity {
 
     public void addCreatedExamProblem(CreatedExamProblem cep) {
         if (cep != null) {
-            cep.getExam().removeCreatedExamProblem(cep);
-            createdExamProblemList.add(cep);
+            Exam prev = cep.getExam();
+            if (prev != null && prev != this) {
+                prev.removeCreatedExamProblem(cep);
+            }
+
             cep.setExam(this);
+
+            if (!createdExamProblemList.contains(cep)) {
+                createdExamProblemList.add(cep);
+            }
         }
     }
 
@@ -79,9 +93,16 @@ public class Exam extends BaseEntity {
 
     public void addStudentExam(StudentExam studentExam) {
         if (studentExam != null) {
-            studentExam.getExam().removeStudentExam(studentExam);
-            studentExamList.add(studentExam);
+            Exam prev = studentExam.getExam();
+            if (prev != null && prev != this) {
+                prev.removeStudentExam(studentExam);
+            }
+
             studentExam.setExam(this);
+
+            if (!studentExamList.contains(studentExam)) {
+                studentExamList.add(studentExam);
+            }
         }
     }
 
