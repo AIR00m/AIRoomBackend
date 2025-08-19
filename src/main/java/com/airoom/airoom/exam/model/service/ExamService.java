@@ -6,9 +6,9 @@ import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.exam.entity.*;
 import com.airoom.airoom.exam.entity.value.ProblemLevel;
 import com.airoom.airoom.exam.model.dto.*;
+import com.airoom.airoom.exam.model.repository.CreatedExamProblemRepository;
 import com.airoom.airoom.exam.model.repository.ExamProblemRepository;
 import com.airoom.airoom.exam.model.repository.ExamRepository;
-import com.airoom.airoom.exam.model.repository.StudentExamRepository;
 import com.airoom.airoom.textbook.entity.Unit;
 import com.airoom.airoom.textbook.model.repository.UnitRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class ExamService {
     private final ExamProblemRepository examProblemRepository;
     private final ClassroomRepository classroomRepository;
     private final UnitRepository unitRepository;
-    private final StudentExamRepository studentExamRepository;
+    private final CreatedExamProblemRepository createdExamProblemRepository;
 
     /**
      * 시험 생성
@@ -69,12 +69,16 @@ public class ExamService {
         return getRandomExamProblemByUnitAndLevelExcludingSelf(target);
     }
 
-
-
-
-
-
-
+    /**
+     * 시험출제문제 전체조회 = 시험 상세조회
+     */
+    public ExamDetailResponse getExamProblems(final Long examNo) {
+        List<ExamProblemDetailResponse> examProblemDetailResponseList = createdExamProblemRepository.findCreatedExamProblemsByExamNo(examNo);
+        if (examProblemDetailResponseList == null || examProblemDetailResponseList.isEmpty()) {
+            throw new IllegalArgumentException("잘못된 시험고유번호 입니다. : " + examNo);
+        }
+        return new ExamDetailResponse(examNo, examProblemDetailResponseList);
+    }
 
 
     /**
@@ -129,12 +133,22 @@ public class ExamService {
 
     private void addExamProblemToExam(final List<Long> epNoList, final Exam exam) {
         List<ExamProblem> examProblemList = examProblemRepository.findAllById(epNoList);
+        //랜덤하게 문제 배치를 위한 컬렉션 요소 셔플
+        Collections.shuffle(examProblemList);
+        //낮은 난이도가 먼저 배치될 수 있도록 난이도별 정렬
+        examProblemList.sort(Comparator.comparingInt(ep -> switch (ep.getEpLevel()) {
+            case LOW -> 0;
+            case MEDIUM -> 1;
+            case HIGH -> 2;
+        }));
+
         Map<Long, ExamProblem> examProblemMap = examProblemList.stream().collect(Collectors.toMap(ExamProblem::getEpNo, e -> e));
         int order = 0;
-        for (Long epNo : epNoList) {
-            ExamProblem ep = examProblemMap.get(epNo);
+        for (ExamProblem examProblem : examProblemList) {
+
+            ExamProblem ep = examProblemMap.get(examProblem.getEpNo());
             if (ep == null) {
-                throw new IllegalArgumentException("존재하지 않는 시험문제 번호입니다. : " + epNo);
+                throw new IllegalArgumentException("존재하지 않는 시험문제 번호입니다. : " + examProblem.getEpNo());
             }
             CreatedExamProblem cep = CreatedExamProblem.builder()
                     .cepQuestionOrder(++order)
