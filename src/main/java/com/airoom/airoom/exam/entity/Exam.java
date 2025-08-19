@@ -41,6 +41,14 @@ public class Exam extends BaseEntity {
     @Builder.Default
     private List<ExamUnit> examUnitList = new ArrayList<>(); //시험 단원
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "exam")
+    @Builder.Default
+    private List<CreatedExamProblem> createdExamProblemList = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "exam")
+    @Builder.Default
+    private List<StudentExam> studentExamList = new ArrayList<>();
+
     public void addExamUnit(ExamUnit examUnit) {
         if (examUnit != null) {
             examUnit.getExam().removeExamUnit(examUnit);
@@ -52,6 +60,34 @@ public class Exam extends BaseEntity {
     public void removeExamUnit(ExamUnit examUnit) {
         if (examUnit != null && examUnitList.remove(examUnit)) {
             examUnit.setExam(null);
+        }
+    }
+
+    public void addCreatedExamProblem(CreatedExamProblem cep) {
+        if (cep != null) {
+            cep.getExam().removeCreatedExamProblem(cep);
+            createdExamProblemList.add(cep);
+            cep.setExam(this);
+        }
+    }
+
+    public void removeCreatedExamProblem(CreatedExamProblem cep) {
+        if (cep != null && createdExamProblemList.remove(cep)) {
+            cep.setExam(null);
+        }
+    }
+
+    public void addStudentExam(StudentExam studentExam) {
+        if (studentExam != null) {
+            studentExam.getExam().removeStudentExam(studentExam);
+            studentExamList.add(studentExam);
+            studentExam.setExam(this);
+        }
+    }
+
+    public void removeStudentExam(StudentExam studentExam) {
+        if (studentExam != null && studentExamList.remove(studentExam)) {
+            studentExam.setExam(null);
         }
     }
 
