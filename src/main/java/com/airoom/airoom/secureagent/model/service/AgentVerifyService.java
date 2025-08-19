@@ -1,18 +1,21 @@
 package com.airoom.airoom.secureagent.model.service;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.airoom.airoom.secureagent.config.AgentProperties;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class AgentVerifyService {
 
-    @Value("${agent.allowed-versions}")
-    private List<String> allowedVersions;
+    private final Set<String> allowedVersions;
+    private final Set<String> allowedHashes;
 
-    @Value("${agent.allowed-hashes}")
-    private List<String> allowedHashes;
+    public AgentVerifyService(AgentProperties props) {
+        this.allowedVersions = new HashSet<>(props.getAllowedVersions());
+        this.allowedHashes   = new HashSet<>(props.getAllowedHashes());
+    }
 
     public boolean isAllowed(String version, String sha256) {
         return allowedVersions.contains(version) && allowedHashes.contains(sha256);
