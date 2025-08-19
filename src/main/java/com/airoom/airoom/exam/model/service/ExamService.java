@@ -70,13 +70,6 @@ public class ExamService {
     }
 
 
-
-
-
-
-
-
-
     /**
      * 메소드 추출
      */
@@ -129,12 +122,22 @@ public class ExamService {
 
     private void addExamProblemToExam(final List<Long> epNoList, final Exam exam) {
         List<ExamProblem> examProblemList = examProblemRepository.findAllById(epNoList);
+        //랜덤하게 문제 배치를 위한 컬렉션 요소 셔플
+        Collections.shuffle(examProblemList);
+        //낮은 난이도가 먼저 배치될 수 있도록 난이도별 정렬
+        examProblemList.sort(Comparator.comparingInt(ep -> switch (ep.getEpLevel()) {
+            case LOW -> 0;
+            case MEDIUM -> 1;
+            case HIGH -> 2;
+        }));
+
         Map<Long, ExamProblem> examProblemMap = examProblemList.stream().collect(Collectors.toMap(ExamProblem::getEpNo, e -> e));
         int order = 0;
-        for (Long epNo : epNoList) {
-            ExamProblem ep = examProblemMap.get(epNo);
+        for (ExamProblem examProblem : examProblemList) {
+
+            ExamProblem ep = examProblemMap.get(examProblem.getEpNo());
             if (ep == null) {
-                throw new IllegalArgumentException("존재하지 않는 시험문제 번호입니다. : " + epNo);
+                throw new IllegalArgumentException("존재하지 않는 시험문제 번호입니다. : " + examProblem.getEpNo());
             }
             CreatedExamProblem cep = CreatedExamProblem.builder()
                     .cepQuestionOrder(++order)
