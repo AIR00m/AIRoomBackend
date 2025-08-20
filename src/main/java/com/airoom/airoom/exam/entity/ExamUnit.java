@@ -1,5 +1,6 @@
 package com.airoom.airoom.exam.entity;
 
+import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.textbook.entity.Unit;
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,18 +12,19 @@ import org.hibernate.annotations.SQLRestriction;
 @Builder
 @SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE EXAM_UNIT SET DELETED_AT = NOW() WHERE EU_NO = ?")
+@SQLDelete(sql = "UPDATE exam_unit SET deleted_at = NOW() WHERE eu_no = ?")
 @AllArgsConstructor
-public class ExamUnit {
+public class ExamUnit extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long euNo; //시험단원 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EXAM_NO")
+    @JoinColumn(name = "exam_no")
+    @Setter
     private Exam exam; //시험
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UNIT_NO")
+    @JoinColumn(name = "unit_no")
     private Unit unit; //단원
 }

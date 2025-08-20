@@ -15,22 +15,22 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Builder
 // Soft Delete 방식
-@SQLDelete(sql = "UPDATE CLASSROOM_TEACHER SET deleted_at = NOW() WHERE CLASSROOM_TEACHER_NO = ?")
+@SQLDelete(sql = "UPDATE classroom_teacher SET deleted_at = NOW() WHERE classroom_teacher_no = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class ClassroomTeacher extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long classroomTeacherNo; // 클래스룸 선생님 고유번호
 
-    @ManyToOne
-    @JoinColumn(name = "CLASSROOM_NO")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "classroom_no")
     private Classroom classroom; // 클래스룸 고유 번호
 
-    @ManyToOne
-    @JoinColumn(name ="MEMBER_NO")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name ="member_no")
     private Member teacher;// 회원 고유 번호 (선생님)
 
-    @ManyToOne
-    @JoinColumn(name = "TEXTBOOK_NO")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "textbook_no")
     private Textbook textbook; // 교재 고유 번호
 }
