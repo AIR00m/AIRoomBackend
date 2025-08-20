@@ -12,4 +12,6 @@ public interface AttachmentRepository extends JpaRepository<Attachment,Long> {
     void deleteByBoardNoAndBoardType(Long boardNo, BoardType boardType);
 
     List<Attachment> findByBoardNoAndBoardType(Long boardNo, BoardType boardType);
+
+    boolean existsByBoardNoAndBoardType(Long boardNo, BoardType boardType);
 }

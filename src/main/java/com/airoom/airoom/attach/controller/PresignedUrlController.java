@@ -20,6 +20,7 @@ public class PresignedUrlController implements PresignedUrlSwagger {
     @PostMapping("/upload")
     public ResponseEntity<PresignedUrlResponse> getUploadPresignedUrl(@RequestBody PresignedUrlRequest request) {
         return ResponseEntity.ok(presignedUrlService.generateUploadUrl(request));
+        //created,nocontent
     }
 
     @PostMapping("/attachment")

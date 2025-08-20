@@ -18,13 +18,7 @@ public class AttachmentService {
     private final AttachmentRepository attachmentRepository;
 
     public void saveAttachment(AttachmentDto dto) {
-        Attachment attachment = Attachment.builder()
-                .boardNo(dto.getBoardNo())
-                .boardType(dto.getBoardType())
-                .originalName(dto.getOriginalName())
-                .savedName(dto.getSavedName())
-                .s3Key(dto.getS3Key())
-                .build();
+        Attachment attachment = buildAttachment(dto);
         attachmentRepository.save(attachment);
     }
 
@@ -35,6 +29,18 @@ public class AttachmentService {
     @Transactional(readOnly = true)
     public List<Attachment> findByBoard(Long boardNo, BoardType boardType) {
         return attachmentRepository.findByBoardNoAndBoardType(boardNo, boardType);
+    }
+
+
+    /*메소드 추출*/
+    private Attachment buildAttachment(AttachmentDto dto) {
+        return Attachment.builder()
+                .boardNo(dto.getBoardNo())
+                .boardType(dto.getBoardType())
+                .originalName(dto.getOriginalName())
+                .savedName(dto.getSavedName())
+                .s3Key(dto.getS3Key())
+                .build();
     }
 
 }
