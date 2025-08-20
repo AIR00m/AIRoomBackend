@@ -36,15 +36,28 @@ public class SecurityConfig {
                         "http://43.200.2.244", // 배포 프론트 서버
                         "http://localhost:8080",
                         "http://localhost:5173", // 로컬 Vue 서버
+                        "http://localhost:4455", // SecureAgent 4455~4460
+                        "http://localhost:4456",
+                        "http://localhost:4457",
+                        "http://localhost:4458",
+                        "http://localhost:4459",
+                        "http://localhost:4460",
+                        "http://127.0.0.1:4455",
+                        "http://127.0.0.1:4456",
+                        "http://127.0.0.1:4457",
+                        "http://127.0.0.1:4458",
+                        "http://127.0.0.1:4459",
+                        "http://127.0.0.1:4460",
                         "http://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:443",
                         "http://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:80",
                         "http://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:5173"
                 )
         );
-        corsConfiguration.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        corsConfiguration.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS","HEAD"));
         // 허용할 Http 메소드를 입력해준다.
-        corsConfiguration.setAllowedHeaders(List.of("Authorization","Content-Type"));
+//        corsConfiguration.setAllowedHeaders(List.of("Authorization","Content-Type"));
         // 브라우저 요청 해더에 보내도 되는 것 Authorization -> JWT / JSON -> Content-Type
+        corsConfiguration.setAllowedHeaders(List.of("*"));
 
 //        corsConfiguration.setExposedHeaders(List.of("Authorization")); -> Refresh Token에서 필요없음
         // 응답 해더 중 JS 코드 볼 수 있게 해주는 것
@@ -89,6 +102,8 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth-> auth
+                        .requestMatchers("/api/agent/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                         .requestMatchers("/auth/**").permitAll() // 인증
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 모니터링
                         .requestMatchers(
