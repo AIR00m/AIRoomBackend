@@ -1,5 +1,10 @@
 package com.airoom.airoom.member.controller;
 
+import com.airoom.airoom.classroom.entity.Classroom;
+import com.airoom.airoom.classroom.entity.ClassroomStudent;
+import com.airoom.airoom.classroom.entity.ClassroomTeacher;
+import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
+import com.airoom.airoom.classroom.model.service.ClassroomService;
 import com.airoom.airoom.common.token.CookieUtility;
 import com.airoom.airoom.common.token.JWTTokenUtility;
 import com.airoom.airoom.member.entity.Member;
@@ -15,6 +20,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
   import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,6 +30,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final ClassroomService classroomService;
     private final JWTTokenUtility jwtUtility;
     private final CookieUtility cookieUtility;
 
@@ -45,9 +53,22 @@ public class AuthController {
          // 2. DB에 접근하여 로그인 정보 확인
          Member member = authService.authenticate(request.id(), request.pwd());
          boolean isTeacher = member.getMemberType().toString().equals("TEACHER");
+         Long memberNo = member.getMemberNo();
+         // 클래스룸 고유번호
+         Map<String,Object> classroomClaims = new HashMap<>();
+         Long classroomNo  = classroomService.getClassroom(memberNo).getClassroomNo();
+
+         classroomClaims.put("classroomNo",classroomNo);
+         if(isTeacher){
+             List<Long> classroomTeacherNos = classroomService.getClassroomTeacherNosByMemberNo(memberNo);
+             classroomClaims.put("classroomTeacherNos",classroomTeacherNos);
+         } else {
+             List<Long> classroomStudentNos = classroomService.getClassroomStudentNosByMemberNo(memberNo);
+             classroomClaims.put("classroomStudentNos",classroomStudentNos);
+         }
 
          // 3. 서버에서 토큰을 발급
-         String accessToken = jwtUtility.createAccessToken(request.id(), isTeacher);
+         String accessToken = jwtUtility.createAccessToken(request.id(), isTeacher, classroomClaims);
          String refreshToken = jwtUtility.createRefreshToken(request.id(), isTeacher);
 
          //3-1 Redis에는 (Time To Live)기능이 존재하여
@@ -57,7 +78,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("Access_Token", accessToken, "role", member.getMemberType().name()));
+                .body(Map.of("Access_Token", accessToken));
 
     }
 

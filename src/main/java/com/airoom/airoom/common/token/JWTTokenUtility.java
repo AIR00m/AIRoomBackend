@@ -4,6 +4,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -11,13 +15,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+@ConfigurationProperties(prefix = "jwt")
 @Component
+@RequiredArgsConstructor
 public class JWTTokenUtility {
 
     // 환경 변수에 있는 Secret Key 가지고 오기 -> 여기서만 사용하므로 접근 제한자는 private를 사용해서 할것
-    private static final String SECRET_KEY =  Optional.ofNullable(System.getenv("JWT_SECRET_KEY"))
-            .orElseThrow(() -> new IllegalStateException("환경변수 JWT_SECRET_KEY가 설정되어 있지 않습니다."));
-    private static final SecretKey secretKey = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    private static SecretKey secretKey; // final 아님 (초기화는 yml 값 이후)
+
+    @Value("${jwt.secret}")
+    private String secret;  // yml에서 읽어옴
+
+    @PostConstruct
+    public void init() {
+        // yml에서 읽은 값을 static 필드에 변환 후 세팅
+        secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
     // 컴퓨터는 문자를 이해못함 -> 바이트 배열로 형태로 변환(UTF_8방식으로 변환)
     // 이런 순수 바이트 배열 사용 X -> JJWT 는 HMAC-SHA 알고리즘을 사용해서 알고리즘에 맞는 객체로 반환해준다.
     private static final String ISSUER = "http://43.200.2.244:8080/airoom";
@@ -29,6 +42,17 @@ public class JWTTokenUtility {
         String role = isTeacher ? "teacher" : "student";
         claims.put("role", role);
         claims.put("token_type", "AccessToken");
+        return buildToken(userId, claims, ACCESS_TOKEN_EXPIRATION_TIME);
+    }
+
+    public String createAccessToken(String userId, boolean isTeacher, Map<String, Object> extraClaims) {
+        HashMap<String, Object> claims = new HashMap<>();
+        claims.put("token_type", "AccessToken");
+        String role = isTeacher ? "teacher" : "student";
+        claims.put("role", role);
+        if (extraClaims != null && !extraClaims.isEmpty()) {
+            claims.putAll(extraClaims);
+        }
         return buildToken(userId, claims, ACCESS_TOKEN_EXPIRATION_TIME);
     }
 
