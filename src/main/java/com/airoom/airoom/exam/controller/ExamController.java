@@ -1,15 +1,16 @@
 package com.airoom.airoom.exam.controller;
 
-import com.airoom.airoom.exam.model.dto.CreateExamProblemsRequest;
-import com.airoom.airoom.exam.model.dto.CreateExamProblemsResponse;
-import com.airoom.airoom.exam.model.dto.CreateExamRequest;
-import com.airoom.airoom.exam.model.dto.ReplaceExamProblemRequest;
+import com.airoom.airoom.exam.model.dto.*;
 import com.airoom.airoom.exam.model.service.ExamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/exam")
@@ -20,10 +21,10 @@ public class ExamController implements ExamControllerSwagger {
      * 시험 생성
      */
     @PostMapping
-    public ResponseEntity<Long> createExam(
+    public ResponseEntity<Void> createExam(
             @Valid @RequestBody final CreateExamRequest request
     ) {
-        return null;
+        return ResponseEntity.created(URI.create("/exam/" + examService.createExam(request))).build();
     }
 
 
@@ -41,9 +42,27 @@ public class ExamController implements ExamControllerSwagger {
      * 시험문제 교체
      */
     @PostMapping("/problem")
-    public void replaceExamProblem(
+    public ResponseEntity<ExamProblemResponse> replaceExamProblem(
             @Valid @RequestBody final ReplaceExamProblemRequest request
     ) {
+        return ResponseEntity.ok(examService.replaceExamProblem(request));
+    }
+
+    /**
+     * 시험출제문제 전체조회 = 시험 상세조회
+     */
+    @Override
+    @GetMapping("/examProblems/{examNo}")
+    public ExamDetailResponse getExamProblems(@PathVariable Long examNo) {
+        return examService.getExamProblems(examNo);
+    }
+
+    /**
+     * 시험문제 채점
+     */
+    @Override
+    @PostMapping("/submit/{studentExamNo}")
+    public void markAndSubmitExamProblems(@PathVariable Long studentExamNo) {
 
     }
 
@@ -81,26 +100,11 @@ public class ExamController implements ExamControllerSwagger {
     }
 
     /**
-     * 시험별 시험문제 조회
-     */
-    @Override
-    public void getExamProblems() {
-
-    }
-
-    /**
-     * 시험문제 채점
-     */
-    @Override
-    public void markExamProblems() {
-
-    }
-
-    /**
      * 시험 삭제
      */
     @Override
-    public void deleteExam() {
+    @DeleteMapping("/{examNo}")
+    public void deleteExam(@PathVariable Long examNo) {
 
     }
 

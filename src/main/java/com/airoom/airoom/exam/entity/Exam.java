@@ -41,17 +41,74 @@ public class Exam extends BaseEntity {
     @Builder.Default
     private List<ExamUnit> examUnitList = new ArrayList<>(); //시험 단원
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "exam")
+    @Builder.Default
+    private List<CreatedExamProblem> createdExamProblemList = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "exam")
+    @Builder.Default
+    private List<StudentExam> studentExamList = new ArrayList<>();
+
     public void addExamUnit(ExamUnit examUnit) {
         if (examUnit != null) {
-            examUnit.getExam().removeExamUnit(examUnit);
-            examUnitList.add(examUnit);
+            Exam prevExam = examUnit.getExam();
+            if (prevExam != null && prevExam != this) {
+                prevExam.removeExamUnit(examUnit);
+            }
+
             examUnit.setExam(this);
+
+            if (!examUnitList.contains(examUnit)) {
+                examUnitList.add(examUnit);
+            }
         }
     }
 
     public void removeExamUnit(ExamUnit examUnit) {
         if (examUnit != null && examUnitList.remove(examUnit)) {
             examUnit.setExam(null);
+        }
+    }
+
+    public void addCreatedExamProblem(CreatedExamProblem cep) {
+        if (cep != null) {
+            Exam prev = cep.getExam();
+            if (prev != null && prev != this) {
+                prev.removeCreatedExamProblem(cep);
+            }
+
+            cep.setExam(this);
+
+            if (!createdExamProblemList.contains(cep)) {
+                createdExamProblemList.add(cep);
+            }
+        }
+    }
+
+    public void removeCreatedExamProblem(CreatedExamProblem cep) {
+        if (cep != null && createdExamProblemList.remove(cep)) {
+            cep.setExam(null);
+        }
+    }
+
+    public void addStudentExam(StudentExam studentExam) {
+        if (studentExam != null) {
+            Exam prev = studentExam.getExam();
+            if (prev != null && prev != this) {
+                prev.removeStudentExam(studentExam);
+            }
+
+            studentExam.setExam(this);
+
+            if (!studentExamList.contains(studentExam)) {
+                studentExamList.add(studentExam);
+            }
+        }
+    }
+
+    public void removeStudentExam(StudentExam studentExam) {
+        if (studentExam != null && studentExamList.remove(studentExam)) {
+            studentExam.setExam(null);
         }
     }
 

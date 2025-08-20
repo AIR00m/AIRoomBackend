@@ -38,7 +38,7 @@ public class Textbook extends BaseEntity {
     @Column(nullable = false)
     private String textbookPdfUrl; //교재 PDF URL
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, columnDefinition = "enum('FIRST','SECOND','THIRD','FOURTH','FIFTH','SIXTH')", length = 10)
     @Enumerated(EnumType.STRING)
     private Grade textbookGrade; //교재 대상학년
 
