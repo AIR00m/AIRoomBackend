@@ -2,7 +2,6 @@ package com.airoom.airoom.member.model.service;
 
 import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.member.entity.Member;
-import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
 import com.airoom.airoom.member.model.repository.MemberRepository;
 import jakarta.transaction.Transactional;
@@ -69,7 +68,7 @@ public class AuthService {
         Member member = memberRepository.findMemberByMemberId(id)
                 .orElseThrow(()->new IllegalArgumentException("아이디와 비밀번호가 맞지 않습니다."));
         
-        if(!passwordEncoder.matches(pwd, member.getMemberPwd())){
+        if(passwordEncoder.matches(pwd, member.getMemberPwd())){
             throw new IllegalArgumentException("아이디와 비밀번호가 맞지 않습니다.");
         }
         return member;

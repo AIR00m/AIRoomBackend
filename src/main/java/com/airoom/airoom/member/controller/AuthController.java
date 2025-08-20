@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+  import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -57,7 +57,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("token_Type", accessToken, "role", member.getMemberType().name()));
+                .body(Map.of("Access_Token", accessToken, "role", member.getMemberType().name()));
 
     }
 
