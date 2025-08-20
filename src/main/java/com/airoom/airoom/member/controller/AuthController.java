@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,7 +48,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         Member member = authService.authenticate(request.id(), request.pwd());
         String role = member.getMemberType().toString();
         List<Textbook> textbooks = new ArrayList<>();
@@ -63,7 +64,7 @@ public class AuthController {
     }
 
     @PostMapping("/token")
-    public ResponseEntity<?> createTokenOnTextbookClick(@Valid @RequestBody String memberId, Long textbookNo) {
+    public ResponseEntity<?> createTokenOnTextbookClick(@Valid @RequestBody String memberId, @RequestBody Long textbookNo) {
         // 프론트에서 아이디를 넘겨준것으로 맴버를 반환
         Member member = authService.searchById(memberId);
         // 역할 확인
