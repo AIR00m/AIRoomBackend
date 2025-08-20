@@ -3,12 +3,11 @@ package com.airoom.airoom.exam.model.service;
 import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
+import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.exam.entity.*;
 import com.airoom.airoom.exam.entity.value.ProblemLevel;
 import com.airoom.airoom.exam.model.dto.*;
-import com.airoom.airoom.exam.model.repository.CreatedExamProblemRepository;
-import com.airoom.airoom.exam.model.repository.ExamProblemRepository;
-import com.airoom.airoom.exam.model.repository.ExamRepository;
+import com.airoom.airoom.exam.model.repository.*;
 import com.airoom.airoom.textbook.entity.Unit;
 import com.airoom.airoom.textbook.model.repository.UnitRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +28,9 @@ public class ExamService {
     private final ClassroomRepository classroomRepository;
     private final UnitRepository unitRepository;
     private final CreatedExamProblemRepository createdExamProblemRepository;
+    private final StudentExamRepository studentExamRepository;
+    private final ClassroomStudentRepository classroomStudentRepository;
+    private final StudentAnswerRepository studentAnswerRepository;
 
     /**
      * 시험 생성
@@ -37,11 +40,8 @@ public class ExamService {
         Classroom classroom = loadClassroom(request.classroomNo());
         Exam exam = buildExam(request, classroom);
 
-        //단원 추가
         addUnitToExam(request.unitNoList(), exam);
-        //시험문제 추가
         addExamProblemToExam(request.epNoList(), exam);
-        //시험대상 학생추가
         addClassroomStudentToExam(request.classroomStudentNoList(), classroom, exam);
 
         Exam savedExam = examRepository.save(exam);
@@ -80,11 +80,37 @@ public class ExamService {
         return new ExamDetailResponse(examNo, examProblemDetailResponseList);
     }
 
+    /**
+     * 시험문제 채점 & 제출
+     * 학생응답(STUDENT_ANSWER), 학생시험(STUDENT_EXAM) 트랜잭션으로 묶어서 진행
+     */
+    public SubmitExamProblemsResponse markAndSubmitExamProblems(final SubmitExamProblemsRequest request) {
+        ClassroomStudent classroomStudent = loadClassroomStudent(request);
+        Exam exam = loadExam(request);
+
+        //검증 로직
+        final List<StudentAnswerRequest> studentAnswerRequests = validateStudentAnswerRequestList(request);
+
+        final int problemCounts = request.studentAnswerRequestList().size();
+        final double scorePerProblem = 100.0 / problemCounts;
+
+        List<StudentAnswerResponse> studentAnswerResponseList = new ArrayList<>(problemCounts);
+        List<StudentAnswer> studentAnswerList = new ArrayList<>(problemCounts);
+
+        //채점 로직
+        Result result = markProblems(studentAnswerRequests, scorePerProblem, studentAnswerResponseList, studentAnswerList, classroomStudent, exam);
+
+        //영속성 저장 로직
+        studentAnswerRepository.saveAll(studentAnswerList);
+        StudentExam se = buildStudentExam(request, result.roundScore(), classroomStudent);
+        exam.addStudentExam(se);
+
+        return new SubmitExamProblemsResponse(exam.getExamName(), result.totalSolvingTime(), request.seStartTime(), result.roundScore(), studentAnswerResponseList);
+    }
 
     /**
      * 메소드 추출
      */
-
     private ExamProblemResponse getRandomExamProblemByUnitAndLevelExcludingSelf(ExamProblem examProblem) {
         ProblemLevel level = examProblem.getEpLevel();
         Unit unit = examProblem.getUnit();
@@ -92,9 +118,96 @@ public class ExamService {
         return examProblemResponseList.get(0);
     }
 
+    private Result markProblems(List<StudentAnswerRequest> studentAnswerRequests, double scorePerProblem, List<StudentAnswerResponse> studentAnswerResponseList, List<StudentAnswer> studentAnswerList, ClassroomStudent classroomStudent, Exam exam) {
+        double totalScore = 0.0;
+        Duration totalSolvingTime = Duration.ZERO;
+        //N+1 문제 방지를 위해 미리 먼저 조회해오기
+        Map<Long, ExamProblem> examProblemMap = loadExamProblems(studentAnswerRequests);
+        Map<Long, CreatedExamProblem> createdExamProblemMap = loadCreatedExamProblems(studentAnswerRequests);
+
+        for (StudentAnswerRequest studentAnswerRequest : studentAnswerRequests) {
+            ExamProblem examProblem = examProblemMap.get(studentAnswerRequest.epNo());
+            CreatedExamProblem createdExamProblem = createdExamProblemMap.get(studentAnswerRequest.cepNo());
+            
+            boolean isCorrect = examProblem.getEpAnswer().equals(studentAnswerRequest.saAnswer());
+            if (isCorrect) {
+                totalScore += scorePerProblem;
+            }
+
+            Duration solvingTime = studentAnswerRequest.saSolvingTime();
+            totalSolvingTime = solvingTime != null ? totalSolvingTime.plus(solvingTime) : totalSolvingTime;
+
+            studentAnswerResponseList.add(new StudentAnswerResponse(examProblem.getUnit().getUnitTitle(), isCorrect, createdExamProblem.getCepQuestionOrder(), createdExamProblem.getCepNo(), examProblem.getEpNo(), studentAnswerRequest.saSolvingTime(), studentAnswerRequest.saAnswer(), examProblem.getEpAnswer()));
+            studentAnswerList.add(buildStudentAnswer(studentAnswerRequest, isCorrect, examProblem, classroomStudent, createdExamProblem, exam));
+        }
+        int roundScore = Math.min((int) Math.round(totalScore), 100);
+        return new Result(totalSolvingTime, roundScore);
+    }
+
+    private List<StudentAnswerRequest> validateStudentAnswerRequestList(SubmitExamProblemsRequest request) {
+        final List<StudentAnswerRequest> studentAnswerRequests = request.studentAnswerRequestList();
+        if (studentAnswerRequests == null || studentAnswerRequests.isEmpty()) {
+            throw new IllegalArgumentException("학생 응답이 비어있습니다.");
+        }
+        return studentAnswerRequests;
+    }
+
     private ExamProblem loadExamProblem(Long epNo) {
         return examProblemRepository.findById(epNo).orElseThrow(
                 () -> new IllegalArgumentException("잘못된 시험문제 고유번호입니다. : " + epNo)
+        );
+    }
+
+    private StudentExam buildStudentExam(SubmitExamProblemsRequest request, int score, ClassroomStudent classroomStudent) {
+        return StudentExam.builder()
+                .seIsDone(true)
+                .seScore(score)
+                .seStartTime(request.seStartTime())
+                .seEndTime(request.seEndTime())
+                .classroomStudent(classroomStudent)
+                .build();
+    }
+
+    private StudentAnswer buildStudentAnswer(StudentAnswerRequest studentAnswerRequest, boolean isCorrect, ExamProblem examProblem, ClassroomStudent classroomStudent, CreatedExamProblem createdExamProblem, Exam exam) {
+        return StudentAnswer.builder()
+                .saAnswer(studentAnswerRequest.saAnswer())
+                .saIsCorrect(isCorrect)
+                .saSolvingTime(studentAnswerRequest.saSolvingTime())
+                .examProblem(examProblem)
+                .classroomStudent(classroomStudent)
+                .createdExamProblem(createdExamProblem)
+                .exam(exam)
+                .build();
+    }
+
+    private Exam loadExam(SubmitExamProblemsRequest request) {
+        return examRepository.findById(request.examNo()).orElseThrow(
+                () -> new IllegalArgumentException("잘못된 시험 고유번호입니다. : " + request.examNo())
+        );
+    }
+
+    private Map<Long, CreatedExamProblem> loadCreatedExamProblems(List<StudentAnswerRequest> requests) {
+        Set<Long> cepNos = requests.stream()
+                .map(StudentAnswerRequest::cepNo)
+                .collect(Collectors.toSet());
+        List<CreatedExamProblem> createdExamProblemList = createdExamProblemRepository.findAllById(cepNos);
+        return createdExamProblemList.stream()
+                .collect(Collectors.toMap(CreatedExamProblem::getCepNo, cep -> cep));
+    }
+
+    private Map<Long, ExamProblem> loadExamProblems(final List<StudentAnswerRequest> requests) {
+        Set<Long> epNos = requests.stream()
+                .map(StudentAnswerRequest::epNo)
+                .collect(Collectors.toSet());
+
+        List<ExamProblem> examProblemList = examProblemRepository.findExamProblemsByEpNoIn(epNos);
+        return examProblemList.stream()
+                .collect(Collectors.toMap(ExamProblem::getEpNo, ep -> ep));
+    }
+
+    private ClassroomStudent loadClassroomStudent(SubmitExamProblemsRequest request) {
+        return classroomStudentRepository.findById(request.classroomStudentNo()).orElseThrow(
+                () -> new IllegalArgumentException("잘못된 클래스룸학생 고유번호입니다. : " + request.classroomStudentNo())
         );
     }
 
@@ -191,4 +304,29 @@ public class ExamService {
                 () -> new IllegalArgumentException("올바르지 않은 클래스룸 고유번호입니다. 다시 확인하세요 : " + classroomNo)
         );
     }
+
+    private record Result(Duration totalSolvingTime, int roundScore) {
+
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

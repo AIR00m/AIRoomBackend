@@ -7,7 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
 
 @Entity
 @Getter
@@ -27,7 +27,7 @@ public class StudentAnswer extends BaseEntity {
     @Column(nullable = false)
     private boolean saIsCorrect; //정답여부
 
-    private LocalDateTime saSolvingTime; //풀이시간
+    private Duration saSolvingTime; //풀이시간
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cep_no")
