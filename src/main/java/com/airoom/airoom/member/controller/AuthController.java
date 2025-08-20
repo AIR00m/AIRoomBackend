@@ -11,16 +11,17 @@ import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
 import com.airoom.airoom.member.model.service.AuthService;
+import com.airoom.airoom.member.model.service.MemberService;
+import com.airoom.airoom.textbook.entity.Textbook;
+import com.airoom.airoom.textbook.model.service.TextbookService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-  import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,62 +31,36 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final ClassroomService classroomService;
-    private final JWTTokenUtility jwtUtility;
-    private final CookieUtility cookieUtility;
+    private final TextbookService textbookService;
 
-      //학생 회원가입
-     @PostMapping("/signup/student")
-     public ResponseEntity<?> enrollStudent(@RequestBody SignUpRequest request) {
+    //학생 회원가입
+    @PostMapping("/signup/student")
+    public ResponseEntity<?> enrollStudent(@RequestBody SignUpRequest request) {
         Member member;
         return null;
-     }
+    }
 
     // 선생님 회원가입
     @PostMapping("/signup/teacher")
-    public ResponseEntity<?> enrollTeacher(@RequestBody SignUpRequest dto){
+    public ResponseEntity<?> enrollTeacher(@RequestBody SignUpRequest dto) {
         return null;
     }
 
-    // 1. 로그인 요청
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
-         // 2. DB에 접근하여 로그인 정보 확인
-         Member member = authService.authenticate(request.id(), request.pwd());
-         boolean isTeacher = member.getMemberType().toString().equals("TEACHER");
-         Long memberNo = member.getMemberNo();
-         // 클래스룸 고유번호
-         Map<String,Object> classroomClaims = new HashMap<>();
-         Long classroomNo  = classroomService.getClassroom(memberNo).getClassroomNo();
+        Member member = authService.authenticate(request.id(), request.pwd());
+        String role = member.getMemberType().toString();
+        List<Textbook> textbooks = new ArrayList<>();
 
-         classroomClaims.put("classroomNo",classroomNo);
-         if(isTeacher){
-             List<Long> classroomTeacherNos = classroomService.getClassroomTeacherNosByMemberNo(memberNo);
-             classroomClaims.put("classroomTeacherNos",classroomTeacherNos);
-         } else {
-             List<Long> classroomStudentNos = classroomService.getClassroomStudentNosByMemberNo(memberNo);
-             classroomClaims.put("classroomStudentNos",classroomStudentNos);
-         }
-
-         // 3. 서버에서 토큰을 발급
-         String accessToken = jwtUtility.createAccessToken(request.id(), isTeacher, classroomClaims);
-         String refreshToken = jwtUtility.createRefreshToken(request.id(), isTeacher);
-
-         //3-1 Redis에는 (Time To Live)기능이 존재하여
-
-        ResponseCookie cookie = cookieUtility.refreshTokenCookie(refreshToken);
-        // 쿠키에 담는 것도 좋지만 프론트에서 localstorage에 담는것도 생각해보는 것을 추천
-
+        if (role.equals("TEACHER")) {
+            textbooks = textbookService.getAllTextbooksByTeacherMemberNo(member.getMemberNo());
+        } else {
+            textbooks = textbookService.getAllTextbooksByStudentMemberNo(member.getMemberNo());
+        }
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("Access_Token", accessToken));
+                .body(Map.of("memberId", member.getMemberId(), "textbooks", textbooks));
 
     }
-
-
-
-
-
 
 
 }
