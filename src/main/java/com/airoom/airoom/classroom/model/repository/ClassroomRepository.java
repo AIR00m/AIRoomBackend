@@ -17,4 +17,13 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
                     where c.classroomNo = :id
             """)
     Optional<Classroom> findByIdWithStudents(@Param("id") Long id);
+    @Query("""
+        SELECT c.classroomNo
+        FROM Classroom c
+        Join 
+        
+        
+
+    """)
+    Long getClassroomNoByTextbookNo(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
 }

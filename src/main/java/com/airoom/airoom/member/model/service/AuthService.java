@@ -73,4 +73,9 @@ public class AuthService {
         }
         return member;
     }
+
+    public Member searchById(String id){
+        return memberRepository.findMemberByMemberId(id)
+                .orElseThrow(()->new IllegalArgumentException("아이디에 해당하는 회원이 존재하지 않습니다."));
+    }
 }
