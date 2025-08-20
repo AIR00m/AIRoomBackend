@@ -17,13 +17,22 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
                     where c.classroomNo = :id
             """)
     Optional<Classroom> findByIdWithStudents(@Param("id") Long id);
-//    @Query("""
-//        SELECT c.classroomNo
-//        FROM Classroom c
-//        Join
-//
-//
-//
-//    """)
-//    Long getClassroomNoByTextbookNo(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
+
+    @Query("""
+                    SELECT ct.classroom, ct.classroomTeacherNo
+                    FROM ClassroomTeacher ct
+                    JOIN Member m
+                    WHERE m.memberId = :memberId AND ct.textbook = :textbookNo   
+            """)
+    Long getClassroomNoByTextbookNoAndTeacherId(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
+    @Query(
+            """
+                SELECT ct.classroom, cs.classRoomStudentNo
+                FROM ClassroomTeacher ct 
+                JOIN Member m
+                JOIN ClassroomStudent cs
+                WHERE m.memberId = :memberId AND ct.textbook = :textbookNo
+            """
+    )
+    Long getClassroomNoByTextbookNoAndStudentId(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
 }

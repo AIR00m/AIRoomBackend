@@ -30,16 +30,19 @@ public class ClassroomService {
         return classroomStudentRepository.findClassroomStudentsByClassroomNo(classroomNo);
     }
 
-//    public Long getClassroomNo(String memberId,Long textbookNo) {
-//        return classroomRepository.getClassroomNoByTextbookNo(textbookNo,memberId);
-//    }
-
-    // 년도가 바뀜에 따라 한명이 여러 클래스룸을 가질 수 있으므로 List
-    public List<Long> getClassroomStudentNosByMemberNo(Long memberNo) {
-        return classroomStudentRepository.getClassroomStudentNosByMemberNo(memberNo);
+    public Long getClassroomNoByTeacherId(String memberId,Long textbookNo) {
+        return classroomRepository.getClassroomNoByTextbookNoAndTeacherId(textbookNo,memberId);
     }
 
-    public List<Long> getClassroomTeacherNosByMemberNo(Long memberNo) {
-        return classroomTeacherRepository.getClassroomTeacherNosByMemberNo(memberNo);
+    public Long getClassroomNoByStudentId(String memberId,Long textbookNo) {
+        return classroomRepository.getClassroomNoByTextbookNoAndStudentId(textbookNo,memberId);
+    }
+
+    public Long getClassTeacherNoByClassRoomNo(Long classroomNo){
+        return classroomTeacherRepository.getClassTeacherNoByClassRoomNo(classroomNo);
+    }
+
+    public Long getClassStudentNoByClassRoomNo(Long classroomNo){
+        return classroomStudentRepository.getClassStudentNoByClassRoomNo(classroomNo);
     }
 }

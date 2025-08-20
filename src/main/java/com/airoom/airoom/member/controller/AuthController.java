@@ -1,4 +1,5 @@
 package com.airoom.airoom.member.controller;
+
 import com.airoom.airoom.classroom.model.service.ClassroomService;
 import com.airoom.airoom.common.token.CookieUtility;
 import com.airoom.airoom.common.token.JWTTokenUtility;
@@ -69,17 +70,20 @@ public class AuthController {
         boolean isTeacher = member.getMemberType().toString().equals("TEACHER");
         Long memberNo = member.getMemberNo();
         // 클래스룸 고유번호
-        Map<String,Object> classroomClaims = new HashMap<>();
+        // 이름 넣기
+        Map<String, Object> classroomClaims = new HashMap<>();
+        classroomClaims.put("memberName", member.getMemberName());
 
-//        Long classroomNo  = classroomService.getClassroomNo(memberId,textbookNo);
-        Long classroomNo = null;
-        classroomClaims.put("classroomNo",classroomNo);
         if (isTeacher) {
-            List<Long> classroomTeacherNos = classroomService.getClassroomTeacherNosByMemberNo(memberNo);
-            classroomClaims.put("classroomTeacherNos",classroomTeacherNos);
+            Long classroomNo = classroomService.getClassroomNoByTeacherId(memberId, textbookNo);
+            classroomClaims.put("classroomNo", classroomNo);
+            Long classroomTeacherNo = classroomService.getClassTeacherNoByClassRoomNo(classroomNo);
+            classroomClaims.put("classroomTeacherNo", classroomTeacherNo);
         } else {
-            List<Long> classroomStudentNos = classroomService.getClassroomStudentNosByMemberNo(memberNo);
-            classroomClaims.put("classroomStudentNos",classroomStudentNos);
+            Long classroomNo = classroomService.getClassroomNoByStudentId(memberId, textbookNo);
+            classroomClaims.put("classroomNo", classroomNo);
+            Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNo(classroomNo);
+            classroomClaims.put("classRoomStudentNo", classRoomStudentNo);
         }
 
         // 3. 서버에서 토큰을 발급
@@ -96,8 +100,6 @@ public class AuthController {
                 .body(Map.of("Access_Token", accessToken));
 
     }
-
-
 
 
 }
