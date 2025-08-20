@@ -5,9 +5,11 @@ import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface ClassroomTeacherRepository extends CrudRepository<ClassroomTeacher,Long> {
     @Query("SELECT cs.classroomTeacherNo FROM ClassroomTeacher cs WHERE cs.teacher.memberNo = :memberNo")
     List<Long> getClassroomTeacherNosByMemberNo(@Param("memberNo") Long memberNo);

@@ -1,9 +1,11 @@
 package com.airoom.airoom.classroom.model.service;
 
+import com.airoom.airoom.classroom.model.dto.ClassroomGroupResponse;
 import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
+import com.airoom.airoom.classroom.model.repository.ClassroomGroupRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
@@ -19,6 +21,7 @@ import java.util.List;
 public class ClassroomService {
     private final ClassroomRepository classroomRepository;
     private final ClassroomStudentRepository classroomStudentRepository;
+    private final ClassroomGroupRepository classroomGroupRepository;
     private final ClassroomTeacherRepository classroomTeacherRepository;
 
     /**
@@ -27,6 +30,10 @@ public class ClassroomService {
     @Transactional(readOnly = true)
     public List<ClassroomStudentResponse> getClassroomStudentAll(final Long classroomNo) {
         return classroomStudentRepository.findClassroomStudentsByClassroomNo(classroomNo);
+    }
+    @Transactional(readOnly = true)
+    public List<ClassroomGroupResponse> getClassroomGroupAll(final Long classroomNo) {
+        return classroomGroupRepository.findClassroomGroupsByClassroomNo(classroomNo);
     }
 
     public Classroom getClassroom(Long classroomNo) {

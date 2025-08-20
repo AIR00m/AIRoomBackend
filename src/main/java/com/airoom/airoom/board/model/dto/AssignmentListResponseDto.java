@@ -4,13 +4,12 @@ import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AssignmentListDto {
+public class AssignmentListResponseDto {
     private Long id;
     private String title;
     private boolean isGroupAssignment;
