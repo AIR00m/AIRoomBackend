@@ -22,4 +22,6 @@ public interface CreatedExamProblemRepository extends JpaRepository<CreatedExamP
                 order by cep.cepQuestionOrder
             """)
     List<ExamProblemDetailResponse> findCreatedExamProblemsByExamNo(Long examNo);
+
+
 }
