@@ -24,9 +24,8 @@ public class ExamController implements ExamControllerSwagger {
     public ResponseEntity<Void> createExam(
             @Valid @RequestBody final CreateExamRequest request
     ) {
-        return ResponseEntity.created(URI.create("/exam/" + examService.createExam(request))).build();
+        return ResponseEntity.created(URI.create("/examProblems/" + examService.createExam(request))).build();
     }
-
 
     /**
      * 난이도, 단원별 랜덤 문제 출제
@@ -53,17 +52,17 @@ public class ExamController implements ExamControllerSwagger {
      */
     @Override
     @GetMapping("/examProblems/{examNo}")
-    public ExamDetailResponse getExamProblems(@PathVariable Long examNo) {
+    public ExamDetailResponse getExamProblems(@PathVariable final Long examNo) {
         return examService.getExamProblems(examNo);
     }
 
     /**
-     * 시험문제 채점
+     * 시험문제 채점 & 제출
      */
     @Override
-    @PostMapping("/submit/{studentExamNo}")
-    public void markAndSubmitExamProblems(@PathVariable Long studentExamNo) {
-
+    @PostMapping("/submit")
+    public ResponseEntity<SubmitExamProblemsResponse> markAndSubmitExamProblems(@RequestBody @Valid final SubmitExamProblemsRequest request) {
+        return ResponseEntity.ok(examService.markAndSubmitExamProblems(request));
     }
 
     /**

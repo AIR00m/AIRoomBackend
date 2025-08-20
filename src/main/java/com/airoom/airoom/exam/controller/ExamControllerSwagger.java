@@ -42,7 +42,7 @@ public interface ExamControllerSwagger {
             summary = "시험문제 풀이 제출 및 채점 API",
             description = "시험문제 풀이를 제출 및 채점합니다."
     )
-    public void markAndSubmitExamProblems(@PathVariable Long studentExamNo);
+    public ResponseEntity<SubmitExamProblemsResponse> markAndSubmitExamProblems(@RequestBody @Valid final SubmitExamProblemsRequest request);
 
 
     @Operation(
