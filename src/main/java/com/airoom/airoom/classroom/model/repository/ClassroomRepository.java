@@ -19,19 +19,22 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     Optional<Classroom> findByIdWithStudents(@Param("id") Long id);
 
     @Query("""
-                    SELECT ct.classroom, ct.classroomTeacherNo
+                    SELECT ct.classroom
                     FROM ClassroomTeacher ct
-                    JOIN Member m
-                    WHERE m.memberId = :memberId AND ct.textbook = :textbookNo   
+                    JOIN ct.teacher m
+                    JOIN ct.textbook t
+                    WHERE m.memberId = :memberId AND t.textbookNo = :textbookNo
             """)
     Long getClassroomNoByTextbookNoAndTeacherId(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
     @Query(
             """
-                SELECT ct.classroom, cs.classRoomStudentNo
-                FROM ClassroomTeacher ct 
-                JOIN Member m
-                JOIN ClassroomStudent cs
-                WHERE m.memberId = :memberId AND ct.textbook = :textbookNo
+                 select distinct c.classroomNo
+                    from ClassroomTeacher ct
+                      join ct.classroom c
+                      join c.classroomStudentList cs
+                      join cs.student s
+                    where s.memberId = :memberId
+                      and ct.textbook.textbookNo = :textbookNo
             """
     )
     Long getClassroomNoByTextbookNoAndStudentId(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);

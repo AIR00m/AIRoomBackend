@@ -6,6 +6,7 @@ import com.airoom.airoom.common.token.JWTTokenUtility;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
+import com.airoom.airoom.member.model.dto.TokenRequest;
 import com.airoom.airoom.member.model.service.AuthService;
 import com.airoom.airoom.textbook.entity.Textbook;
 import com.airoom.airoom.textbook.model.service.TextbookService;
@@ -33,6 +34,7 @@ public class AuthController {
     private final ClassroomService classroomService;
     private final JWTTokenUtility jwtUtility;
     private final CookieUtility cookieUtility;
+
 
     //학생 회원가입
     @PostMapping("/signup/student")
@@ -64,24 +66,23 @@ public class AuthController {
     }
 
     @PostMapping("/token")
-    public ResponseEntity<?> createTokenOnTextbookClick(@Valid @RequestBody String memberId, @RequestBody Long textbookNo) {
+    public ResponseEntity<?> createTokenOnTextbookClick(@Valid @RequestBody TokenRequest tokenRequest) {
         // 프론트에서 아이디를 넘겨준것으로 맴버를 반환
-        Member member = authService.searchById(memberId);
+        Member member = authService.searchById(tokenRequest.memberId());
         // 역할 확인
         boolean isTeacher = member.getMemberType().toString().equals("TEACHER");
-        Long memberNo = member.getMemberNo();
         // 클래스룸 고유번호
         // 이름 넣기
         Map<String, Object> classroomClaims = new HashMap<>();
         classroomClaims.put("memberName", member.getMemberName());
 
         if (isTeacher) {
-            Long classroomNo = classroomService.getClassroomNoByTeacherId(memberId, textbookNo);
+            Long classroomNo = classroomService.getClassroomNoByTeacherId(tokenRequest.memberId(), tokenRequest.textbookNo());
             classroomClaims.put("classroomNo", classroomNo);
             Long classroomTeacherNo = classroomService.getClassTeacherNoByClassRoomNo(classroomNo);
             classroomClaims.put("classroomTeacherNo", classroomTeacherNo);
         } else {
-            Long classroomNo = classroomService.getClassroomNoByStudentId(memberId, textbookNo);
+            Long classroomNo = classroomService.getClassroomNoByStudentId(tokenRequest.memberId(), tokenRequest.textbookNo());
             classroomClaims.put("classroomNo", classroomNo);
             Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNo(classroomNo);
             classroomClaims.put("classRoomStudentNo", classRoomStudentNo);
@@ -89,7 +90,7 @@ public class AuthController {
 
         // 3. 서버에서 토큰을 발급
         String accessToken = jwtUtility.createAccessToken(member, isTeacher, classroomClaims);
-        String refreshToken = jwtUtility.createRefreshToken(memberId, isTeacher);
+        String refreshToken = jwtUtility.createRefreshToken(tokenRequest.memberId(), isTeacher);
 
         //3-1 Redis에는 (Time To Live)기능이 존재하여
 

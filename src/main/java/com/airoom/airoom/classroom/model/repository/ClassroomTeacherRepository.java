@@ -9,7 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface ClassroomTeacherRepository extends CrudRepository<ClassroomTeacher,Long> {
     @Query
-            ("SELECT ct.classroomTeacherNo FROM ClassroomTeacher ct WHERE ct.classroom =: classroomNo")
+            ("""
+                SELECT ct.classroomTeacherNo
+                FROM ClassroomTeacher ct
+                JOIN ct.classroom c
+                WHERE c.classroomNo = :classroomNo
+           """)
     Long getClassTeacherNoByClassRoomNo (@Param("classroomNo") Long classroomNo);
 
 }
