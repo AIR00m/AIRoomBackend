@@ -18,7 +18,11 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
                 || uri.startsWith("/download")
                 || uri.startsWith("/assets")        // Vite 정적
                 || uri.startsWith("/favicon")       // 파비콘
-                || uri.startsWith("/error")) {      // 에러 페이지
+                || uri.startsWith("/error")      // 에러 페이지
+                || uri.startsWith("/css")       // 추가
+                || uri.startsWith("/js")        // 추가
+                || uri.startsWith("/images")    // 추가
+                || uri.startsWith("/webjars")){   // (스웨거/웹자르)
             return true;
         }
 
