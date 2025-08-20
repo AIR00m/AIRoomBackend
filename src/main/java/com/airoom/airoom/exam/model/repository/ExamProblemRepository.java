@@ -26,9 +26,32 @@ public interface ExamProblemRepository extends JpaRepository<ExamProblem, Long> 
               and ep.deletedAt is null
             order by function('RAND')
             """)
-    List<ExamProblemResponse> findRandomExamProblemByUnitAndLevel(
+    List<ExamProblemResponse> findRandomExamProblemsByUnitAndLevel(
             @Param("unitNo") Long unitNo,
             @Param("level") ProblemLevel level,
             Pageable pageable
     );
+
+    @Query("""
+                select new com.airoom.airoom.exam.model.dto.ExamProblemResponse(
+                    ep.epNo, ep.epLevel, ep.epQuestion, ep.epImageUrl, ep.epParagraph,
+                    ep.epExample, ep.epAnswer, ep.epComment,
+                    u.unitNum, u.unitTitle
+                )
+                from ExamProblem ep
+                join ep.unit u
+                where u.unitNo = :unitNo
+                  and ep.epLevel = :level
+                  and ep.deletedAt is null
+                  and ep.epNo <> :excludeEpNo
+                order by function('RAND')
+            """)
+    List<ExamProblemResponse> findRandomByUnitAndLevelExcludingSelf( //자기 자신을 제외한 랜덤문제 생성
+                                                                     @Param("unitNo") Long unitNo,
+                                                                     @Param("level") ProblemLevel level,
+                                                                     @Param("excludeEpNo") Long excludeEpNo,
+                                                                     Pageable pageable
+    );
+
+
 }

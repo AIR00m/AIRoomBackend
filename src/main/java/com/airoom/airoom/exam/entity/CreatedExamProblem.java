@@ -23,6 +23,7 @@ public class CreatedExamProblem extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_no")
+    @Setter
     private Exam exam; //시험
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -8,6 +8,9 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 // JPA는 기본 생성자로 생성 | 개발자의 무분별한 생성을 막기 위해
@@ -25,7 +28,7 @@ public class Classroom extends BaseEntity {
     @Column(nullable = false)
     private String classroomSchool; // 클래스룸 학교 이름
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, columnDefinition = "enum('FIRST','SECOND','THIRD','FOURTH','FIFTH','SIXTH')", length = 10)
     @Enumerated(EnumType.STRING)
     private Grade classroomGrade; // 클래스룸 학년
 
@@ -38,4 +41,28 @@ public class Classroom extends BaseEntity {
     @Column(nullable = false, length = 10)
     @Enumerated(EnumType.STRING)
     private Semester classroomSemester; // 클래스룸 학기
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "classRoom")
+    @Builder.Default
+    private List<ClassroomStudent> classroomStudentList = new ArrayList<>();
+
+    public void addClassroomStudent(ClassroomStudent classroomStudent) {
+        if (classroomStudent != null) {
+            Classroom prev = classroomStudent.getClassRoom();
+            if (prev != null && prev != this) {
+                prev.removeClassroomStudent(classroomStudent);
+            }
+            classroomStudent.setClassRoom(this);
+
+            if (!classroomStudentList.contains(classroomStudent)) {
+                classroomStudentList.add(classroomStudent);
+            }
+        }
+    }
+
+    public void removeClassroomStudent(ClassroomStudent classroomStudent) {
+        if (classroomStudent != null && classroomStudentList.remove(classroomStudent)) {
+            classroomStudent.setClassRoom(null);
+        }
+    }
 }

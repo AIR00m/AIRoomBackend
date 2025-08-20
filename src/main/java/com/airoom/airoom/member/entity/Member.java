@@ -47,7 +47,7 @@ public class Member extends BaseEntity {
     private Gender memberGender; // 회원 성별
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10)
+    @Column(columnDefinition = "enum('FIRST','SECOND','THIRD','FOURTH','FIFTH','SIXTH')", length = 10)
     private Grade memberGrade; // 회원 학년
 
     private Integer memberClass; // 회원 반
