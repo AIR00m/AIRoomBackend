@@ -30,9 +30,9 @@ public class ClassroomService {
         return classroomStudentRepository.findClassroomStudentsByClassroomNo(classroomNo);
     }
 
-    public Long getClassroomNo(String memberId,Long textbookNo) {
-        return classroomRepository.getClassroomNoByTextbookNo(textbookNo,memberId);
-    }
+//    public Long getClassroomNo(String memberId,Long textbookNo) {
+//        return classroomRepository.getClassroomNoByTextbookNo(textbookNo,memberId);
+//    }
 
     // 년도가 바뀜에 따라 한명이 여러 클래스룸을 가질 수 있으므로 List
     public List<Long> getClassroomStudentNosByMemberNo(Long memberNo) {

@@ -71,8 +71,8 @@ public class AuthController {
         // 클래스룸 고유번호
         Map<String,Object> classroomClaims = new HashMap<>();
 
-        Long classroomNo  = classroomService.getClassroomNo(memberId,textbookNo);
-
+//        Long classroomNo  = classroomService.getClassroomNo(memberId,textbookNo);
+        Long classroomNo = null;
         classroomClaims.put("classroomNo",classroomNo);
         if (isTeacher) {
             List<Long> classroomTeacherNos = classroomService.getClassroomTeacherNosByMemberNo(memberNo);
