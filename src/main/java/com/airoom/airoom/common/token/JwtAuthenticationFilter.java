@@ -18,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -27,6 +28,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final PathMatcher pathMatcher; // 주로 특정 경로 패턴이 주어진 경로와 일치하는지 확인할때 사용
     private final List<String> whiteList = List.of(
             "/", "/index.html",
+            "/api/agent/**",
+            "/download/agent/**",
+            "/install/**",
+            "/agent-required/**",
             "/auth/**",
             "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"); // 필터에 적용 받지 않을 위치 경로를 추가
 
@@ -49,7 +54,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return false;
     }
 
-    //
+    // 로그인이후에 모든 요청에 이 필터가 사용이 되는거고
+    // 요청만다 토큰에 들어가서 권한과 회원자 id를 확인
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -66,27 +72,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 3. Access 토큰을 검증하는 메소드를 진행한다.
             Claims claim = jwtTokenUtility.verifyAccessToken(token);
 
-            // 4. 필요한 정보들 빼기
+            // 4. 권한을 만들어주기
             String username = claim.getSubject(); // 회원아이디
             String role = claim.get("role", String.class); // 회원 역할(선생님,학생)
-            String authority = "ROLE_" + role;
+            String authority = "ROLE_" + role.toUpperCase();
 
             List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(authority));
+            //   사용자가 가진 권한 예)ROLE_TEACHER 같은것 -> List는 권한이 여러개 가능하므로
 
-            // 5. 인증 심기?
-
+            // 5. 권한을 기반으로 출입증 만들기
             UsernamePasswordAuthenticationToken authentication
                     = new UsernamePasswordAuthenticationToken(username, null, authorities);
+
             // 토큰 기반이라서 비밀번호가 필요 없음
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             // Security Context에 인증상태를 기록 한다.
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+
+            chain.doFilter(request, response);
         } catch (JwtException e) {
             SecurityContextHolder.clearContext();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401인증 실패
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"message\":\"" + e.getMessage() + "\"}");
-            return;
         }
     }
 

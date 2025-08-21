@@ -3,18 +3,19 @@ package com.airoom.airoom.member.controller;
 import com.airoom.airoom.classroom.model.service.ClassroomService;
 import com.airoom.airoom.common.token.CookieUtility;
 import com.airoom.airoom.common.token.JWTTokenUtility;
+import com.airoom.airoom.exam.controller.ExamControllerSwagger;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
+import com.airoom.airoom.member.model.dto.SignUpResponse;
 import com.airoom.airoom.member.model.dto.TokenRequest;
 import com.airoom.airoom.member.model.service.AuthService;
 import com.airoom.airoom.textbook.entity.Textbook;
 import com.airoom.airoom.textbook.model.service.TextbookService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,10 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
-public class AuthController {
+public class AuthController implements AuthControllerSwagger {
 
     private final AuthService authService;
     private final TextbookService textbookService;
@@ -36,24 +38,30 @@ public class AuthController {
     private final CookieUtility cookieUtility;
 
 
-    //학생 회원가입
+    /**
+     * 회원가입
+     */
     @PostMapping("/signup/student")
-    public ResponseEntity<?> enrollStudent(@RequestBody SignUpRequest request) {
-        Member member;
-        return null;
+    public ResponseEntity<SignUpResponse> enrollStudent(@Valid @RequestBody SignUpRequest request) {
+        Member member = authService.studentSignUp(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new SignUpResponse(member.getMemberName()));
     }
 
     // 선생님 회원가입
     @PostMapping("/signup/teacher")
-    public ResponseEntity<?> enrollTeacher(@RequestBody SignUpRequest dto) {
-        return null;
+    public ResponseEntity<SignUpResponse> enrollTeacher(@Valid @RequestBody SignUpRequest request) {
+        Member member = authService.teacherSignUp(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new SignUpResponse(member.getMemberName()));
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         Member member = authService.authenticate(request.id(), request.pwd());
         String role = member.getMemberType().toString();
-        List<Textbook> textbooks = new ArrayList<>();
+        List<Textbook> textbooks;
 
         if (role.equals("TEACHER")) {
             textbooks = textbookService.getAllTextbooksByTeacherMemberNo(member.getMemberNo());
@@ -71,8 +79,8 @@ public class AuthController {
         Member member = authService.searchById(tokenRequest.memberId());
         // 역할 확인
         boolean isTeacher = member.getMemberType().toString().equals("TEACHER");
-        // 클래스룸 고유번호
-        // 이름 넣기
+
+        // 추가로 넣어줄 클래임들 생성
         Map<String, Object> classroomClaims = new HashMap<>();
         classroomClaims.put("memberName", member.getMemberName());
 
@@ -83,9 +91,8 @@ public class AuthController {
             classroomClaims.put("classroomTeacherNo", classroomTeacherNo);
         } else {
             Long classroomNo = classroomService.getClassroomNoByStudentId(tokenRequest.memberId(), tokenRequest.textbookNo());
-
             classroomClaims.put("classroomNo", classroomNo);
-            Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNoAndId(classroomNo,member.getMemberId());
+            Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNoAndId(classroomNo, member.getMemberId());
             classroomClaims.put("classRoomStudentNo", classRoomStudentNo);
         }
 
@@ -103,6 +110,10 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(Map.of("Access_Token", accessToken));
 
+    }
+    @PostMapping("/logout")
+    public ResponseEntity<ResponseCookie> deleteToken(@Valid @RequestBody TokenRequest tokenRequest) {
+        return ResponseEntity.ok(cookieUtility.deleteTokenCookie());
     }
 
 
