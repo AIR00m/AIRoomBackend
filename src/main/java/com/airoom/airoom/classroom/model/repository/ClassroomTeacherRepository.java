@@ -6,9 +6,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 
 public interface ClassroomTeacherRepository extends CrudRepository<ClassroomTeacher,Long> {
-    @Query("SELECT cs.classroomTeacherNo FROM ClassroomTeacher cs WHERE cs.teacher.memberNo = :memberNo")
-    List<Long> getClassroomTeacherNosByMemberNo(@Param("memberNo") Long memberNo);
+    @Query
+            ("""
+                SELECT ct.classroomTeacherNo
+                FROM ClassroomTeacher ct
+                JOIN ct.classroom c
+                WHERE c.classroomNo = :classroomNo
+           """)
+    Long getClassTeacherNoByClassRoomNo (@Param("classroomNo") Long classroomNo);
+
 }
