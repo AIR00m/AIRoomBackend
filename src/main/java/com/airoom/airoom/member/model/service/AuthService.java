@@ -68,9 +68,14 @@ public class AuthService {
         Member member = memberRepository.findMemberByMemberId(id)
                 .orElseThrow(()->new IllegalArgumentException("아이디와 비밀번호가 맞지 않습니다."));
         
-        if(passwordEncoder.matches(pwd, member.getMemberPwd())){
+        if(!passwordEncoder.matches(pwd, member.getMemberPwd())){
             throw new IllegalArgumentException("아이디와 비밀번호가 맞지 않습니다.");
         }
         return member;
+    }
+
+    public Member searchById(String id){
+        return memberRepository.findMemberByMemberId(id)
+                .orElseThrow(()->new IllegalArgumentException("아이디에 해당하는 회원이 존재하지 않습니다."));
     }
 }

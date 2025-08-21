@@ -1,25 +1,25 @@
 package com.airoom.airoom.member.controller;
 
-import com.airoom.airoom.classroom.entity.Classroom;
-import com.airoom.airoom.classroom.entity.ClassroomStudent;
-import com.airoom.airoom.classroom.entity.ClassroomTeacher;
-import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.classroom.model.service.ClassroomService;
 import com.airoom.airoom.common.token.CookieUtility;
 import com.airoom.airoom.common.token.JWTTokenUtility;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
+import com.airoom.airoom.member.model.dto.TokenRequest;
 import com.airoom.airoom.member.model.service.AuthService;
-import jakarta.servlet.http.Cookie;
+import com.airoom.airoom.textbook.entity.Textbook;
+import com.airoom.airoom.textbook.model.service.TextbookService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-  import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,48 +30,71 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final TextbookService textbookService;
     private final ClassroomService classroomService;
     private final JWTTokenUtility jwtUtility;
     private final CookieUtility cookieUtility;
 
-      //학생 회원가입
-     @PostMapping("/signup/student")
-     public ResponseEntity<?> enrollStudent(@RequestBody SignUpRequest request) {
-        Member member;
-        return null;
-     }
 
-    // 선생님 회원가입
-    @PostMapping("/signup/teacher")
-    public ResponseEntity<?> enrollTeacher(@RequestBody SignUpRequest dto){
+    //학생 회원가입
+    @PostMapping("/signup/student")
+    public ResponseEntity<?> enrollStudent(@RequestBody SignUpRequest request) {
+        Member member;
         return null;
     }
 
-    // 1. 로그인 요청
+    // 선생님 회원가입
+    @PostMapping("/signup/teacher")
+    public ResponseEntity<?> enrollTeacher(@RequestBody SignUpRequest dto) {
+        return null;
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
-         // 2. DB에 접근하여 로그인 정보 확인
-         Member member = authService.authenticate(request.id(), request.pwd());
-         boolean isTeacher = member.getMemberType().toString().equals("TEACHER");
-         Long memberNo = member.getMemberNo();
-         // 클래스룸 고유번호
-         Map<String,Object> classroomClaims = new HashMap<>();
-         Long classroomNo  = classroomService.getClassroom(memberNo).getClassroomNo();
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        Member member = authService.authenticate(request.id(), request.pwd());
+        String role = member.getMemberType().toString();
+        List<Textbook> textbooks = new ArrayList<>();
 
-         classroomClaims.put("classroomNo",classroomNo);
-         if(isTeacher){
-             List<Long> classroomTeacherNos = classroomService.getClassroomTeacherNosByMemberNo(memberNo);
-             classroomClaims.put("classroomTeacherNos",classroomTeacherNos);
-         } else {
-             List<Long> classroomStudentNos = classroomService.getClassroomStudentNosByMemberNo(memberNo);
-             classroomClaims.put("classroomStudentNos",classroomStudentNos);
-         }
+        if (role.equals("TEACHER")) {
+            textbooks = textbookService.getAllTextbooksByTeacherMemberNo(member.getMemberNo());
+        } else {
+            textbooks = textbookService.getAllTextbooksByStudentMemberNo(member.getMemberNo());
+        }
+        return ResponseEntity.ok()
+                .body(Map.of("memberId", member.getMemberId(), "textbooks", textbooks));
 
-         // 3. 서버에서 토큰을 발급
-         String accessToken = jwtUtility.createAccessToken(request.id(), isTeacher, classroomClaims);
-         String refreshToken = jwtUtility.createRefreshToken(request.id(), isTeacher);
+    }
 
-         //3-1 Redis에는 (Time To Live)기능이 존재하여
+    @PostMapping("/token")
+    public ResponseEntity<?> createTokenOnTextbookClick(@Valid @RequestBody TokenRequest tokenRequest) {
+        // 프론트에서 아이디를 넘겨준것으로 맴버를 반환
+        Member member = authService.searchById(tokenRequest.memberId());
+        // 역할 확인
+        boolean isTeacher = member.getMemberType().toString().equals("TEACHER");
+        // 클래스룸 고유번호
+        // 이름 넣기
+        Map<String, Object> classroomClaims = new HashMap<>();
+        classroomClaims.put("memberName", member.getMemberName());
+
+        if (isTeacher) {
+            Long classroomNo = classroomService.getClassroomNoByTeacherId(tokenRequest.memberId(), tokenRequest.textbookNo());
+            classroomClaims.put("classroomNo", classroomNo);
+            Long classroomTeacherNo = classroomService.getClassTeacherNoByClassRoomNo(classroomNo);
+            classroomClaims.put("classroomTeacherNo", classroomTeacherNo);
+        } else {
+            Long classroomNo = classroomService.getClassroomNoByStudentId(tokenRequest.memberId(), tokenRequest.textbookNo());
+
+            classroomClaims.put("classroomNo", classroomNo);
+            Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNoAndId(classroomNo,member.getMemberId());
+            classroomClaims.put("classRoomStudentNo", classRoomStudentNo);
+        }
+
+        // 3. 서버에서 토큰을 발급
+        String accessToken = jwtUtility.createAccessToken(member, isTeacher, classroomClaims);
+        String refreshToken = jwtUtility.createRefreshToken(tokenRequest.memberId(), isTeacher);
+
+
+        //3-1 Redis에는 (Time To Live)기능이 존재하여
 
         ResponseCookie cookie = cookieUtility.refreshTokenCookie(refreshToken);
         // 쿠키에 담는 것도 좋지만 프론트에서 localstorage에 담는것도 생각해보는 것을 추천
@@ -81,11 +104,6 @@ public class AuthController {
                 .body(Map.of("Access_Token", accessToken));
 
     }
-
-
-
-
-
 
 
 }
