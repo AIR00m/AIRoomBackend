@@ -31,6 +31,9 @@ public class ClassroomService {
     public List<ClassroomStudentResponse> getClassroomStudentAll(final Long classroomNo) {
         return classroomStudentRepository.findClassroomStudentsByClassroomNo(classroomNo);
     }
+    /**
+     * 클래스룸 그룹 전체 조회
+     */
     @Transactional(readOnly = true)
     public List<ClassroomGroupResponse> getClassroomGroupAll(final Long classroomNo) {
         return classroomGroupRepository.findClassroomGroupsByClassroomNo(classroomNo);

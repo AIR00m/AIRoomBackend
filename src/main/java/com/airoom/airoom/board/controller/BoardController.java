@@ -39,23 +39,32 @@ public class BoardController {
     @GetMapping("/list/{classroomNo}")
     public List<AssignmentListResponseDto> getAllAssignments(
             @PathVariable Long classroomNo,
-            @RequestParam String userType,  // "student" 또는 "teacher"
-            @RequestParam(required = false) Long memberNo) { // 학생인 경우에만 필수
+            @RequestParam String userType,
+            @RequestParam(required = false) Long classroomStudentNo) { // memberNo → classroomStudentNo 변경
 
         if ("teacher".equals(userType)) {
             return boardService.getAssignmentsForTeacher(classroomNo);
-        } else if ("student".equals(userType) && memberNo != null) {
-            return boardService.getAssignmentsForStudent(classroomNo, memberNo);
+        } else if ("student".equals(userType) && classroomStudentNo != null) {
+            return boardService.getAssignmentsForStudent(classroomNo, classroomStudentNo); // 파라미터 변경
         } else {
             throw new IllegalArgumentException("Invalid parameters");
         }
     }
 
-//    @GetMapping("/list/{id}")
-//    public ResponseEntity<AssignmentDetailResponseDto> getAssignmentById(@PathVariable Long id) {
-//        log.info("과제 상세 조회 요청 - ID: {}", id);
-//        AssignmentDetailResponseDto assignment = boardService.getAssignmentById(id);
-//        return ResponseEntity.ok(assignment);
+//
+//    @GetMapping("/list/{assignBoardNo}")
+//    public ResponseEntity<AssignmentDetailResponseDto> getAssignmentByAssignBoardNo(@PathVariable Long assignBoardNo) {
+//        try {
+//            log.info("과제 상세 조회 요청 - assignBoardNo: {}", assignBoardNo);
+//            AssignmentDetailResponseDto assignment = boardService.getAssignmentByAssignBoardNo(assignBoardNo);
+//            if (assignment == null) {
+//                return ResponseEntity.notFound().build();
+//            }
+//            return ResponseEntity.ok(assignment);
+//        } catch (Exception e) {
+//            log.error("과제 상세 조회 실패 - assignBoardNo: {}, Error: {}", assignBoardNo, e.getMessage());
+//            return ResponseEntity.internalServerError().build();
+//        }
 //    }
 
     /**

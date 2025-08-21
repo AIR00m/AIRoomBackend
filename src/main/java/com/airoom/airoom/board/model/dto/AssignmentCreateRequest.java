@@ -8,9 +8,8 @@ public record AssignmentCreateRequest(
         List<AttachmentFile> attachmentFile,
         List<AssignTarget> assignTargets
 ) {
-
     public record AssignBoard(
-            Long memberNo,
+            Long classroomTeacherNo, // 신규 추가: 교사 식별자
             Long classroomNo,
             String assignBoardTitle,
             String assignBoardContent,

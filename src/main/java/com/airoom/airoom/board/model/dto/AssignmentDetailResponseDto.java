@@ -13,9 +13,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AssignmentDetailResponseDto {
-    private Long id;
+    private Long assignBoardNo;
     private String title;
-    private String subject;
     private String content;
     private String startDate;
     private String dueDate;

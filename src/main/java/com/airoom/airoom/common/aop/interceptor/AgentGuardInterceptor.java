@@ -26,12 +26,12 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        HttpSession session = req.getSession(false);
-        Boolean verified = (session == null) ? null : (Boolean) session.getAttribute("AGENT_VERIFIED");
-        if (verified == null || !verified) {
-            res.sendRedirect("/agent-required");
-            return false;
-        }
+//        HttpSession session = req.getSession(false);
+//        Boolean verified = (session == null) ? null : (Boolean) session.getAttribute("AGENT_VERIFIED");
+//        if (verified == null || !verified) {
+//            res.sendRedirect("/agent-required");
+//            return false;
+//        }
         return true;
     }
 

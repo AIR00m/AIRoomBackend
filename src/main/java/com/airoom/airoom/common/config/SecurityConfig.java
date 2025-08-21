@@ -103,6 +103,10 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth-> auth
                         .requestMatchers("/api/agent/**").permitAll()
+                        .requestMatchers("/api/assignments/**").permitAll()
+                        .requestMatchers("/assignments/**").permitAll()
+                        .requestMatchers("/classroom/**").permitAll()
+
                         .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                         .requestMatchers("/auth/**").permitAll() // 인증
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 모니터링
