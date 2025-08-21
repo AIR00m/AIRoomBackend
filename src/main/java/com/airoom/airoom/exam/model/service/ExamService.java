@@ -2,9 +2,13 @@ package com.airoom.airoom.exam.model.service;
 
 import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
+import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
+import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
+import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.exam.entity.*;
+import com.airoom.airoom.exam.entity.value.ExamStatus;
 import com.airoom.airoom.exam.entity.value.ProblemLevel;
 import com.airoom.airoom.exam.model.dto.*;
 import com.airoom.airoom.exam.model.repository.*;
@@ -28,9 +32,10 @@ public class ExamService {
     private final ClassroomRepository classroomRepository;
     private final UnitRepository unitRepository;
     private final CreatedExamProblemRepository createdExamProblemRepository;
-    private final StudentExamRepository studentExamRepository;
     private final ClassroomStudentRepository classroomStudentRepository;
     private final StudentAnswerRepository studentAnswerRepository;
+    private final ClassroomTeacherRepository classroomTeacherRepository;
+    private final StudentExamRepository studentExamRepository;
 
     /**
      * 시험 생성
@@ -85,8 +90,8 @@ public class ExamService {
      * 학생응답(STUDENT_ANSWER), 학생시험(STUDENT_EXAM) 트랜잭션으로 묶어서 진행
      */
     public SubmitExamProblemsResponse markAndSubmitExamProblems(final SubmitExamProblemsRequest request) {
-        ClassroomStudent classroomStudent = loadClassroomStudent(request);
-        Exam exam = loadExam(request);
+        ClassroomStudent classroomStudent = loadClassroomStudent(request.classroomStudentNo());
+        Exam exam = loadExam(request.examNo());
 
         //검증 로직
         final List<StudentAnswerRequest> studentAnswerRequests = validateStudentAnswerRequestList(request);
@@ -102,10 +107,24 @@ public class ExamService {
 
         //영속성 저장 로직
         studentAnswerRepository.saveAll(studentAnswerList);
-        StudentExam se = buildStudentExam(request, result.roundScore(), classroomStudent);
+
+        StudentExam se = loadStudentExam(classroomStudent, exam);
+        se.updateStudentExam(result.roundScore, request.seStartTime(), request.seEndTime());
         exam.addStudentExam(se);
 
         return new SubmitExamProblemsResponse(exam.getExamName(), result.totalSolvingTime(), request.seStartTime(), result.roundScore(), studentAnswerResponseList);
+    }
+
+    /**
+     * 전체 시험 조회
+     * 멤버 타입별로 교사, 학생별 데이터가 다름
+     */
+    @Transactional(readOnly = true)
+    public List<ExamListResponse> getExams(final Long classroomMemberNo, final ExamStatus examStatus, final MemberRole memberRole) {
+        Classroom classroom;
+        classroom = loadClassroomByMemberRole(classroomMemberNo, memberRole);
+
+        return examRepository.getExamsByClassroomAndExamStatusAndMemberRole(classroom, classroomMemberNo, examStatus, memberRole);
     }
 
     /**
@@ -128,7 +147,7 @@ public class ExamService {
         for (StudentAnswerRequest studentAnswerRequest : studentAnswerRequests) {
             ExamProblem examProblem = examProblemMap.get(studentAnswerRequest.epNo());
             CreatedExamProblem createdExamProblem = createdExamProblemMap.get(studentAnswerRequest.cepNo());
-            
+
             boolean isCorrect = examProblem.getEpAnswer().equals(studentAnswerRequest.saAnswer());
             if (isCorrect) {
                 totalScore += scorePerProblem;
@@ -152,22 +171,6 @@ public class ExamService {
         return studentAnswerRequests;
     }
 
-    private ExamProblem loadExamProblem(Long epNo) {
-        return examProblemRepository.findById(epNo).orElseThrow(
-                () -> new IllegalArgumentException("잘못된 시험문제 고유번호입니다. : " + epNo)
-        );
-    }
-
-    private StudentExam buildStudentExam(SubmitExamProblemsRequest request, int score, ClassroomStudent classroomStudent) {
-        return StudentExam.builder()
-                .seIsDone(true)
-                .seScore(score)
-                .seStartTime(request.seStartTime())
-                .seEndTime(request.seEndTime())
-                .classroomStudent(classroomStudent)
-                .build();
-    }
-
     private StudentAnswer buildStudentAnswer(StudentAnswerRequest studentAnswerRequest, boolean isCorrect, ExamProblem examProblem, ClassroomStudent classroomStudent, CreatedExamProblem createdExamProblem, Exam exam) {
         return StudentAnswer.builder()
                 .saAnswer(studentAnswerRequest.saAnswer())
@@ -180,10 +183,38 @@ public class ExamService {
                 .build();
     }
 
-    private Exam loadExam(SubmitExamProblemsRequest request) {
-        return examRepository.findById(request.examNo()).orElseThrow(
-                () -> new IllegalArgumentException("잘못된 시험 고유번호입니다. : " + request.examNo())
+    private Classroom loadClassroomByMemberRole(Long classroomMemberNo, MemberRole memberRole) {
+        Classroom classroom;
+        if (memberRole == MemberRole.STUDENT) {
+            ClassroomStudent classroomStudent = loadClassroomStudent(classroomMemberNo);
+            classroom = classroomStudent.getClassRoom();
+        } else {
+            ClassroomTeacher classroomTeacher = loadClassroomTeacher(classroomMemberNo);
+            classroom = classroomTeacher.getClassroom();
+        }
+        return classroom;
+    }
+
+    private ClassroomTeacher loadClassroomTeacher(Long classroomMemberNo) {
+        return classroomTeacherRepository.findById(classroomMemberNo).orElseThrow(
+                () -> new IllegalArgumentException("잘못된 클래스룸 교사 고유번호입니다. : " + classroomMemberNo)
         );
+    }
+
+    private ExamProblem loadExamProblem(Long epNo) {
+        return examProblemRepository.findById(epNo).orElseThrow(
+                () -> new IllegalArgumentException("잘못된 시험문제 고유번호입니다. : " + epNo)
+        );
+    }
+
+    private Exam loadExam(Long examNo) {
+        return examRepository.findById(examNo).orElseThrow(
+                () -> new IllegalArgumentException("잘못된 시험 고유번호입니다. : " + examNo)
+        );
+    }
+
+    private StudentExam loadStudentExam(ClassroomStudent classroomStudent, Exam exam) {
+        return studentExamRepository.findStudentExamByClassroomStudentAndExam(classroomStudent, exam);
     }
 
     private Map<Long, CreatedExamProblem> loadCreatedExamProblems(List<StudentAnswerRequest> requests) {
@@ -205,9 +236,9 @@ public class ExamService {
                 .collect(Collectors.toMap(ExamProblem::getEpNo, ep -> ep));
     }
 
-    private ClassroomStudent loadClassroomStudent(SubmitExamProblemsRequest request) {
-        return classroomStudentRepository.findById(request.classroomStudentNo()).orElseThrow(
-                () -> new IllegalArgumentException("잘못된 클래스룸학생 고유번호입니다. : " + request.classroomStudentNo())
+    private ClassroomStudent loadClassroomStudent(Long classroomStudentNo) {
+        return classroomStudentRepository.findById(classroomStudentNo).orElseThrow(
+                () -> new IllegalArgumentException("잘못된 클래스룸학생 고유번호입니다. : " + classroomStudentNo)
         );
     }
 

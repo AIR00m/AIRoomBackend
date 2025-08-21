@@ -1,5 +1,7 @@
 package com.airoom.airoom.exam.controller;
 
+import com.airoom.airoom.common.value.MemberRole;
+import com.airoom.airoom.exam.entity.value.ExamStatus;
 import com.airoom.airoom.exam.model.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -7,6 +9,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Tag(name = "Exam 관련 API", description = "Exam 관련 API")
 public interface ExamControllerSwagger {
@@ -46,27 +51,13 @@ public interface ExamControllerSwagger {
 
 
     @Operation(
-            summary = "미완료 시험 조회 API",
-            description = "미완료 시험을 조회합니다."
+            summary = "진행/완료/전체 시험 조회 API",
+            description = "진행/완료/전체 시험을 조회합니다."
     )
-    public void getInCompleteExams(
-            @PathVariable final Integer classroomNo
-    );
-
-    @Operation(
-            summary = "완료 시험 조회 API",
-            description = "완료 시험을 조회합니다."
-    )
-    public void getCompleteExams(
-            @PathVariable final Integer classroomNo
-    );
-
-    @Operation(
-            summary = "전체 시험 조회 API",
-            description = "전체 시험을 조회합니다."
-    )
-    public void getExamsAll(
-            @PathVariable final Integer classroomNo
+    public List<ExamListResponse> getExams(
+            @PathVariable final Long classroomMemberNo,
+            @RequestParam("examStatus") final ExamStatus examStatus,
+            @RequestParam("memberRole") final MemberRole memberRole
     );
 
     @Operation(
