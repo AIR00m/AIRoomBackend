@@ -28,6 +28,7 @@
     </scm>
     <properties>
         <java.version>17</java.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
 
 
@@ -167,20 +168,27 @@
             <version>2.1.1</version>
         </dependency>
 
-        <!-- APT용 annotation processor 설정 -->
-        <dependency>
-            <groupId>com.querydsl</groupId>
-            <artifactId>querydsl-apt</artifactId>
-            <version>5.1.0</version>
-            <classifier>jakarta</classifier>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- JPA 어노테이션 사용을 위한 API -->
+        <!-- JPA (jakarta) API -->
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
             <version>3.1.0</version>
+        </dependency>
+
+        <!-- QueryDSL Core -->
+        <dependency>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-jpa</artifactId>
+            <version>5.0.0</version>
+            <classifier>jakarta</classifier>
+        </dependency>
+
+        <!-- QueryDSL Annotation Processor (APT) - jakarta 버전 꼭 써야 함!! -->
+        <dependency>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-apt</artifactId>
+            <version>5.0.0</version>
+            <classifier>jakarta</classifier>
         </dependency>
 
     </dependencies>
@@ -200,7 +208,6 @@
                 </configuration>
             </plugin>
 
-            <!-- ✨ Annotation processor만으로 Q파일 자동 생성 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -212,7 +219,7 @@
                         <path>
                             <groupId>com.querydsl</groupId>
                             <artifactId>querydsl-apt</artifactId>
-                            <version>5.1.0</version>
+                            <version>5.0.0</version>
                             <classifier>jakarta</classifier>
                         </path>
                         <path>
@@ -225,12 +232,14 @@
                             <artifactId>jakarta.annotation-api</artifactId>
                             <version>2.1.1</version>
                         </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
                     </annotationProcessorPaths>
                     <compilerArgs>
-                        <arg>-Aquerydsl.generatedAnnotationClass=javax.annotation.Generated</arg>
-                        <arg>-proc:only</arg>
-                        <arg>-processor</arg>
-                        <arg>com.querydsl.apt.jpa.JPAAnnotationProcessor</arg>
+                        <arg>-Aquerydsl.generatedAnnotationClass=jakarta.annotation.Generated</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
