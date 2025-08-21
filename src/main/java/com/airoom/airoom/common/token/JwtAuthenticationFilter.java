@@ -28,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final PathMatcher pathMatcher; // 주로 특정 경로 패턴이 주어진 경로와 일치하는지 확인할때 사용
     private final List<String> whiteList = List.of(
             "/", "/index.html",
+            "/api/agent/**",
             "/auth/**",
             "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"); // 필터에 적용 받지 않을 위치 경로를 추가
 

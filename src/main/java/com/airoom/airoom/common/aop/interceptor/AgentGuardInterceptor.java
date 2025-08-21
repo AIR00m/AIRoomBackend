@@ -1,14 +1,17 @@
 package com.airoom.airoom.common.aop.interceptor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.Map;
+
 public class AgentGuardInterceptor implements HandlerInterceptor {
 
     private static final String PROD_REDIRECT = "http://43.200.2.244:80/agent-required";
-    private static final String DEV_REDIRECT  = "http://127.0.0.1:5173/agent-required";
+    private static final String DEV_REDIRECT  = "http://localhost:5173/agent-required";
 
     @Override
     public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) throws Exception {
@@ -28,7 +31,10 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
 
         if (verified == null || !verified) {
             String redirect = isLocalRequest(req) ? DEV_REDIRECT : PROD_REDIRECT;
-            res.sendRedirect(redirect);
+            res.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE); // 코드가 406 이면 location 정보
+            Map<String,String> body=Map.of("location","/agent-required");
+            res.getWriter().print(new ObjectMapper().writeValueAsString(body));
+//            res.sendRedirect(redirect);
             return false;
         }
         return true;
@@ -45,7 +51,7 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
                 // 기존 예외
                 "/install",
                 "/agent-required",
-                "/login",
+                "/auth",
                 "/api/agent",
                 "/download",
                 "/assets",
