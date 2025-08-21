@@ -1,6 +1,6 @@
-package com.airoom.airoom.board.model.dto;
+package com.airoom.airoom.board.model.dto.assign;
 
-public record AssignmentListResponseDto(
+public record AssignListResponse(
         Long id,
         String title,
         boolean groupAssignType,

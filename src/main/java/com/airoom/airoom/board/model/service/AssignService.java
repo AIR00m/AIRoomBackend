@@ -2,7 +2,9 @@ package com.airoom.airoom.board.model.service;
 
 import com.airoom.airoom.board.entity.AssignBoard;
 import com.airoom.airoom.board.entity.AssignTarget;
-import com.airoom.airoom.board.model.dto.*;
+import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
+import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
+import com.airoom.airoom.board.model.dto.assign.AssignmentSubmissionRequestDto;
 import com.airoom.airoom.board.model.repository.AssignBoardRepository;
 import com.airoom.airoom.board.model.repository.AssignTargetRepository;
 import com.airoom.airoom.board.model.repository.HomeworkRepository;
@@ -13,9 +15,8 @@ import com.airoom.airoom.classroom.model.repository.ClassroomGroupRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
 import com.airoom.airoom.common.redis.RedisStreamPublisher;
-import com.airoom.airoom.common.redis.model.dto.AssignmentCreateDto;
+import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.member.entity.Member;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class  BoardService {
+public class AssignService {
     private final RedisStreamPublisher publisher;
     private final AssignBoardRepository assignBoardRepository;
     private final ClassroomGroupRepository classroomGroupRepository;
@@ -38,7 +39,7 @@ public class  BoardService {
     private final AssignTargetRepository assignTargetRepository;
     private final HomeworkRepository homeworkRepository;
 
-    public void createAssignment(AssignmentCreateRequest request) {
+    public void createAssignment(AssignCreateRequest request) {
         //유효성 검사
         validateRequest(request);
         //assignBoard save
@@ -83,7 +84,7 @@ public class  BoardService {
     /**
      * AssignBoard 엔티티 생성 및 저장
      */
-    private AssignBoard createAndSaveAssignBoard(AssignmentCreateRequest.AssignBoard boardDto) {
+    private AssignBoard createAndSaveAssignBoard(AssignCreateRequest.AssignBoard boardDto) {
 
         // 1) ClassroomTeacher로 실제 Member 조회
         ClassroomTeacher classroomTeacher = classroomTeacherRepository.findById(boardDto.classroomTeacherNo())
@@ -108,9 +109,9 @@ public class  BoardService {
      * AssignTarget 저장 - 개별과제/모둠과제 분기 처리
      * @return 실제 과제를 받을 모든 학생들의 classroomStudentNo 리스트
      */
-    private List<Long> saveAssignTargets(AssignBoard assignBoard, List<AssignmentCreateRequest.AssignTarget> assignTargets) {
+    private List<Long> saveAssignTargets(AssignBoard assignBoard, List<AssignCreateRequest.AssignTarget> assignTargets) {
         List<Long> allTargetIds = new ArrayList<>();
-        for (AssignmentCreateRequest.AssignTarget targetDto : assignTargets) {
+        for (AssignCreateRequest.AssignTarget targetDto : assignTargets) {
             boolean isGroup = Boolean.TRUE.equals(targetDto.groupAssignType());
             Long targetNo = targetDto.targetNo();
 
@@ -157,7 +158,7 @@ public class  BoardService {
     /**
      * 유효성 검증
      */
-    private void validateRequest(AssignmentCreateRequest request) {
+    private void validateRequest(AssignCreateRequest request) {
         if (request.assignTargets() == null || request.assignTargets().isEmpty()) {
             throw new IllegalArgumentException("과제 대상자를 선택해주세요.");
         }
@@ -184,13 +185,13 @@ public class  BoardService {
 
         // 존재성 검증(선택)
         if (mode) {
-            for (AssignmentCreateRequest.AssignTarget t : request.assignTargets()) {
+            for (AssignCreateRequest.AssignTarget t : request.assignTargets()) {
                 if (!classroomGroupRepository.existsById(t.targetNo())) {
                     throw new IllegalArgumentException("존재하지 않는 모둠입니다. groupNo=" + t.targetNo());
                 }
             }
         } else {
-            for (AssignmentCreateRequest.AssignTarget t : request.assignTargets()) {
+            for (AssignCreateRequest.AssignTarget t : request.assignTargets()) {
                 if (!classroomStudentRepository.existsById(t.targetNo())) {
                     throw new IllegalArgumentException("존재하지 않는 학생입니다. classroomStudentNo=" + t.targetNo());
                 }
@@ -201,8 +202,38 @@ public class  BoardService {
     /**
      * 학생용 과제 목록 조회
      */
+    public List<AssignListResponse> getAssignmentsForClassUser(Long classroomNo, Long classroomStudentNo, MemberRole userType) {
+
+        if (MemberRole.TEACHER==userType) {
+            return getAssignmentsForTeacher(classroomNo);
+        } else if (MemberRole.STUDENT==userType && classroomStudentNo != null) {
+            return getAssignmentsForStudent(classroomNo, classroomStudentNo); // 파라미터 변경
+        } else {
+            throw new IllegalArgumentException("Invalid parameters");
+        }
+    }
+    /**
+     * 선생님용 과제 목록 조회
+     */
     @Transactional(readOnly = true)
-    public List<AssignmentListResponseDto> getAssignmentsForStudent(Long classroomNo, Long classroomStudentNo) {
+    public List<AssignListResponse> getAssignmentsForTeacher(Long classroomNo) {
+        // 해당 클래스룸의 모든 과제 조회
+        List<AssignBoard> assignBoards = assignBoardRepository.findAssignBoardByClassroomClassroomNo(classroomNo);
+
+        return assignBoards.stream()
+                .map(assignBoard -> new AssignListResponse( // record 생성자 사용
+                        assignBoard.getAssignBoardNo(),
+                        assignBoard.getAssignBoardTitle(),
+                        checkIfGroupAssignment(assignBoard), // 모둠/개별 과제 구분
+                        assignBoard.getAssignStart().toLocalDate().toString(),
+                        assignBoard.getAssignEnd().toLocalDate().toString(),
+                        "N/A" // 선생님용에서는 submitStatus가 의미 없음
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssignListResponse> getAssignmentsForStudent(Long classroomNo, Long classroomStudentNo) {
         // 1) 해당 학생의 개별 AssignTarget 조회
         List<AssignTarget> individualTargets = assignTargetRepository
                 .findByAssignBoard_Classroom_ClassroomNoAndTargetNoAndGroupAssignTypeFalse(
@@ -231,7 +262,7 @@ public class  BoardService {
                     // 제출 여부 체크 (AssignTarget 기준)
                     boolean isSubmitted = homeworkRepository.existsByAssignTarget(assignTarget);
 
-                    return new AssignmentListResponseDto(
+                    return new AssignListResponse(
                             assignBoard.getAssignBoardNo(),
                             assignBoard.getAssignBoardTitle(),
                             assignTarget.isGroupAssignType(), // AssignTarget의 실제 값 사용
@@ -267,25 +298,7 @@ public class  BoardService {
 //    }
 
 
-    /**
-     * 선생님용 과제 목록 조회
-     */
-    @Transactional(readOnly = true)
-    public List<AssignmentListResponseDto> getAssignmentsForTeacher(Long classroomNo) {
-        // 해당 클래스룸의 모든 과제 조회
-        List<AssignBoard> assignBoards = assignBoardRepository.findByClassroomClassroomNo(classroomNo);
 
-        return assignBoards.stream()
-                .map(assignBoard -> new AssignmentListResponseDto( // record 생성자 사용
-                        assignBoard.getAssignBoardNo(),
-                        assignBoard.getAssignBoardTitle(),
-                        checkIfGroupAssignment(assignBoard), // 모둠/개별 과제 구분
-                        assignBoard.getAssignStart().toLocalDate().toString(),
-                        assignBoard.getAssignEnd().toLocalDate().toString(),
-                        "N/A" // 선생님용에서는 submitStatus가 의미 없음
-                ))
-                .collect(Collectors.toList());
-    }
 
     /**
      * 모둠 과제인지 확인

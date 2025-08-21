@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface HomeworkRepository extends JpaRepository<Homework, Long> {
-    boolean existsByAssignTarget_AssignBoardAndAssignTarget_TargetNo(AssignBoard assignBoard, Long targetNo);
     boolean existsByAssignTarget(AssignTarget assignTarget);
 }
 
