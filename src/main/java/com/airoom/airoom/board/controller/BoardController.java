@@ -13,7 +13,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/assignments")
 @Slf4j
-public class BoardController {
+public class BoardController implements  BoardControllerSwagger {
+
+
     private final BoardService boardService;
 
     /**
@@ -36,6 +38,7 @@ public class BoardController {
     /**
      * 과제 목록 조회 (학생/선생님 통합)
      */
+    @Override
     @GetMapping("/list/{classroomNo}")
     public List<AssignmentListResponseDto> getAllAssignments(
             @PathVariable Long classroomNo,

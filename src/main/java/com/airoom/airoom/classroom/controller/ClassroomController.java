@@ -28,6 +28,7 @@ public class ClassroomController implements ClassroomControllerSwagger {
     /**
      * 클래스룸 그룹 전체 조회
      */
+    @Override
     @GetMapping("/group/{classroomNo}")
     public List<ClassroomGroupResponse> getAssignmentGroup(@PathVariable Long classroomNo) {
         return classroomService.getClassroomGroupAll(classroomNo);
