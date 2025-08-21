@@ -1,5 +1,7 @@
 package com.airoom.airoom.exam.controller;
 
+import com.airoom.airoom.common.value.MemberRole;
+import com.airoom.airoom.exam.entity.value.ExamStatus;
 import com.airoom.airoom.exam.model.dto.*;
 import com.airoom.airoom.exam.model.service.ExamService;
 import jakarta.validation.Valid;
@@ -9,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -66,36 +69,16 @@ public class ExamController implements ExamControllerSwagger {
     }
 
     /**
-     * 미완료 시험 조회
+     * 진행/완료/전체 시험 조회
      * 멤버 타입별로 교사, 학생별 데이터가 다름
      */
-    @GetMapping("/incomplete/{classroomNo}")
-    public void getInCompleteExams(
-            @PathVariable final Integer classroomNo
+    @GetMapping("/{classroomMemberNo}")
+    public List<ExamListResponse> getExams(
+            @PathVariable final Long classroomMemberNo,
+            @RequestParam("examStatus") final ExamStatus examStatus,
+            @RequestParam("memberRole") final MemberRole memberRole
     ) {
-
-    }
-
-    /**
-     * 완료 시험 조회
-     * 멤버 타입별로 교사, 학생별 데이터가 다름
-     */
-    @GetMapping("/complete/{classroomNo}")
-    public void getCompleteExams(
-            @PathVariable final Integer classroomNo
-    ) {
-
-    }
-
-    /**
-     * 전체 시험 조회
-     * 멤버 타입별로 교사, 학생별 데이터가 다름
-     */
-    @GetMapping("/all/{classroomNo}")
-    public void getExamsAll(
-            @PathVariable final Integer classroomNo
-    ) {
-
+        return examService.getExams(classroomMemberNo, examStatus, memberRole);
     }
 
     /**
