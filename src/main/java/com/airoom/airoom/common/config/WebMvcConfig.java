@@ -6,9 +6,9 @@ import org.springframework.web.servlet.config.annotation.*;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
-//    @Override
-//    public void addInterceptors(InterceptorRegistry reg) {
-//        reg.addInterceptor(new AgentGuardInterceptor())
-//                .addPathPatterns("/**");
-//    }
+    @Override
+    public void addInterceptors(InterceptorRegistry reg) {
+        reg.addInterceptor(new AgentGuardInterceptor())
+                .addPathPatterns("/**");
+    }
 }
