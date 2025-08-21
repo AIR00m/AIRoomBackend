@@ -1,11 +1,8 @@
 package com.airoom.airoom.textbook.controller;
 
-import com.airoom.airoom.textbook.entity.Textbook;
-import com.airoom.airoom.textbook.entity.Unit;
 import com.airoom.airoom.textbook.model.dto.UnitsResponse;
 import com.airoom.airoom.textbook.model.service.TextbookService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
