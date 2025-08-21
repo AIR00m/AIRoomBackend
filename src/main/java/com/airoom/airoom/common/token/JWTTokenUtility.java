@@ -128,7 +128,6 @@ public class JWTTokenUtility {
         Claims claims = parseToken(token);
 
         String userId = claims.getSubject();
-        String issuer = claims.getIssuer();
 
         if (userId == null || userId.isEmpty()) {
             throw new JwtException("아이디가 토큰에 존재하지 않습니다.");
