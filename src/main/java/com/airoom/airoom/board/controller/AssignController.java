@@ -1,7 +1,9 @@
 package com.airoom.airoom.board.controller;
 
-import com.airoom.airoom.board.model.dto.*;
-import com.airoom.airoom.board.model.service.BoardService;
+import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
+import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
+import com.airoom.airoom.board.model.service.AssignService;
+import com.airoom.airoom.common.value.MemberRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,22 +13,22 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/assignments")
+@RequestMapping("/assign")
 @Slf4j
-public class BoardController implements  BoardControllerSwagger {
+public class AssignController implements AssignControllerSwagger {
 
 
-    private final BoardService boardService;
+    private final AssignService assignService;
 
     /**
      * 테스트용 간단한 과제 생성 API
      * Vue.js에서 보낸 JSON을 Map으로 받아서 콘솔 출력
      */
     @PostMapping("/create")
-    public ResponseEntity<String> createAssignment(@RequestBody AssignmentCreateRequest request) {
+    public ResponseEntity<String> createAssignment(@RequestBody AssignCreateRequest request) {
         // ✅ 받은 데이터 전체 출력
         try {
-            boardService.createAssignment(request);
+            assignService.createAssignment(request);
             return ResponseEntity.ok("✅ 과제 생성 요청을 성공적으로 받았습니다!");
         }catch (Exception e) {
             // ✅ Vue.js로 성공 메시지 전송
@@ -40,18 +42,13 @@ public class BoardController implements  BoardControllerSwagger {
      */
     @Override
     @GetMapping("/list/{classroomNo}")
-    public List<AssignmentListResponseDto> getAllAssignments(
+    public List<AssignListResponse> getAllAssignments(
             @PathVariable Long classroomNo,
-            @RequestParam String userType,
+            @RequestParam MemberRole userType,
             @RequestParam(required = false) Long classroomStudentNo) { // memberNo → classroomStudentNo 변경
 
-        if ("teacher".equals(userType)) {
-            return boardService.getAssignmentsForTeacher(classroomNo);
-        } else if ("student".equals(userType) && classroomStudentNo != null) {
-            return boardService.getAssignmentsForStudent(classroomNo, classroomStudentNo); // 파라미터 변경
-        } else {
-            throw new IllegalArgumentException("Invalid parameters");
-        }
+        return assignService.getAssignmentsForClassUser(classroomNo, classroomStudentNo,userType);
+
     }
 
 //

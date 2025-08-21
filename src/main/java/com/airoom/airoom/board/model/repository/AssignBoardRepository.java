@@ -11,6 +11,6 @@ import java.util.List;
 @Repository
 public interface AssignBoardRepository extends JpaRepository<AssignBoard, Long> {
 
-    List<AssignBoard> findByClassroomClassroomNo(Long classroomNo);
+    List<AssignBoard> findAssignBoardByClassroomClassroomNo(Long classroomNo);
 }
 

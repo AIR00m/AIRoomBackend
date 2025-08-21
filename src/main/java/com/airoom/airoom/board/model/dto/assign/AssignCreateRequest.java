@@ -1,9 +1,9 @@
-package com.airoom.airoom.board.model.dto;
+package com.airoom.airoom.board.model.dto.assign;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record AssignmentCreateRequest(
+public record AssignCreateRequest(
         AssignBoard assignBoard,
         List<AttachmentFile> attachmentFile,
         List<AssignTarget> assignTargets

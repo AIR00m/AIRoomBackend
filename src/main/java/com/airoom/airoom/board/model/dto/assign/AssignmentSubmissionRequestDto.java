@@ -1,4 +1,4 @@
-package com.airoom.airoom.board.model.dto;
+package com.airoom.airoom.board.model.dto.assign;
 
 import lombok.Data;
 import lombok.Builder;
