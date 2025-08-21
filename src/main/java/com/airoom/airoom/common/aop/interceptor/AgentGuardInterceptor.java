@@ -20,6 +20,7 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
                 || uri.startsWith("/login")
                 || uri.startsWith("/api/agent")
                 || uri.startsWith("/download")
+                || uri.startsWith("/swagger-ui")
                 || uri.startsWith("/assets")     // Vite 정적
                 || uri.startsWith("/favicon")    // 파비콘
                 || uri.startsWith("/error")      // 에러 페이지
