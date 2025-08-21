@@ -1,8 +1,6 @@
 package com.airoom.airoom.board.controller;
 
-import com.airoom.airoom.board.model.dto.AssignmentListDto;
-import com.airoom.airoom.board.model.dto.AssignmentRequestDto;
-import com.airoom.airoom.board.model.dto.AssignmentResponseDto;
+import com.airoom.airoom.board.model.dto.*;
 import com.airoom.airoom.board.model.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,13 +8,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/assignments")
 @Slf4j
-public class BoardController {
+public class BoardController implements  BoardControllerSwagger {
+
+
     private final BoardService boardService;
 
     /**
@@ -24,17 +23,63 @@ public class BoardController {
      * Vue.js에서 보낸 JSON을 Map으로 받아서 콘솔 출력
      */
     @PostMapping("/create")
-    public ResponseEntity<String> createAssignment(@RequestBody AssignmentRequestDto requestDto) {
+    public ResponseEntity<String> createAssignment(@RequestBody AssignmentCreateRequest request) {
         // ✅ 받은 데이터 전체 출력
-        boardService.createAssignment(requestDto);
-        // ✅ Vue.js로 성공 메시지 전송
-        return ResponseEntity.ok("✅ 과제 생성 요청을 성공적으로 받았습니다!");
+        try {
+            boardService.createAssignment(request);
+            return ResponseEntity.ok("✅ 과제 생성 요청을 성공적으로 받았습니다!");
+        }catch (Exception e) {
+            // ✅ Vue.js로 성공 메시지 전송
+            return ResponseEntity.badRequest().body("과제생성 실패"+e.getMessage());
+
+        }
     }
 
-    @GetMapping("/list")
-    public List<AssignmentListDto> getAllAssignments() {
-        return  boardService.getAllAssignments();
+    /**
+     * 과제 목록 조회 (학생/선생님 통합)
+     */
+    @Override
+    @GetMapping("/list/{classroomNo}")
+    public List<AssignmentListResponseDto> getAllAssignments(
+            @PathVariable Long classroomNo,
+            @RequestParam String userType,
+            @RequestParam(required = false) Long classroomStudentNo) { // memberNo → classroomStudentNo 변경
 
+        if ("teacher".equals(userType)) {
+            return boardService.getAssignmentsForTeacher(classroomNo);
+        } else if ("student".equals(userType) && classroomStudentNo != null) {
+            return boardService.getAssignmentsForStudent(classroomNo, classroomStudentNo); // 파라미터 변경
+        } else {
+            throw new IllegalArgumentException("Invalid parameters");
+        }
     }
+
+//
+//    @GetMapping("/list/{assignBoardNo}")
+//    public ResponseEntity<AssignmentDetailResponseDto> getAssignmentByAssignBoardNo(@PathVariable Long assignBoardNo) {
+//        try {
+//            log.info("과제 상세 조회 요청 - assignBoardNo: {}", assignBoardNo);
+//            AssignmentDetailResponseDto assignment = boardService.getAssignmentByAssignBoardNo(assignBoardNo);
+//            if (assignment == null) {
+//                return ResponseEntity.notFound().build();
+//            }
+//            return ResponseEntity.ok(assignment);
+//        } catch (Exception e) {
+//            log.error("과제 상세 조회 실패 - assignBoardNo: {}, Error: {}", assignBoardNo, e.getMessage());
+//            return ResponseEntity.internalServerError().build();
+//        }
+//    }
+
+    /**
+     * 과제 제출 API
+     */
+//    @PostMapping("/list/{id}/submit")
+//    public ResponseEntity<String> submitAssignment(
+//            @PathVariable Long id,
+//            @RequestBody AssignmentSubmissionDto submissionDto) {
+//        log.info("과제 제출 요청 - 과제 ID: {}, 제출 내용: {}", id, submissionDto.getContent());
+//        boardService.submitAssignment(id, submissionDto);
+//        return ResponseEntity.ok("🐥 과제가 성공적으로 제출되었습니다!");
+//    }
 
 }
