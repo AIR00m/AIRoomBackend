@@ -34,6 +34,7 @@ public class SecurityConfig {
         corsConfiguration.setAllowedOrigins(
                 List.of(
                         "http://43.200.2.244", // 배포 프론트 서버
+                        "http://43.200.2.244:80",
                         "http://localhost:8080",
                         "http://localhost:5173", // 로컬 Vue 서버
                         "http://localhost:4455", // SecureAgent 4455~4460
