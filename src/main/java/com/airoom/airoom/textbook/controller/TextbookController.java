@@ -17,8 +17,5 @@ public class TextbookController {
 
     private final TextbookService textbookService;
 
-    @GetMapping
-    public ResponseEntity<List<Textbook>> getAllTextbooks() {
-        return ResponseEntity.ok(textbookService.getAllTextbooks());
-    }
+
 }
