@@ -6,6 +6,7 @@ import com.airoom.airoom.common.token.JWTTokenUtility;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
+import com.airoom.airoom.member.model.dto.SignUpResponse;
 import com.airoom.airoom.member.model.dto.TokenRequest;
 import com.airoom.airoom.member.model.service.AuthService;
 import com.airoom.airoom.textbook.entity.Textbook;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
@@ -37,15 +39,16 @@ public class AuthController {
 
     //학생 회원가입
     @PostMapping("/signup/student")
-    public ResponseEntity<?> enrollStudent(@Valid @RequestBody SignUpRequest request) {
+    public ResponseEntity<SignUpResponse> enrollStudent(@Valid @RequestBody SignUpRequest request) {
         Member member = authService.studentSignUp(request);
+
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("memberName", member.getMemberName()));
+                .body(new SignUpResponse(member.getMemberName()));
     }
 
     // 선생님 회원가입
     @PostMapping("/signup/teacher")
-    public ResponseEntity<?> enrollTeacher(@Valid @RequestBody SignUpRequest request) {
+    public ResponseEntity<Map<String,String>> enrollTeacher(@Valid @RequestBody SignUpRequest request) {
         Member member = authService.teacherSignUp(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("memberName", member.getMemberName()));
