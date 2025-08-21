@@ -85,8 +85,9 @@ public class SecurityConfig {
                 // 어떤 브라우저에서 우리
                 .csrf(AbstractHttpConfigurer::disable) // csrf : jwt 인증이면 비활성화 시킴
 
-                .sessionManagement(sm-> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sm-> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 // 세션 관리 - Stateless -> 세션 저장을 피함
+                // Stateless 를 IF_REQUIRED 로 변경해서, secure agent 관련해서 세션 발급되게함
 
                 .exceptionHandling(ex ->ex
                         .authenticationEntryPoint((request,response,exception)->{
@@ -103,14 +104,13 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth-> auth
                         .requestMatchers("/api/agent/**").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                         .requestMatchers("/auth/**").permitAll() // 인증
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 모니터링
                         .requestMatchers(
                                 "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()// Swagger API
                         .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                         // 프리플라이트(브라우저가 실제 요청 전에 서버에 보내는 사전 검사 요청) -> 막히게 되면 실제 API 호출 전에 실패 함
-                        .requestMatchers("/install/**","/agent-required/**","/download/agent").permitAll()
+//                        .requestMatchers("/install/**","/agent-required/**","/download/agent").permitAll()
                         .anyRequest().authenticated() // 다른 것에 대한것은 인증이 필요
                 )
 
