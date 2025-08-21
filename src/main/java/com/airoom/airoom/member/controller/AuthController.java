@@ -3,6 +3,7 @@ package com.airoom.airoom.member.controller;
 import com.airoom.airoom.classroom.model.service.ClassroomService;
 import com.airoom.airoom.common.token.CookieUtility;
 import com.airoom.airoom.common.token.JWTTokenUtility;
+import com.airoom.airoom.exam.controller.ExamControllerSwagger;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.dto.LoginRequest;
 import com.airoom.airoom.member.model.dto.SignUpRequest;
@@ -28,7 +29,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
-public class AuthController {
+public class AuthController implements AuthControllerSwagger {
 
     private final AuthService authService;
     private final TextbookService textbookService;
@@ -37,7 +38,9 @@ public class AuthController {
     private final CookieUtility cookieUtility;
 
 
-    //학생 회원가입
+    /**
+     * 회원가입
+     */
     @PostMapping("/signup/student")
     public ResponseEntity<SignUpResponse> enrollStudent(@Valid @RequestBody SignUpRequest request) {
         Member member = authService.studentSignUp(request);
@@ -48,10 +51,10 @@ public class AuthController {
 
     // 선생님 회원가입
     @PostMapping("/signup/teacher")
-    public ResponseEntity<Map<String,String>> enrollTeacher(@Valid @RequestBody SignUpRequest request) {
+    public ResponseEntity<SignUpResponse> enrollTeacher(@Valid @RequestBody SignUpRequest request) {
         Member member = authService.teacherSignUp(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("memberName", member.getMemberName()));
+                .body(new SignUpResponse(member.getMemberName()));
     }
 
     @PostMapping("/login")
@@ -107,6 +110,10 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(Map.of("Access_Token", accessToken));
 
+    }
+    @PostMapping("/logout")
+    public ResponseEntity<ResponseCookie> deleteToken(@Valid @RequestBody TokenRequest tokenRequest) {
+        return ResponseEntity.ok(cookieUtility.deleteTokenCookie());
     }
 
 
