@@ -60,11 +60,4 @@ public interface ExamControllerSwagger {
             @RequestParam("memberRole") final MemberRole memberRole
     );
 
-    @Operation(
-            summary = "시험 삭제 API",
-            description = "시험을 삭제합니다."
-    )
-    public void deleteExam(@PathVariable Long examNo);
-
-
 }
