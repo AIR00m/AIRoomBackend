@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,23 +20,25 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     Optional<Classroom> findByIdWithStudents(@Param("id") Long id);
 
     @Query("""
-                    SELECT ct.classroom
+                    SELECT c.classroomNo
                     FROM ClassroomTeacher ct
                     JOIN ct.teacher m
                     JOIN ct.textbook t
+                    JOIN ct.classroom c
                     WHERE m.memberId = :memberId AND t.textbookNo = :textbookNo
             """)
-    Long getClassroomNoByTextbookNoAndTeacherId(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
+    Optional<Long> getClassroomNoByTextbookNoAndTeacherId(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
     @Query(
             """
-                 select distinct c.classroomNo
-                    from ClassroomTeacher ct
-                      join ct.classroom c
-                      join c.classroomStudentList cs
-                      join cs.student s
-                    where s.memberId = :memberId
-                      and ct.textbook.textbookNo = :textbookNo
+                 SELECT c.classroomNo
+                 FROM ClassroomTeacher ct
+                 JOIN ct.textbook tb
+                 JOIN ct.classroom c
+                 JOIN c.classroomStudentList cs
+                 JOIN cs.student s
+                 WHERE s.memberId = :memberId
+                   AND tb.textbookNo = :textbookNo
             """
     )
-    Long getClassroomNoByTextbookNoAndStudentId(@Param("textbookNo") Long textbookNo,@Param("memberId") String memberId);
+    Optional<Long> getClassroomNoByTextbookNoAndStudentId(@Param("textbookNo") Long textbookNo, @Param("memberId") String memberId);
 }

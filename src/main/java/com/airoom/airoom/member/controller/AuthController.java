@@ -83,14 +83,16 @@ public class AuthController {
             classroomClaims.put("classroomTeacherNo", classroomTeacherNo);
         } else {
             Long classroomNo = classroomService.getClassroomNoByStudentId(tokenRequest.memberId(), tokenRequest.textbookNo());
+
             classroomClaims.put("classroomNo", classroomNo);
-            Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNo(classroomNo);
+            Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNoAndId(classroomNo,member.getMemberId());
             classroomClaims.put("classRoomStudentNo", classRoomStudentNo);
         }
 
         // 3. 서버에서 토큰을 발급
         String accessToken = jwtUtility.createAccessToken(member, isTeacher, classroomClaims);
         String refreshToken = jwtUtility.createRefreshToken(tokenRequest.memberId(), isTeacher);
+
 
         //3-1 Redis에는 (Time To Live)기능이 존재하여
 
