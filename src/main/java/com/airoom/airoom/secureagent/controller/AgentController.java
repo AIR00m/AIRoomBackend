@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/agent")
+@CrossOrigin("*")
 public class AgentController {
 
     private final AgentVerifyService agentVerifyService;

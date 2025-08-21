@@ -1,5 +1,6 @@
 package com.airoom.airoom.common.token;
 
+import com.airoom.airoom.member.entity.Member;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -45,15 +46,18 @@ public class JWTTokenUtility {
         return buildToken(userId, claims, ACCESS_TOKEN_EXPIRATION_TIME);
     }
 
-    public String createAccessToken(String userId, boolean isTeacher, Map<String, Object> extraClaims) {
+    public String createAccessToken(Member member, boolean isTeacher, Map<String, Object> extraClaims) {
+        // 클래스룸 번호 / 회원 이름 / 클래스룸 학생,선생 고유 번호
         HashMap<String, Object> claims = new HashMap<>();
+        String name = member.getMemberName();
+
         claims.put("token_type", "AccessToken");
         String role = isTeacher ? "teacher" : "student";
         claims.put("role", role);
         if (extraClaims != null && !extraClaims.isEmpty()) {
             claims.putAll(extraClaims);
         }
-        return buildToken(userId, claims, ACCESS_TOKEN_EXPIRATION_TIME);
+        return buildToken(member.getMemberId(), claims, ACCESS_TOKEN_EXPIRATION_TIME);
     }
 
     public String createRefreshToken(String userId, boolean isTeacher) {
