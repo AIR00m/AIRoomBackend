@@ -85,8 +85,9 @@ public class SecurityConfig {
                 // 어떤 브라우저에서 우리
                 .csrf(AbstractHttpConfigurer::disable) // csrf : jwt 인증이면 비활성화 시킴
 
-                .sessionManagement(sm-> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sm-> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 // 세션 관리 - Stateless -> 세션 저장을 피함
+                // Stateless 를 IF_REQUIRED 로 변경해서, secure agent 관련해서 세션 발급되게함
 
                 .exceptionHandling(ex ->ex
                         .authenticationEntryPoint((request,response,exception)->{
@@ -103,7 +104,6 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth-> auth
                         .requestMatchers("/api/agent/**").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                         .requestMatchers("/auth/**").permitAll() // 인증
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 모니터링
                         .requestMatchers(
