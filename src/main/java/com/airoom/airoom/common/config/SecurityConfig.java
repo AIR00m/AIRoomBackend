@@ -18,6 +18,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.core.Ordered;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -31,34 +34,21 @@ public class SecurityConfig {
     @Primary
     public CorsConfigurationSource CorsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(
-                List.of(
-                        "http://43.200.2.244", // 배포 프론트 서버
-                        "http://43.200.2.244:80",
-                        "http://localhost:8080",
-                        "http://localhost:5173", // 로컬 Vue 서버
-                        "http://localhost:4455", // SecureAgent 4455~4460
-                        "http://localhost:4456",
-                        "http://localhost:4457",
-                        "http://localhost:4458",
-                        "http://localhost:4459",
-                        "http://localhost:4460",
-                        "http://127.0.0.1:4455",
-                        "http://127.0.0.1:4456",
-                        "http://127.0.0.1:4457",
-                        "http://127.0.0.1:4458",
-                        "http://127.0.0.1:4459",
-                        "http://127.0.0.1:4460",
-                        "http://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:443",
-                        "http://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:80",
-                        "http://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:5173"
-                )
-        );
+        corsConfiguration.setAllowedOriginPatterns(List.of(
+                "http://43.200.2.244",      // 80
+                "http://43.200.2.244:*",    // 8080 등 모든 포트
+                "https://43.200.2.244",     // https 를 쓸 가능성 대비
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:*",
+                "https://ec2-43-200-2-244.ap-northeast-2.compute.amazonaws.com:*"
+        ));
         corsConfiguration.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS","HEAD"));
         // 허용할 Http 메소드를 입력해준다.
 //        corsConfiguration.setAllowedHeaders(List.of("Authorization","Content-Type"));
         // 브라우저 요청 해더에 보내도 되는 것 Authorization -> JWT / JSON -> Content-Type
         corsConfiguration.setAllowedHeaders(List.of("*"));
+        corsConfiguration.setExposedHeaders(List.of("*"));
 
 //        corsConfiguration.setExposedHeaders(List.of("Authorization")); -> Refresh Token에서 필요없음
         // 응답 해더 중 JS 코드 볼 수 있게 해주는 것
@@ -72,6 +62,16 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);
         return source;
+    }
+
+    //CORS 필터를 체인의 최상단으로 올려서 프리플라이트(OPTIONS)에 CORS 헤더가 확실히 붙도록 보장
+    @Bean
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsConfigurationSource source) {
+        // SecurityConfig에 이미 있는 corsConfigurationSource() 빈을 사용
+        FilterRegistrationBean<CorsFilter> bean =
+                new FilterRegistrationBean<>(new CorsFilter((UrlBasedCorsConfigurationSource) source));
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE); // 최우선으로 실행
+        return bean;
     }
 
     @Bean
