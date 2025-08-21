@@ -50,4 +50,11 @@ public class StudentExam extends BaseEntity {
             seIsDone = false;
         }
     }
+
+    public void updateStudentExam(int seScore, LocalDateTime seStartTime, LocalDateTime seEndTime) {
+        this.seIsDone = true;
+        this.seScore = seScore;
+        this.seStartTime = seStartTime;
+        this.seEndTime = seEndTime;
+    }
 }
