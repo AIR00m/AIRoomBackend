@@ -5,6 +5,7 @@ import com.airoom.airoom.board.entity.AssignTarget;
 import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
 import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
 import com.airoom.airoom.board.model.dto.assign.AssignmentSubmissionRequestDto;
+import com.airoom.airoom.board.model.dto.assign.AssignResponse;
 import com.airoom.airoom.board.model.repository.AssignBoardRepository;
 import com.airoom.airoom.board.model.repository.AssignTargetRepository;
 import com.airoom.airoom.board.model.repository.HomeworkRepository;
@@ -17,6 +18,7 @@ import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
 import com.airoom.airoom.common.redis.RedisStreamPublisher;
 import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.member.entity.Member;
+import com.amazonaws.services.kms.model.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,12 +47,12 @@ public class AssignService {
         //assignBoard save
         AssignBoard assignBoard = createAndSaveAssignBoard(request.assignBoard());
         //assignTarget save
-        List<Long> savedTargetIds  = saveAssignTargets(assignBoard, request.assignTargets()); // 🔧 수정: 변수명 변경
+        List<Long> savedTargetIds = saveAssignTargets(assignBoard, request.assignTargets()); // 🔧 수정: 변수명 변경
         //redis stream 메세지 발행
 //        publishAssignmentCreated(assignBoard, savedTargetIds , request); // 🔧 수정
 
         log.info("과제 생성 완료 - AssignBoard ID: {}, 대상자 수: {}",
-                assignBoard.getAssignBoardNo(), savedTargetIds .size()); // 🔧 수정
+                assignBoard.getAssignBoardNo(), savedTargetIds.size()); // 🔧 수정
     }
 
     /**
@@ -107,6 +109,7 @@ public class AssignService {
 
     /**
      * AssignTarget 저장 - 개별과제/모둠과제 분기 처리
+     *
      * @return 실제 과제를 받을 모든 학생들의 classroomStudentNo 리스트
      */
     private List<Long> saveAssignTargets(AssignBoard assignBoard, List<AssignCreateRequest.AssignTarget> assignTargets) {
@@ -130,6 +133,7 @@ public class AssignService {
 
     /**
      * 모둠 과제 AssignTarget 저장
+     *
      * @return 해당 모둠 구성원들의 classroomStudentNo 리스트
      */
     private void saveGroupAssignTarget(AssignBoard assignBoard, Long groupNo) {
@@ -144,6 +148,7 @@ public class AssignService {
 
     /**
      * 개별 AssignTarget 저장
+     *
      * @param classroomStudentNo 클래스룸 학생 번호 (ClassroomStudent PK)
      */
     private void saveIndividualAssignTarget(AssignBoard assignBoard, Long classroomStudentNo) {
@@ -204,14 +209,15 @@ public class AssignService {
      */
     public List<AssignListResponse> getAssignmentsForClassUser(Long classroomNo, Long classroomStudentNo, MemberRole userType) {
 
-        if (MemberRole.TEACHER==userType) {
+        if (MemberRole.TEACHER == userType) {
             return getAssignmentsForTeacher(classroomNo);
-        } else if (MemberRole.STUDENT==userType && classroomStudentNo != null) {
+        } else if (MemberRole.STUDENT == userType && classroomStudentNo != null) {
             return getAssignmentsForStudent(classroomNo, classroomStudentNo); // 파라미터 변경
         } else {
             throw new IllegalArgumentException("Invalid parameters");
         }
     }
+
     /**
      * 선생님용 과제 목록 조회
      */
@@ -298,8 +304,6 @@ public class AssignService {
 //    }
 
 
-
-
     /**
      * 모둠 과제인지 확인
      */
@@ -330,12 +334,26 @@ public class AssignService {
 //                .build();
 //
 //    }
-
     public void submitAssignment(Long assignmentId, AssignmentSubmissionRequestDto submissionDto) {
         log.info("과제 제출 처리 - 과제 ID: {}, 내용: {}", assignmentId, submissionDto.getContent());
         log.info("첨부파일 개수: {}", submissionDto.getFiles() != null ? submissionDto.getFiles().size() : 0);
 
         // 실제로는 DB에 저장하는 로직 구현
         // 여기서는 로그만 출력
+    }
+
+
+    public AssignResponse getAssignBoardByBoardNo(Long assignBoardNo) {
+        AssignBoard board = assignBoardRepository.findById(assignBoardNo)
+                .orElseThrow(() -> new NotFoundException("해당하는 번호의 과제를 찾지 못했습니다 :("));
+        return AssignResponse.makeResponse(board);
+
+    }
+
+    public AssignResponse getAssignBoardWithSubmissions(Long assignBoardNo) {
+        AssignBoard board = assignBoardRepository.findById(assignBoardNo)
+                .orElseThrow(() -> new NotFoundException("해당하는 번호의 과제를 찾지 못했습니다 :("));
+        List<AssignTarget> students = assignTargetRepository.findByAssignBoard_AssignBoardNo(assignBoardNo);
+        return null;
     }
 }

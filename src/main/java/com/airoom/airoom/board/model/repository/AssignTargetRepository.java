@@ -23,4 +23,6 @@ public interface AssignTargetRepository extends JpaRepository<AssignTarget, Long
     List<AssignTarget> findByAssignBoard_Classroom_ClassroomNoAndTargetNoAndGroupAssignTypeFalse(Long classroomNo, Long targetNo);
 
     List<AssignTarget> findByAssignBoard_Classroom_ClassroomNoAndTargetNoAndGroupAssignTypeTrue(Long classroomNo, Long targetNo);
+
+    List<AssignTarget> findByAssignBoard_AssignBoardNo (Long assignBoardNo);
 }
