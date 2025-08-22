@@ -80,15 +80,7 @@ public class ExamController implements ExamControllerSwagger {
     ) {
         return examService.getExams(classroomMemberNo, examStatus, memberRole);
     }
+    
 
-    /**
-     * 시험 삭제
-     */
-    @Override
-    @DeleteMapping("/{examNo}")
-    public void deleteExam(@PathVariable Long examNo) {
-
-    }
-
-    //시험 수정 기능은 제외
+    //시험 수정,삭제 기능은 제외
 }
