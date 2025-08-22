@@ -15,6 +15,7 @@ import com.airoom.airoom.classroom.model.repository.ClassroomGroupRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
 import com.airoom.airoom.common.redis.RedisStreamPublisher;
+import com.airoom.airoom.common.redis.model.dto.AssignmentCreateDto;
 import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.member.entity.Member;
 import lombok.RequiredArgsConstructor;
@@ -45,41 +46,59 @@ public class AssignService {
         //assignBoard save
         AssignBoard assignBoard = createAndSaveAssignBoard(request.assignBoard());
         //assignTarget save
-        List<Long> savedTargetIds  = saveAssignTargets(assignBoard, request.assignTargets()); // 🔧 수정: 변수명 변경
+        List<Long> savedTargetIds  = saveAssignTargets(assignBoard, request.assignTargets()); //모둠과제면 해당하는 아이디들과 개별과제면 타겟 아이디들
+
+//        List<Long> memberNos = getMembereNos(savedTargetIds,request.assignTargets());
+
         //redis stream 메세지 발행
-//        publishAssignmentCreated(assignBoard, savedTargetIds , request); // 🔧 수정
+        publishAssignmentCreated(assignBoard, savedTargetIds); // 🔧 수정
 
         log.info("과제 생성 완료 - AssignBoard ID: {}, 대상자 수: {}",
                 assignBoard.getAssignBoardNo(), savedTargetIds .size()); // 🔧 수정
     }
 
+//    private List<Long> getMembereNos(List<Long> savedTargetIds, List<AssignCreateRequest.AssignTarget> assignTargets) {
+//
+//        for(int i = 0; i<assignTargets.size(); i++) {
+//            Long targetId = targetIds.get(i);
+//            boolean isGroup = Boolean.TRUE.equals(assignTargets.get(i).groupAssignType());
+//
+//
+//            if(isGroup) {
+//                List<ClassroomStudent> groupMembers = classroomStudentRepository.findClassroomStudentsByGroupNo(targetId);
+//            }
+//        }
+//
+//    }
+//
+
     /**
      * Redis Stream 메시지 발행
      */
-//    private void publishAssignmentCreated(AssignBoard assignBoard, List<Long> targetClassroomStudentNos, AssignmentCreateRequest request) { // 🔧 수정
-//        List<Long> targetMemberNos = targetClassroomStudentNos.stream()
-//                .map(classroomStudentNo -> {
-//                    ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
-//                            .orElseThrow(() -> new IllegalArgumentException("학생 정보를 찾을 수 없습니다: " + classroomStudentNo));
-//                    return student.getStudent().getMemberNo();
-//                })
-//                .collect(Collectors.toList());
-//
-//        AssignmentCreateDto createDto = AssignmentCreateDto.builder()
-//                .boardType("ASSIGN")
-//                .assignBoardTitle(assignBoard.getAssignBoardTitle())
-//                .classroomNo(assignBoard.getClassroom().getClassroomNo())
-//                .boardContent(assignBoard.getAssignBoardContent())
-//                .memberNo(assignBoard.getMember().getMemberNo())
-//                .targetNo(targetMemberNos)  // 🔧 수정: memberNo 리스트 사용
-//                .build();
-//
-//        // Redis Stream에 메시지 발행
-//        publisher.createAssignment(createDto);
-//
-//        log.info("Redis Stream 메시지 발행 완료 - 과제 ID: {}, 대상자(memberNo): {}",
-//                assignBoard.getAssignBoardNo(), targetMemberNos); // 🔧 수정
-//    }
+    private void publishAssignmentCreated(AssignBoard assignBoard, List<Long> targetClassroomStudentNos) { // 🔧 수정
+        List<Long> targetMemberNos = targetClassroomStudentNos.stream()
+                .map(classroomStudentNo -> {
+                    ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
+                            .orElseThrow(() -> new IllegalArgumentException("학생 정보를 찾을 수 없습니다: " + classroomStudentNo));
+                    return student.getStudent().getMemberNo();
+                })
+                .collect(Collectors.toList());
+
+        AssignmentCreateDto createDto = AssignmentCreateDto.builder()
+                .boardType("ASSIGN")
+                .assignBoardTitle(assignBoard.getAssignBoardTitle())
+                .classroomNo(assignBoard.getClassroom().getClassroomNo())
+                .boardContent(assignBoard.getAssignBoardContent())
+                .memberNo(assignBoard.getMember().getMemberNo())
+                .targetNo(targetMemberNos)  // 🔧 수정: memberNo 리스트 사용
+                .build();
+
+        // Redis Stream에 메시지 발행
+        publisher.createAssignment(createDto);
+
+        log.info("Redis Stream 메시지 발행 완료 - 과제 ID: {}, 대상자(memberNo): {}",
+                assignBoard.getAssignBoardNo(), targetMemberNos); // 🔧 수정
+    }
 
     /**
      * AssignBoard 엔티티 생성 및 저장
@@ -110,9 +129,13 @@ public class AssignService {
      * @return 실제 과제를 받을 모든 학생들의 classroomStudentNo 리스트
      */
     private List<Long> saveAssignTargets(AssignBoard assignBoard, List<AssignCreateRequest.AssignTarget> assignTargets) {
+
         List<Long> allTargetIds = new ArrayList<>();
+
         for (AssignCreateRequest.AssignTarget targetDto : assignTargets) {
+
             boolean isGroup = Boolean.TRUE.equals(targetDto.groupAssignType());
+
             Long targetNo = targetDto.targetNo();
 
             if (isGroup) {

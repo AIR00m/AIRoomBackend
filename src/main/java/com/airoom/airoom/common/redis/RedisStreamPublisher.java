@@ -23,7 +23,7 @@ public class RedisStreamPublisher {
 
     public void createAssignment(AssignmentCreateDto assignment) { // 학생에게 알림 보낼 dto 생성 후 넣기
         try {
-            String json = objectMapper.writeValueAsString(assignment);
+            String json = objectMapper.writeValueAsString(assignment);//객체를 json문자열로 직렬화
 
             //ObjectMapper(ofObject) vs MapRecord(ofMap)
             //
