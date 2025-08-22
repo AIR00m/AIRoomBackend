@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 })
 /**
  * 원천 학습로그 테이블
+ * 프론트 로그수집 -> Kafka API로 전송 (일정 주기/트리거)에 의해서 -> logstash 전송 -> ElasticSearch에 저장 -> Kibana 시각화 && RDB에 저장
  * 이후 요약 통계 테이블(LEARNING_SUMMARY, LEARNING_BEHAVIOR)로 배치 처리할 것!
  */
 public class LearningLog {

@@ -2,8 +2,8 @@ package com.airoom.airoom.attach.model.service;
 
 import com.airoom.airoom.attach.model.dto.AttachmentRequest;
 import com.airoom.airoom.attach.model.repository.AttachmentRepository;
-import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.board.entity.Attachment;
+import com.airoom.airoom.board.entity.BoardType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
