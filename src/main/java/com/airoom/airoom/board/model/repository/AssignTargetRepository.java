@@ -28,12 +28,15 @@ public interface AssignTargetRepository extends JpaRepository<AssignTarget, Long
 
     @Query("""
       SELECT
-        NEW com.airoom.airoom.board.model.dto.homework.StudentHomeworkResponse(m.memberName,
+        NEW com.airoom.airoom.board.model.dto.homework.StudentHomeworkResponse(
+        m.memberNo,
+        m.memberName,
         h.homeworkSubmitType,
         h.createdAt,
         h.updatedAt,
         a.originalName,
         a.s3Key,
+        h.homeworkBoardContent,
         h.homeworkScore)
       FROM Homework h
       JOIN h.assignTarget at
