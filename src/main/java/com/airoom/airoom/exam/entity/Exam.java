@@ -18,6 +18,9 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE exam SET deleted_at = NOW() WHERE exam_no = ?")
 @AllArgsConstructor
+@Table(indexes = {
+        @Index(name = "idx_classroom_no_exam_end_time", columnList = "classroom_no, exam_end_time")
+})
 public class Exam extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
