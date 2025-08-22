@@ -134,3 +134,4 @@ volumes:
 networks:
   core-services-net:
     external: true
+
