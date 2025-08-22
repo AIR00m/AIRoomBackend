@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 })
 /**
  * 원천 학습로그 테이블
- * 이후 요약 통계 테이블(STUDENT_LEARNING_SUMMARY, STUDENT_LEARNING_BEHAVIOR)로 배치 처리할 것!
+ * 이후 요약 통계 테이블(LEARNING_SUMMARY, LEARNING_BEHAVIOR)로 배치 처리할 것!
  */
 public class LearningLog {
     @Id
