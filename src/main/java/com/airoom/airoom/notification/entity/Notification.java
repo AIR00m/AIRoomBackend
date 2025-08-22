@@ -23,9 +23,6 @@ public class Notification extends BaseEntity {
     private Long notificationNo;
 
     @Column(nullable = false)
-    private String notificationTitle;
-
-    @Column(nullable = false)
     private String notificationContent;
 
     private String notificationUrl;
