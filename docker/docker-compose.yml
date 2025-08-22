@@ -8,68 +8,76 @@ services:
       - core-services-net
     environment:
       CLUSTER_ID: '9cdc8119cb39c45f0efa6da8e2220058020c7433e3ba3a3ce11a8006a18cb336'
-      KAFKA_ADVERTISED_LISTENERS: 'EXTERNAL://172.31.0.93:9092,BROKER://kafka:29092'
-      KAFKA_LISTENERS: 'EXTERNAL://0.0.0.0:9092,BROKER://0.0.0.0:29092,CONTROLLER://kafka:9093'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'BROKER'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,EXTERNAL:PLAINTEXT'
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_NODE_ID: '1'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://43.200.2.244:9092,BROKER://kafka:29092
+      KAFKA_LISTENERS: EXTERNAL://0.0.0.0:9092,BROKER://0.0.0.0:29092,CONTROLLER://kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
-
-  # Redis
   redis:
     image: redis:7.0
+    container_name: redis
     ports:
       - "6379:6379"
     networks:
       - core-services-net
 
-
   kafka-exporter:
     image: danielqsj/kafka-exporter
     command:
       - --kafka.server=kafka:29092
-    ports: [ "9308:9308" ]
-    depends_on: [ kafka ]
+    ports:
+      - "9308:9308"
+    depends_on:
+      - kafka
     restart: always
-    networks: [ core-services-net ]
+    networks:
+      - core-services-net
 
   redis-exporter:
     image: oliver006/redis_exporter
     environment:
       REDIS_ADDR: redis://redis:6379
-    ports: [ "9121:9121" ]
-    depends_on: [ redis ]
-    networks: [ core-services-net ]
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    networks:
+      - core-services-net
 
-  # Elasticsearch
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.security.http.ssl.enabled=false
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
-    ports:
-      - "9200:9200"
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
       - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
     networks:
       - core-services-net
 
-  # Logstash
   logstash:
     image: docker.elastic.co/logstash/logstash:8.13.4
-    ports:
-      - "5044:5044"
+    container_name: logstash
     volumes:
       - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "5044:5044"
     environment:
       LS_JAVA_OPTS: "-Xms512m -Xmx512m"
     depends_on:
@@ -77,19 +85,19 @@ services:
     networks:
       - core-services-net
 
-  # Kibana
   kibana:
     image: docker.elastic.co/kibana/kibana:8.13.4
+    container_name: kibana
     ports:
       - "5601:5601"
     environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
     depends_on:
       - elasticsearch
     networks:
       - core-services-net
 
-  # Prometheus
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -102,7 +110,6 @@ services:
     networks:
       - core-services-net
 
-  # Grafana
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -114,9 +121,9 @@ services:
     networks:
       - core-services-net
 
-  # Node Exporter (for system metrics)
   node-exporter:
     image: prom/node-exporter
+    container_name: node-exporter
     ports:
       - "9100:9100"
     networks:
@@ -129,3 +136,4 @@ volumes:
 networks:
   core-services-net:
     external: true
+
