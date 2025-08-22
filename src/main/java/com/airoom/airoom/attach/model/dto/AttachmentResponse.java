@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class AttachmentDto {
+public class AttachmentResponse {
+    private Long attachNo;
     private Long boardNo;
     private BoardType boardType;
     private String originalName;

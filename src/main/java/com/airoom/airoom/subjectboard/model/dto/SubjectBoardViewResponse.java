@@ -1,6 +1,6 @@
 package com.airoom.airoom.subjectboard.model.dto;
 
-import com.airoom.airoom.attach.model.dto.AttachmentDto;
+import com.airoom.airoom.attach.model.dto.AttachmentResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,5 +23,5 @@ public class SubjectBoardViewResponse {
     private boolean hasAttachment;
     private boolean isPinned;
 
-    private List<AttachmentDto> attachments;
+    private List<AttachmentResponse> attachments;
 }

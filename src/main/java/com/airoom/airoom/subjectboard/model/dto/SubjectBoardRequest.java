@@ -1,6 +1,5 @@
 package com.airoom.airoom.subjectboard.model.dto;
 
-import com.airoom.airoom.attach.model.dto.AttachmentDto;
 import lombok.*;
 
 import java.util.List;
