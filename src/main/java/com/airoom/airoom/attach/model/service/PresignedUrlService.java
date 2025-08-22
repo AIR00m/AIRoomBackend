@@ -65,8 +65,6 @@ public class PresignedUrlService {
         }
     }
 
-    //미리보기용
-
     private String getExtension(String name) {
         return name.contains(".") ? name.substring(name.lastIndexOf(".")) : "";
     }
