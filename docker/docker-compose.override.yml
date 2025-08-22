@@ -1,11 +1,11 @@
 services:
   kafka:
     environment:
-      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://kafka:9092,BROKER://kafka:29092
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://43.200.2.244:9092,BROKER://kafka:29092
 
   kafka-exporter:
     environment:
-      KAFKA_SERVER: kafka:9092
+      KAFKA_SERVER: kafka:29092
 
   redis-exporter:
     image: oliver006/redis_exporter
