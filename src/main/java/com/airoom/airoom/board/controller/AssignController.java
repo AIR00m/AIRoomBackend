@@ -1,8 +1,11 @@
 package com.airoom.airoom.board.controller;
 
+import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
 import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
 import com.airoom.airoom.board.model.dto.assign.AssignResponse;
+import com.airoom.airoom.board.model.dto.assign.AssignWithHomeworksResponse;
+import com.airoom.airoom.board.model.dto.homework.StudentHomeworkRequest;
 import com.airoom.airoom.board.model.service.AssignService;
 import com.airoom.airoom.common.value.MemberRole;
 import lombok.RequiredArgsConstructor;
@@ -60,9 +63,12 @@ public class AssignController implements AssignControllerSwagger {
     }
 
     @GetMapping("/teacher/{boardNo}")
-    public ResponseEntity<AssignResponse> getAssignTeacherByBoardNo(@RequestParam Long assignBoardNo) {
-        assignService.getAssignBoardWithSubmissions(assignBoardNo);
-        return null;
+    public ResponseEntity<AssignWithHomeworksResponse> getAssignTeacherByBoardNo
+            (@PathVariable Long boardNo, @RequestParam BoardType boardType) {
+        return ResponseEntity.ok().body(
+                assignService.getAssignBoardWithSubmissions
+                        (boardNo, boardType)
+        );
     }
 
 
