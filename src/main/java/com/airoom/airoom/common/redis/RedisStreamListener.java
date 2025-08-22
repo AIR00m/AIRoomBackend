@@ -1,6 +1,6 @@
 package com.airoom.airoom.common.redis;
 
-import com.airoom.airoom.common.redis.model.dto.AssignmentCreateDto;
+import com.airoom.airoom.notification.model.dto.NotificationEventDto;
 import com.airoom.airoom.notification.model.service.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -51,8 +51,8 @@ public class RedisStreamListener {
                     try {
                         String payload = message.getValue().get("payload");
                         log.info("payload : {}", payload);
-                        AssignmentCreateDto assignmentCreateDto = objectMapper.readValue(payload, AssignmentCreateDto.class);
-                        notificationService.assignmentNotification(assignmentCreateDto);
+                        NotificationEventDto notificationEventDto = objectMapper.readValue(payload, NotificationEventDto.class);
+                        notificationService.assignmentNotification(notificationEventDto);
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }

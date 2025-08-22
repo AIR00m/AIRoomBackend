@@ -2,6 +2,7 @@ package com.airoom.airoom.classroom.model.repository;
 
 import com.airoom.airoom.classroom.entity.ClassroomGroup;
 import com.airoom.airoom.classroom.model.dto.ClassroomGroupResponse;
+import com.airoom.airoom.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

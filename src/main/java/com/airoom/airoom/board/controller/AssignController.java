@@ -27,7 +27,6 @@ public class AssignController implements AssignControllerSwagger {
     @PostMapping("/create")
     public ResponseEntity<String> createAssignment(@RequestBody AssignCreateRequest request) {
         // ✅ 받은 데이터 전체 출력
-
             assignService.createAssignment(request);
             return ResponseEntity.ok("✅ 과제 생성 요청을 성공적으로 받았습니다!");
 

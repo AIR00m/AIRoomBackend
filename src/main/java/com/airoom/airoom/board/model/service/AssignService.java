@@ -2,6 +2,7 @@ package com.airoom.airoom.board.model.service;
 
 import com.airoom.airoom.board.entity.AssignBoard;
 import com.airoom.airoom.board.entity.AssignTarget;
+import com.airoom.airoom.board.entity.Homework;
 import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
 import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
 import com.airoom.airoom.board.model.dto.assign.AssignmentSubmissionRequestDto;
@@ -9,15 +10,16 @@ import com.airoom.airoom.board.model.repository.AssignBoardRepository;
 import com.airoom.airoom.board.model.repository.AssignTargetRepository;
 import com.airoom.airoom.board.model.repository.HomeworkRepository;
 import com.airoom.airoom.classroom.entity.Classroom;
+import com.airoom.airoom.classroom.entity.ClassroomGroup;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.classroom.model.repository.ClassroomGroupRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
 import com.airoom.airoom.common.redis.RedisStreamPublisher;
-import com.airoom.airoom.common.redis.model.dto.AssignmentCreateDto;
 import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.member.entity.Member;
+import com.airoom.airoom.notification.model.dto.NotificationEventDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,60 +48,68 @@ public class AssignService {
         //assignBoard save
         AssignBoard assignBoard = createAndSaveAssignBoard(request.assignBoard());
         //assignTarget save
-        List<Long> savedTargetIds  = saveAssignTargets(assignBoard, request.assignTargets()); //모둠과제면 해당하는 아이디들과 개별과제면 타겟 아이디들
+        List<AssignTarget> savedTargetIds  = saveAssignTargets(assignBoard, request.assignTargets()); //모둠과제면 해당하는 아이디들과 개별과제면 타겟 아이디들
+        //homeworkBoard save
+        saveHomework(assignBoard, savedTargetIds);
 
-//        List<Long> memberNos = getMembereNos(savedTargetIds,request.assignTargets());
 
-        //redis stream 메세지 발행
-        publishAssignmentCreated(assignBoard, savedTargetIds); // 🔧 수정
+        publisher.publishNotification();
 
         log.info("과제 생성 완료 - AssignBoard ID: {}, 대상자 수: {}",
                 assignBoard.getAssignBoardNo(), savedTargetIds .size()); // 🔧 수정
     }
 
-//    private List<Long> getMembereNos(List<Long> savedTargetIds, List<AssignCreateRequest.AssignTarget> assignTargets) {
-//
-//        for(int i = 0; i<assignTargets.size(); i++) {
-//            Long targetId = targetIds.get(i);
-//            boolean isGroup = Boolean.TRUE.equals(assignTargets.get(i).groupAssignType());
-//
-//
-//            if(isGroup) {
-//                List<ClassroomStudent> groupMembers = classroomStudentRepository.findClassroomStudentsByGroupNo(targetId);
-//            }
-//        }
-//
-//    }
-//
+    private void createNotification(){
 
-    /**
-     * Redis Stream 메시지 발행
-     */
-    private void publishAssignmentCreated(AssignBoard assignBoard, List<Long> targetClassroomStudentNos) { // 🔧 수정
-        List<Long> targetMemberNos = targetClassroomStudentNos.stream()
-                .map(classroomStudentNo -> {
-                    ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
-                            .orElseThrow(() -> new IllegalArgumentException("학생 정보를 찾을 수 없습니다: " + classroomStudentNo));
-                    return student.getStudent().getMemberNo();
-                })
-                .collect(Collectors.toList());
-
-        AssignmentCreateDto createDto = AssignmentCreateDto.builder()
-                .boardType("ASSIGN")
-                .assignBoardTitle(assignBoard.getAssignBoardTitle())
-                .classroomNo(assignBoard.getClassroom().getClassroomNo())
-                .boardContent(assignBoard.getAssignBoardContent())
-                .memberNo(assignBoard.getMember().getMemberNo())
-                .targetNo(targetMemberNos)  // 🔧 수정: memberNo 리스트 사용
-                .build();
-
-        // Redis Stream에 메시지 발행
-        publisher.createAssignment(createDto);
-
-        log.info("Redis Stream 메시지 발행 완료 - 과제 ID: {}, 대상자(memberNo): {}",
-                assignBoard.getAssignBoardNo(), targetMemberNos); // 🔧 수정
     }
 
+    private void saveHomework(AssignBoard assignBoard, List<AssignTarget> savedAssignTargets) {
+        List<Homework> homeworkList = new ArrayList<>();
+
+
+        for (AssignTarget assignTarget : savedAssignTargets) {
+            if (assignTarget.isGroupAssignType()) {
+                // 모둠과제: 그룹장을 member로 설정하여 하나의 Homework 생성
+                Long groupNo = assignTarget.getTargetNo();
+
+                // 1. ClassroomGroup에서 groupLeaderNo 조회
+                ClassroomGroup group = classroomGroupRepository.findById(groupNo)
+                        .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다: " + groupNo));
+
+                // 2. groupLeaderNo(ClassroomStudent PK)로 ClassroomStudent 조회 후 Member 추출
+                ClassroomStudent groupLeaderStudent = classroomStudentRepository.findById(group.getGroupLeaderNo().longValue())
+                        .orElseThrow(() -> new IllegalArgumentException("그룹장 학생을 찾을 수 없습니다: " + group.getGroupLeaderNo()));
+
+                // 3. 그룹장의 Member 정보 가져와서 homework생성
+                Member groupLeader = groupLeaderStudent.getStudent();
+                Homework homework = createHomework(assignTarget, groupLeader, assignBoard.getClassroom());
+                homeworkList.add(homework);
+
+            } else {
+                // 개별과제: 해당 학생에게만 Homework 생성
+                //classroomNo로 classroomStudent row 찾아오기
+                ClassroomStudent classStudent = classroomStudentRepository.findById(assignTarget.getTargetNo())
+                        .orElseThrow(() -> new IllegalArgumentException("학생을 찾을 수 없습니다: " + assignTarget.getTargetNo()));
+
+                Homework homework = createHomework(assignTarget, classStudent.getStudent(), assignBoard.getClassroom());
+                homeworkList.add(homework);
+            }
+        }
+
+        homeworkRepository.saveAll(homeworkList);
+        log.info("Homework 생성 완료 - 총 {}개", homeworkList.size());
+    }
+
+    private Homework createHomework(AssignTarget assignTarget, Member student, Classroom classroom) {
+        return Homework.builder()
+                .assignTarget(assignTarget)
+                .member(student) // 학생의 Member 엔티티
+                .classroom(classroom)
+                .homeworkBoardContent(" ") // 공백 한 칸
+                .homeworkSubmitType(false) // 미제출 상태
+                .homeworkScore(null) // 점수 없음
+                .build();
+    }
     /**
      * AssignBoard 엔티티 생성 및 저장
      */
@@ -128,9 +138,9 @@ public class AssignService {
      * AssignTarget 저장 - 개별과제/모둠과제 분기 처리
      * @return 실제 과제를 받을 모든 학생들의 classroomStudentNo 리스트
      */
-    private List<Long> saveAssignTargets(AssignBoard assignBoard, List<AssignCreateRequest.AssignTarget> assignTargets) {
+    private List<AssignTarget> saveAssignTargets(AssignBoard assignBoard, List<AssignCreateRequest.AssignTarget> assignTargets) {
 
-        List<Long> allTargetIds = new ArrayList<>();
+        List<AssignTarget> allTarget = new ArrayList<>();
 
         for (AssignCreateRequest.AssignTarget targetDto : assignTargets) {
 
@@ -138,16 +148,17 @@ public class AssignService {
 
             Long targetNo = targetDto.targetNo();
 
+            AssignTarget assignTarget;
             if (isGroup) {
-                saveGroupAssignTarget(assignBoard, targetNo); // groupAssignType=true 고정
+                assignTarget = saveGroupAssignTarget(assignBoard, targetNo); // groupAssignType=true 고정
                 log.debug("모둠 과제 저장 - assignBoardNo={}, groupNo={}", assignBoard.getAssignBoardNo(), targetNo);
             } else {
-                saveIndividualAssignTarget(assignBoard, targetNo); // groupAssignType=false 고정
+                assignTarget = saveIndividualAssignTarget(assignBoard, targetNo); // groupAssignType=false 고정
                 log.debug("개별 과제 저장 - assignBoardNo={}, classroomStudentNo={}", assignBoard.getAssignBoardNo(), targetNo);
             }
-            allTargetIds.add(targetNo);
+            allTarget.add(assignTarget);
         }
-        return allTargetIds;
+        return allTarget;
     }
 
 
@@ -155,13 +166,13 @@ public class AssignService {
      * 모둠 과제 AssignTarget 저장
      * @return 해당 모둠 구성원들의 classroomStudentNo 리스트
      */
-    private void saveGroupAssignTarget(AssignBoard assignBoard, Long groupNo) {
+    private AssignTarget saveGroupAssignTarget(AssignBoard assignBoard, Long groupNo) {
         AssignTarget assignTarget = AssignTarget.builder()
                 .targetNo(groupNo)               // groupNo 저장
                 .groupAssignType(true)           // 모둠 과제
                 .assignBoard(assignBoard)
                 .build();
-        assignTargetRepository.save(assignTarget);
+        return assignTargetRepository.save(assignTarget);
     }
 
 
@@ -169,13 +180,13 @@ public class AssignService {
      * 개별 AssignTarget 저장
      * @param classroomStudentNo 클래스룸 학생 번호 (ClassroomStudent PK)
      */
-    private void saveIndividualAssignTarget(AssignBoard assignBoard, Long classroomStudentNo) {
+    private AssignTarget saveIndividualAssignTarget(AssignBoard assignBoard, Long classroomStudentNo) {
         AssignTarget assignTarget = AssignTarget.builder()
                 .targetNo(classroomStudentNo)    // classroomStudentNo 저장
                 .groupAssignType(false)          // 개별 과제
                 .assignBoard(assignBoard)
                 .build();
-        assignTargetRepository.save(assignTarget);
+        return assignTargetRepository.save(assignTarget);
     }
 
     /**
