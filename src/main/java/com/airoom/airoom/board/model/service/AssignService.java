@@ -53,7 +53,7 @@ public class AssignService {
         saveHomework(assignBoard, savedTargetIds);
 
 
-        publisher.publishNotification();
+//        publisher.publishNotification();
 
         log.info("과제 생성 완료 - AssignBoard ID: {}, 대상자 수: {}",
                 assignBoard.getAssignBoardNo(), savedTargetIds .size()); // 🔧 수정
