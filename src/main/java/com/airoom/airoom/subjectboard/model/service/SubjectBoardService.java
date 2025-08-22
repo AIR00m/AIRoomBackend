@@ -8,7 +8,9 @@ import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.board.entity.Attachment;
 import com.airoom.airoom.board.entity.SubjectBoard;
 import com.airoom.airoom.classroom.entity.Classroom;
+import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
+import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.repository.MemberRepository;
 import com.airoom.airoom.subjectboard.model.dto.SubjectBoardRequest;
@@ -31,7 +33,7 @@ public class SubjectBoardService {
     private final MemberRepository memberRepository;
     private final ClassroomRepository classroomRepository;
     private final AttachmentRepository attachmentRepository;
-
+    private final ClassroomTeacherRepository classroomTeacherRepository;
 
     private final PresignedUrlService presignedUrlService;
     private final AttachmentService attachmentService;
@@ -56,13 +58,10 @@ public class SubjectBoardService {
         return buildSubjectBoardViewResponse(boardNo, board, attachments);
     }
 
-    //classteacherno로 가져오기
-    public Long getMemberNo(Long classroomTeacherNo) {
-        return 1L;
-    }
-
     public Long insertSubjectBoard(SubjectBoardRequest request) {
-        Member member = memberRepository.findById(request.getMemberNo())
+        ClassroomTeacher classroomTeacher = classroomTeacherRepository.findById(request.getClassroomTeacherNo())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+        Member member = memberRepository.findById(classroomTeacher.getTeacher().getMemberNo())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         Classroom classroom = classroomRepository.findById(request.getClassroomNo())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 클래스룸입니다."));

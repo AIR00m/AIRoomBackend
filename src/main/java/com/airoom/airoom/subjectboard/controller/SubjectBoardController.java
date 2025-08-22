@@ -6,6 +6,7 @@ import com.airoom.airoom.subjectboard.model.dto.SubjectBoardViewResponse;
 import com.airoom.airoom.subjectboard.model.service.SubjectBoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +19,9 @@ public class SubjectBoardController implements SubjectBoardSwagger {
 
     private final SubjectBoardService subjectBoardService;
 
-    @GetMapping("/list/{classNo}")
-    public ResponseEntity<List<SubjectBoardListResponse>> getAllSubjectBoards(@PathVariable Long classNo) {
-        return ResponseEntity.ok().body(subjectBoardService.getAllSubjectBoards(classNo));
+    @GetMapping(value = "/list/{classroomNo}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<SubjectBoardListResponse>> getAllSubjectBoards(@PathVariable Long classroomNo) {
+        return ResponseEntity.ok().body(subjectBoardService.getAllSubjectBoards(classroomNo));
     }
 
     @GetMapping("/view/{boardNo}")

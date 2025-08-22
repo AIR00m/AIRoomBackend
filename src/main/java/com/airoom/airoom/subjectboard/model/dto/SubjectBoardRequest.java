@@ -15,7 +15,7 @@ public class SubjectBoardRequest {
     private String content;
     private boolean focusType;
     private Long classroomNo;
-    private Long memberNo;
+    private Long classroomTeacherNo;
 
     private List<Long> deleteAttachments;
 }
