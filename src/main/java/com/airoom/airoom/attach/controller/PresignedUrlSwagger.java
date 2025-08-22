@@ -1,8 +1,6 @@
 package com.airoom.airoom.attach.controller;
 
-import com.airoom.airoom.attach.model.dto.AttachmentDto;
-import com.airoom.airoom.attach.model.dto.PresignedUrlRequest;
-import com.airoom.airoom.attach.model.dto.PresignedUrlResponse;
+import com.airoom.airoom.attach.model.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +21,11 @@ public interface PresignedUrlSwagger {
             summary = "첨부파일 등록 API",
             description = "첨부파일을 등록합니다."
     )
-    public ResponseEntity<Void> saveAttachment(@RequestBody AttachmentDto dto);
+    public ResponseEntity<Void> saveAttachment(@RequestBody AttachmentRequest request);
 
     @Operation(
             summary = "다운로드용 PresignedUrl API",
             description = "다운로드용 PresignedUrl을 생성합니다."
     )
-    public ResponseEntity<String> getDownloadPresignedUrl(@RequestBody String S3Key);
+    public ResponseEntity<String> getDownloadPresignedUrl(@RequestBody DownloadUrlRequest request);
 }

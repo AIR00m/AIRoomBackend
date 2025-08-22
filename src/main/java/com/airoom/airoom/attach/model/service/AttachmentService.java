@@ -1,6 +1,6 @@
 package com.airoom.airoom.attach.model.service;
 
-import com.airoom.airoom.attach.model.dto.AttachmentDto;
+import com.airoom.airoom.attach.model.dto.AttachmentRequest;
 import com.airoom.airoom.attach.model.repository.AttachmentRepository;
 import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.board.entity.Attachment;
@@ -17,8 +17,8 @@ public class AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
 
-    public void saveAttachment(AttachmentDto dto) {
-        Attachment attachment = buildAttachment(dto);
+    public void saveAttachment(AttachmentRequest request) {
+        Attachment attachment = buildAttachment(request);
         attachmentRepository.save(attachment);
     }
 
@@ -33,7 +33,7 @@ public class AttachmentService {
 
 
     /*메소드 추출*/
-    private Attachment buildAttachment(AttachmentDto dto) {
+    private Attachment buildAttachment(AttachmentRequest dto) {
         return Attachment.builder()
                 .boardNo(dto.getBoardNo())
                 .boardType(dto.getBoardType())

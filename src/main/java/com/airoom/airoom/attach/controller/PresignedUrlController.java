@@ -1,8 +1,6 @@
 package com.airoom.airoom.attach.controller;
 
-import com.airoom.airoom.attach.model.dto.AttachmentDto;
-import com.airoom.airoom.attach.model.dto.PresignedUrlRequest;
-import com.airoom.airoom.attach.model.dto.PresignedUrlResponse;
+import com.airoom.airoom.attach.model.dto.*;
 import com.airoom.airoom.attach.model.service.AttachmentService;
 import com.airoom.airoom.attach.model.service.PresignedUrlService;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +21,13 @@ public class PresignedUrlController implements PresignedUrlSwagger {
     }
 
     @PostMapping("/attachment")
-    public ResponseEntity<Void> saveAttachment(@RequestBody AttachmentDto dto) {
-        attachmentService.saveAttachment(dto);
+    public ResponseEntity<Void> saveAttachment(@RequestBody AttachmentRequest request) {
+        attachmentService.saveAttachment(request);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/download")
-    public ResponseEntity<String> getDownloadPresignedUrl(@RequestBody String S3Key) {
-        return ResponseEntity.ok(presignedUrlService.generateDownloadUrl(S3Key));
+    public ResponseEntity<String> getDownloadPresignedUrl(@RequestBody DownloadUrlRequest request) {
+        return ResponseEntity.ok(presignedUrlService.generateDownloadUrl(request.getS3Key()));
     }
 }

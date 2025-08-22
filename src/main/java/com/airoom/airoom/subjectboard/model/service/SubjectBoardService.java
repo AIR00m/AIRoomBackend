@@ -1,6 +1,6 @@
 package com.airoom.airoom.subjectboard.model.service;
 
-import com.airoom.airoom.attach.model.dto.AttachmentDto;
+import com.airoom.airoom.attach.model.dto.AttachmentResponse;
 import com.airoom.airoom.attach.model.repository.AttachmentRepository;
 import com.airoom.airoom.attach.model.service.AttachmentService;
 import com.airoom.airoom.attach.model.service.PresignedUrlService;
@@ -52,7 +52,7 @@ public class SubjectBoardService {
         SubjectBoard board = subjectBoardRepository.findById(boardNo)
                 .orElseThrow(() -> new NotFoundException("해당 게시글이 존재하지 않습니다"));
 
-        List<AttachmentDto> attachments = attachmentRepository.findByBoardNoAndBoardType(boardNo, BoardType.SUBJECT).stream()
+        List<AttachmentResponse> attachments = attachmentRepository.findByBoardNoAndBoardType(boardNo, BoardType.SUBJECT).stream()
                 .map(this::buildAttachmentDto).toList();
 
         return buildSubjectBoardViewResponse(boardNo, board, attachments);
@@ -95,8 +95,9 @@ public class SubjectBoardService {
 
 
     /*메소드추출*/
-    private AttachmentDto buildAttachmentDto(Attachment attachment) {
-        return AttachmentDto.builder()
+    private AttachmentResponse buildAttachmentDto(Attachment attachment) {
+        return AttachmentResponse.builder()
+                .attachNo(attachment.getAttachNo())
                 .boardNo(attachment.getBoardNo())
                 .boardType(attachment.getBoardType())
                 .originalName(attachment.getOriginalName())
@@ -115,7 +116,7 @@ public class SubjectBoardService {
                 .build();
     }
 
-    private SubjectBoardViewResponse buildSubjectBoardViewResponse(Long boardNo, SubjectBoard board, List<AttachmentDto> attachments) {
+    private SubjectBoardViewResponse buildSubjectBoardViewResponse(Long boardNo, SubjectBoard board, List<AttachmentResponse> attachments) {
         return SubjectBoardViewResponse.builder()
                 .sbNo(boardNo)
                 .sbTitle(board.getSbTitle())
