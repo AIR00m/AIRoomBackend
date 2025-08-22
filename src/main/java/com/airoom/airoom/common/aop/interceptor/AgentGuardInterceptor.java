@@ -15,25 +15,26 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) throws Exception {
-        String uri = req.getRequestURI();
+        final String uri = req.getRequestURI();
+
+        // [NEW] 로컬 백엔드에서의 모든 요청은 전면 우회
+        if (isLocalRequest(req)) return true;
 
         // 1) 기본 예외
         if (isExcluded(uri)) return true;
 
-        // 2) 로컬에서 swagger-ui를 통해 호출된 API는 예외 허용 (Try it out)
-        if (isLocalRequest(req) && isSwaggerReferrer(req)) {
-            return true;
-        }
+        // 2) Swagger Try it out 예외
+        if (isSwaggerReferrer(req)) return true;
 
         // 3) 일반 가드
         HttpSession session = req.getSession(false);
-        Boolean verified = (session == null) ? null : (Boolean) session.getAttribute("AGENT_VERIFIED");
-
-        if (verified == null || !verified) {
-            String redirect = isLocalRequest(req) ? DEV_REDIRECT : PROD_REDIRECT;
-            res.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE); // 코드가 406 이면 location 정보
+        boolean verified = (session != null) && Boolean.TRUE.equals(session.getAttribute("AGENT_VERIFIED"));
+        if (!verified) {
+            // 프런트가 406 & {location:"/agent-required"}를 보고 라우팅하도록 설계됨
+            res.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             Map<String,String> body=Map.of("location","/agent-required");
             res.getWriter().print(new ObjectMapper().writeValueAsString(body));
+//            String redirect = isLocalRequest(req) ? DEV_REDIRECT : PROD_REDIRECT;
 //            res.sendRedirect(redirect);
             return false;
         }
