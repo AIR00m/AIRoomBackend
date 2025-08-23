@@ -1,8 +1,8 @@
 package com.airoom.airoom.board.model.repository;
 
-import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.board.entity.AssignBoard;
 import com.airoom.airoom.board.entity.AssignTarget;
+import com.airoom.airoom.board.entity.BoardType;
 import com.airoom.airoom.board.model.dto.homework.StudentHomeworkResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
