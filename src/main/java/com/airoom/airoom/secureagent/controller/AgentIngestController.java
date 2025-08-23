@@ -16,7 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/v1/agent")
+@RequestMapping("/api/agent")
 @CrossOrigin("*")
 public class AgentIngestController {
 
