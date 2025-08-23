@@ -1,11 +1,10 @@
 package com.airoom.airoom.board.model.service;
 
+import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.board.entity.AssignBoard;
 import com.airoom.airoom.board.entity.AssignTarget;
-import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
-import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
-import com.airoom.airoom.board.model.dto.assign.AssignmentSubmissionRequestDto;
-import com.airoom.airoom.board.model.dto.assign.AssignResponse;
+import com.airoom.airoom.board.model.dto.assign.*;
+import com.airoom.airoom.board.model.dto.homework.StudentHomeworkResponse;
 import com.airoom.airoom.board.model.repository.AssignBoardRepository;
 import com.airoom.airoom.board.model.repository.AssignTargetRepository;
 import com.airoom.airoom.board.model.repository.HomeworkRepository;
@@ -350,10 +349,11 @@ public class AssignService {
 
     }
 
-    public AssignResponse getAssignBoardWithSubmissions(Long assignBoardNo) {
+    public AssignWithHomeworksResponse getAssignBoardWithSubmissions(Long assignBoardNo, BoardType boardType) {
         AssignBoard board = assignBoardRepository.findById(assignBoardNo)
                 .orElseThrow(() -> new NotFoundException("해당하는 번호의 과제를 찾지 못했습니다 :("));
-        List<AssignTarget> students = assignTargetRepository.findByAssignBoard_AssignBoardNo(assignBoardNo);
-        return null;
+        List<StudentHomeworkResponse> homeworks
+                = assignTargetRepository.findHomeworkListByAssignBoardNo(assignBoardNo ,boardType);
+        return new AssignWithHomeworksResponse(AssignResponse.makeResponse(board),homeworks);
     }
 }
