@@ -11,6 +11,7 @@ import org.springframework.http.*;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -19,11 +20,12 @@ import java.util.Map;
 @CrossOrigin("*")
 public class AgentIngestController {
 
+    private static final String TOPIC_SECURE_LOGS   = "secure-agent-logs";
+    private static final String TOPIC_SECURE_EVENTS = "secure-agent-events";
+
     private final IngestSecurityProperties sec;
     private final ObjectMapper M = new ObjectMapper();
-
-    /** Kafka가 아직 없으면 null 주입 → 콘솔 fallback */
-    private final KafkaTemplate<String, String> kafka;
+    private final KafkaTemplate<String, String> kafka; // nullable
 
     public AgentIngestController(IngestSecurityProperties sec,
                                  @Autowired(required = false) KafkaTemplate<String, String> kafka) {
@@ -31,19 +33,26 @@ public class AgentIngestController {
         this.kafka = kafka;
     }
 
-    /** 에이전트 라인 로그 수신 (본문은 AES+Base64) */
+    /** 에이전트 라인 로그 수신 (본문은 AES+Base64) → JSON 래핑 후 카프카 */
     @PostMapping(value = "/log", consumes = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<Void> ingestLog(@RequestBody String cipher) {
         try {
             String plaintext = CryptoSupport.aesDecryptBase64(cipher, sec.getAesKey());
-            publish("airoom.security.logs", plaintext);
+
+            ObjectNode json = M.createObjectNode()
+                    .put("timestamp", OffsetDateTime.now().toString()) // ISO8601
+                    .put("level", "INFO")
+                    .put("component", "SecureAgent")
+                    .put("message", plaintext);
+
+            publish(TOPIC_SECURE_LOGS, M.writeValueAsString(json));
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    /** 포렌식 이벤트 수신 (encPayload만 암호문) */
+    /** 포렌식 이벤트 수신 (encPayload만 암호문) → 복호화/검증 후 카프카(JSON) */
     @PostMapping(value = "/event", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> ingestEvent(@RequestBody ForensicEventRequest req) {
@@ -54,21 +63,22 @@ public class AgentIngestController {
 
             // 1) encPayload 복호화 → ForensicPayload JSON
             String payloadJson = CryptoSupport.aesDecryptBase64(req.getEncPayload(), sec.getAesKey());
-            JsonNode p = M.readTree(payloadJson);
+            JsonNode p = M.readTree(payloadJson); // p.ts, p.uid, p.deviceId, p.action, ...
 
             // 2) canonical + HMAC 검증
             String canonical = CryptoSupport.canonical(p);
             String expected  = CryptoSupport.hmacHex(canonical, sec.getTokenSecret(), 12);
             boolean verified = expected.equalsIgnoreCase(req.getToken());
 
-            // 3) 카프카로 적재 (payload + 검증결과 + 에이전트 메타)
+            // 3) 카프카 적재 (enriched JSON)
             ObjectNode enriched = (ObjectNode) p.deepCopy();
             enriched.put("token", req.getToken());
             enriched.put("verified", verified);
             if (req.getAgentTs()  != null) enriched.put("agentTs",  req.getAgentTs());
             if (req.getAgentVer() != null) enriched.put("agentVer", req.getAgentVer());
+            enriched.put("receivedAt", OffsetDateTime.now().toString());
 
-            publish("airoom.security.forensic", M.writeValueAsString(enriched));
+            publish(TOPIC_SECURE_EVENTS, M.writeValueAsString(enriched));
 
             Map<String,Object> res = new LinkedHashMap<>();
             res.put("ok", verified);
