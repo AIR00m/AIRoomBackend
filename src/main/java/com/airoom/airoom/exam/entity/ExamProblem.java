@@ -16,7 +16,9 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("DELETED_AT IS NULL")
 @SQLDelete(sql = "UPDATE exam_problem SET deleted_at = NOW() WHERE ep_no = ?")
 @Table(indexes = {
-        @Index(name = "IDX_EXAM_PROBLEM_UNIT_LEVEL_DEL",  columnList = "ep_level, unit_no, deleted_at")
+        @Index(name = "IDX_EXAM_PROBLEM_UNIT_LEVEL_DEL", columnList = "ep_level, unit_no, deleted_at"), //단원별, 난이도별 문제
+        @Index(name = "idx_ep_no_ep_level_unit_no", columnList = "ep_no, ep_level, unit_no, deleted_at"),
+        @Index(name = "idx_ep_no", columnList = "ep_no, deleted_at")
 })
 public class ExamProblem extends BaseEntity {
     @Id

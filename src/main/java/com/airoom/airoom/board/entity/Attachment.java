@@ -1,6 +1,5 @@
 package com.airoom.airoom.board.entity;
 
-import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

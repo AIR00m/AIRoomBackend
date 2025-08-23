@@ -25,7 +25,6 @@ public interface ExamProblemRepository extends JpaRepository<ExamProblem, Long> 
             join ep.unit u
             where u.unitNo = :unitNo
               and ep.epLevel = :level
-              and ep.deletedAt is null
             order by function('RAND')
             """)
     List<ExamProblemResponse> findRandomExamProblemsByUnitAndLevel(
@@ -44,7 +43,6 @@ public interface ExamProblemRepository extends JpaRepository<ExamProblem, Long> 
                 join ep.unit u
                 where u.unitNo = :unitNo
                   and ep.epLevel = :level
-                  and ep.deletedAt is null
                   and ep.epNo <> :excludeEpNo
                 order by function('RAND')
             """)

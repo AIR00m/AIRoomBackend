@@ -14,6 +14,11 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE exam_unit SET deleted_at = NOW() WHERE eu_no = ?")
 @AllArgsConstructor
+@Table(
+        indexes = {
+                @Index(name = "idx_exam_no", columnList = "exam_no, deleted_at")
+        }
+)
 public class ExamUnit extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
