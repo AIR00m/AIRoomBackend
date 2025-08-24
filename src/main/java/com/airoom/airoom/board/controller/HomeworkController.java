@@ -14,13 +14,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 
-public class HomeworkController {
+public class HomeworkController implements HomeworkControllerSwagger {
 
     private final HomeworkService homeworkService;
-
+    // 선생님이 학생 점수 등록
     @PostMapping("/teacher/assign/{boardNo}")
     public ResponseEntity<Void> saveStudentHomeworkScores
-            (@PathVariable Long boardNo, @RequestBody List<TeacherHomeworkRequest> request) {
+            (@PathVariable Long boardNo, @RequestBody List<TeacherHomeworkRequest> request){
       int saveResult =  homeworkService.saveStudentHomeworkScore(boardNo,request);
         return ResponseEntity.ok().build();
     }

@@ -1,11 +1,10 @@
 package com.airoom.airoom.board.controller;
 
 import com.airoom.airoom.board.entity.Attachment;
+import com.airoom.airoom.board.model.dto.comment.CommentRequest;
 import com.airoom.airoom.board.model.dto.comment.CommentResponse;
-import com.airoom.airoom.board.model.dto.group.CommentService;
-import com.airoom.airoom.board.model.dto.group.GroupBoardRequest;
-import com.airoom.airoom.board.model.dto.group.GroupBoardResponse;
-import com.airoom.airoom.board.model.dto.group.GroupBoardsResponse;
+import com.airoom.airoom.board.model.dto.comment.SaveCommentResponse;
+import com.airoom.airoom.board.model.dto.group.*;
 import com.airoom.airoom.board.model.service.GroupBoardService;
 import com.airoom.airoom.common.token.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ import java.util.List;
 @RequestMapping("/group")
 @RequiredArgsConstructor
 @Slf4j
-public class GroupBoardController {
+public class GroupBoardController implements GroupBoardControllerSwagger{
 
     private final GroupBoardService groupBoardService;
     private final CommentService commentService;
@@ -33,7 +32,7 @@ public class GroupBoardController {
 
     // 모둠 게시판 게시글 작성
     @PostMapping("/{groupNo}/board")
-    public ResponseEntity<?> saveBoard(@PathVariable("groupNo") Long groupNo,
+    public ResponseEntity<Void> saveBoard(@PathVariable("groupNo") Long groupNo,
                                        @RequestBody GroupBoardRequest request,
                                        @AuthenticationPrincipal CustomUserDetails user) {
 
@@ -46,14 +45,27 @@ public class GroupBoardController {
 
     // 게시판 정보 출력
     @GetMapping("/board/{groupBoardNo}")
-    public ResponseEntity<List<CommentResponse>> getGroupBoardByGroupBoardNo(
+    public ResponseEntity<TotalResponse> getGroupBoardByGroupBoardNo(
             @PathVariable Long groupBoardNo) {
-        GroupBoardResponse response = groupBoardService.getGroupBoardByGroupNoAndGroupBoardNo(groupBoardNo);
+        GroupBoardResponse groupBoardresponse = groupBoardService.getGroupBoardByGroupNoAndGroupBoardNo(groupBoardNo);
         List<CommentResponse> commentResponse = commentService.getCommentsByGroupBoardNo(groupBoardNo);
-        return ResponseEntity.ok(commentResponse);
+
+        TotalResponse totalResponse = TotalResponse.builder()
+                .groupBoardResponse(groupBoardresponse)
+                .commentResponse(commentResponse)
+                .build();
+
+        return ResponseEntity.ok(totalResponse);
     }
 
     // 댓글 작성
-
+    @PostMapping("/board/{groupBoardNo}/comment")
+    public ResponseEntity<SaveCommentResponse> writeCommentByBoardNo(@PathVariable Long groupBoardNo,
+                                               @RequestBody CommentRequest request,
+                                               @AuthenticationPrincipal CustomUserDetails user
+                                               ) {
+        SaveCommentResponse response = commentService.writeCommentByBoardNo(groupBoardNo,user,request);
+        return ResponseEntity.ok(response);
+    }
 
 }
