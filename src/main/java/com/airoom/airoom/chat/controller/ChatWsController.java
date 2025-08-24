@@ -19,5 +19,6 @@ public class ChatWsController {
     @MessageMapping("/chat/send")
     public void send(@Payload ChatMessageRequest request) {
         request.setSentAt(LocalDateTime.now());
+        producer.publish(request);
     }
 }
