@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class ChatRoomRequest {
     private Long classroomTeacherNo;
     private Long classroomStudentNo;
+    private Long classroomNo;
 }

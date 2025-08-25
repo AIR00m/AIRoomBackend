@@ -13,10 +13,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChatMessageResponse {
-    private Long roomId;
+    private Long crNo;//채팅방번호
     private Long messageId;
     private String content;
     private MemberRole writerRole;
-    private String senderName;
     private LocalDateTime sentAt;
 }

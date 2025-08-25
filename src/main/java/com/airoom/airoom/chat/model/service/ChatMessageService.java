@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,21 +37,22 @@ public class ChatMessageService {
         chatMessageRepository.save(message);
 
         // 채팅방 마지막 메시지 업데이트
-        room.setLastMessage(content);
-        room.setLastMessageTime(sentAt);
+        room.updateCR(content,sentAt);
 
         return message.getCmNo();
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMessageResponse> scroll(Long roomId, Long beforeId, int size) {
-        ChatRoom room = chatRoomRepository.findById(roomId).orElseThrow();
+    public List<ChatMessageResponse> scroll(Long roomId, Long beforeId) {
+        int size = 10;
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방 없음"));
         Pageable p = PageRequest.of(0, size);
         List<ChatMessageResponse> list = (beforeId == null)
                 ? chatMessageRepository.findByChatRoomOrderByCmNoDesc(room, p).stream()
-                .map(this::buildChatMessageResponse).toList()
+                .map(this::buildChatMessageResponse).collect(Collectors.toList())
                 : chatMessageRepository.findByChatRoomAndCmNoLessThanOrderByCmNoDesc(room, beforeId, p).stream()
-                .map(this::buildChatMessageResponse).toList();
+                .map(this::buildChatMessageResponse).collect(Collectors.toList());
         // 화면에서 아래→위 순서를 원하면 역순 반환
         Collections.reverse(list);
         return list;
@@ -59,7 +61,7 @@ public class ChatMessageService {
     private ChatMessageResponse buildChatMessageResponse(ChatMessage chatMessage) {
         return ChatMessageResponse.builder()
                 .messageId(chatMessage.getCmNo())
-                .roomId(chatMessage.getChatRoom().getCrNo())
+                .crNo(chatMessage.getChatRoom().getCrNo())
                 .content(chatMessage.getCmContent())
                 .sentAt(chatMessage.getCreatedAt())
                 .writerRole(chatMessage.getCmWriterType())

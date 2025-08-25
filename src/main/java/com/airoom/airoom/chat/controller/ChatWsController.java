@@ -18,6 +18,10 @@ public class ChatWsController {
 
     @MessageMapping("/chat/send")
     public void send(@Payload ChatMessageRequest request) {
+        System.out.println("=== 메시지 수신 ===");
+        System.out.println("채팅방: " + request.getCrNo());
+        System.out.println("내용: " + request.getContent());
+        System.out.println("작성자: " + request.getWriterRole());
         request.setSentAt(LocalDateTime.now());
         producer.publish(request);
     }

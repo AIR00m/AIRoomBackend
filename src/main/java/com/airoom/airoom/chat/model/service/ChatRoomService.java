@@ -25,9 +25,9 @@ public class ChatRoomService {
     @Transactional
     public ChatRoom getOrCreateRoom(Long classroomTeacherNo, Long classroomStudentNo) {
         ClassroomTeacher classroomTeacher= teacherRepository.findById(classroomTeacherNo)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         ClassroomStudent classroomStudent= studentRepository.findById(classroomStudentNo)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         return chatRoomRepository.findByClassroomTeacherAndClassroomStudent(classroomTeacher, classroomStudent)
                 .orElseGet(() -> {
                     ChatRoom room = ChatRoom.builder()
@@ -50,7 +50,7 @@ public class ChatRoomService {
 
     public List<ChatRoomResponse> getChatRooms(Long classroomTeacherNo) {
         ClassroomTeacher classroomTeacher= teacherRepository.findById(classroomTeacherNo)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         return chatRoomRepository.findByClassroomTeacher(classroomTeacher).stream()
                 .map(this::buildChatRoomResponse).toList();
     }
