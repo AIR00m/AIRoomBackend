@@ -83,21 +83,29 @@ public class ExamController implements ExamControllerSwagger {
 
 
     /**
-     * 시험별 학생의 정답리스트 조회
+     * 시험별 학생의 정답 리스트 조회
      */
     @Override
-    @GetMapping("/answer/{classroomStudentNo}/{examNo}")
-    public List<StudentAnswerResponse> getStudentAnswers(
+    @GetMapping("/answer/student/{classroomStudentNo}/{examNo}")
+    public List<StudentAnswerResponse> getStudentAnswersByClassroomStudent(
             @PathVariable final Long classroomStudentNo,
             @PathVariable final Long examNo
     ) {
-        return examService.getStudentAnswers(classroomStudentNo, examNo);
+        return examService.getStudentAnswersByClassroomStudent(classroomStudentNo, examNo);
     }
 
-    /**
-     * 시험별 학급의 정답 조회
-     */
 
+    /**
+     * 시험별 학급의 정답 리스트 조회
+     */
+    @GetMapping("/answer/classroom/{classroomNo}/{examNo}")
+    @Override
+    public List<StudentAnswerByClassroomResponse> getStudentAnswersByClassroom(
+            @PathVariable final Long classroomNo,
+            @PathVariable final Long examNo
+    ) {
+        return examService.getStudentAnswersByClassroom(classroomNo, examNo);
+    }
 
     //시험 수정,삭제 기능은 제외
 }

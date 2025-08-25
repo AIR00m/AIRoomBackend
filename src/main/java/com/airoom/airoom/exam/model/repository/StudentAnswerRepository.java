@@ -1,5 +1,6 @@
 package com.airoom.airoom.exam.model.repository;
 
+import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.exam.entity.Exam;
 import com.airoom.airoom.exam.entity.StudentAnswer;
@@ -30,4 +31,18 @@ public interface StudentAnswerRepository extends JpaRepository<StudentAnswer, Lo
             and cs = :classroomStudent
             """)
     List<StudentAnswerResponse> findStudentAnswersByClassroomStudentAndExam(ClassroomStudent classroomStudent, Exam exam);
+
+    @Query("""
+                select distinct sa
+                from StudentAnswer sa
+                join fetch sa.exam e
+                join fetch sa.classroomStudent cs
+                join fetch sa.createdExamProblem cep
+                join fetch sa.examProblem ep
+                join fetch cs.student st
+                join fetch ep.unit u
+                where e = :exam
+                and cs.classRoom = :classroom
+            """)
+    List<StudentAnswer> findStudentAnswersByClassroomAndExam(Classroom classroom, Exam exam);
 }
