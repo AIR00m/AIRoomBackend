@@ -1,5 +1,7 @@
 package com.airoom.airoom.textbook.controller;
 
+import com.airoom.airoom.exam.model.dto.UnitResponse;
+import com.airoom.airoom.textbook.model.dto.UnitPdfUrl;
 import com.airoom.airoom.textbook.model.dto.UnitsResponse;
 import com.airoom.airoom.textbook.model.service.TextbookService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/textbooks")
+@RequestMapping("/api/textbooks")
 public class TextbookController {
 
     private final TextbookService textbookService;
@@ -24,5 +26,8 @@ public class TextbookController {
     }
 
     /* 단원 조회 */
-
+    @GetMapping("/units/pdf/{unitNo}")
+    public List<UnitPdfUrl> getUnitByUnitNo(@PathVariable("unitNo") Long unitNo) {
+        return textbookService.getUnitByUnitNo(unitNo);
+    }
 }
