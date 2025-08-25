@@ -3,6 +3,7 @@ package com.airoom.airoom.statistic.entity;
 import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
@@ -38,9 +39,14 @@ public class LearningSummary extends BaseEntity {
 
     private Integer lsTotalLearningDays; //학습일 수
 
-    private Duration lsTotalLearningTime; //총 학습시간(초)
+    private Duration lsTotalLearningTime; //총 학습시간(밀리초)
+
+    @Formula("ls_total_learning_time")
+    private Long lsTotalLearningTimeMs; //집계용 컬럼
 
     private Integer lsTotalProblemsSolved; //문제풀이 수
+    
+    private Integer lsTotalCorrectProblems; //정답 수
 
     @Column(precision = 5, scale = 2)
     private BigDecimal lsAccuracyRate; //정답률
