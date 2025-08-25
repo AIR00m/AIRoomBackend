@@ -33,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/install/**",
             "/forensic/**",
             "/api/forensic/**",
+            "/api/aichat/**",
             "/agent-required/**",
             "/auth/**",
             "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"); // 필터에 적용 받지 않을 위치 경로를 추가
