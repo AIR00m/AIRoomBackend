@@ -80,7 +80,24 @@ public class ExamController implements ExamControllerSwagger {
     ) {
         return examService.getExams(classroomMemberNo, examStatus, memberRole);
     }
-    
+
+
+    /**
+     * 시험별 학생의 정답리스트 조회
+     */
+    @Override
+    @GetMapping("/answer/{classroomStudentNo}/{examNo}")
+    public List<StudentAnswerResponse> getStudentAnswers(
+            @PathVariable final Long classroomStudentNo,
+            @PathVariable final Long examNo
+    ) {
+        return examService.getStudentAnswers(classroomStudentNo, examNo);
+    }
+
+    /**
+     * 시험별 학급의 정답 조회
+     */
+
 
     //시험 수정,삭제 기능은 제외
 }

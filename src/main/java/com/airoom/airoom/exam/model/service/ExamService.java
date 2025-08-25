@@ -128,6 +128,17 @@ public class ExamService {
     }
 
     /**
+     * 시험별 학생 정답리스트 조회
+     */
+    public List<StudentAnswerResponse> getStudentAnswers(final Long classroomStudentNo, final Long examNo) {
+        ClassroomStudent classroomStudent = loadClassroomStudent(classroomStudentNo);
+        Exam exam = loadExam(examNo);
+
+        return studentAnswerRepository.findStudentAnswersByClassroomStudentAndExam(classroomStudent, exam);
+    }
+
+
+    /**
      * 메소드 추출
      */
     private ExamProblemResponse getRandomExamProblemByUnitAndLevelExcludingSelf(ExamProblem examProblem) {
