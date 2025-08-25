@@ -33,4 +33,9 @@ public interface ClassroomStudentRepository extends JpaRepository<ClassroomStude
            """)
     Long getClassStudentNoByClassRoomNo(@Param("classroomNo")  Long classroomNo, @Param("memberId") String memberId);
 
+
+    @Query("SELECT cs FROM ClassroomStudent cs WHERE cs.classroomGroup.groupNo = :groupNo")
+    List<ClassroomStudent> findClassroomStudentsByGroupNo(@Param("groupNo") Long groupNo);
+
 }
+

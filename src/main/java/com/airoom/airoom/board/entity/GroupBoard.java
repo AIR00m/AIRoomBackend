@@ -29,7 +29,7 @@ public class GroupBoard extends BaseEntity {
     // 게시판 내용
 
     @Column(nullable = false)
-    private String GroupBoardTitle;
+    private String groupBoardTitle;
     // 모둠 게시판 제목
 
     @ManyToOne

@@ -23,7 +23,7 @@ public class AssignTarget extends BaseEntity {
 
     @Column(nullable = false)
     private Long targetNo;
-    // 모둠 고유번호 / 클래스룸 고유 번호를 단독 컬럼으로 사용
+    // 모둠 고유번호 / 클래스룸 학생 고유 번호를 단독 컬럼으로 사용
 
     @Column(nullable = false)
     private boolean groupAssignType;

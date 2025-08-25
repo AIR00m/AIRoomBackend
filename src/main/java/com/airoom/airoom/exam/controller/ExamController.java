@@ -54,7 +54,7 @@ public class ExamController implements ExamControllerSwagger {
      * 시험출제문제 전체조회 = 시험 상세조회
      */
     @Override
-    @GetMapping("/examProblems/{examNo}")
+    @GetMapping("/exam-problems/{examNo}")
     public ExamDetailResponse getExamProblems(@PathVariable final Long examNo) {
         return examService.getExamProblems(examNo);
     }

@@ -115,7 +115,9 @@ public class ExamRepositoryImpl implements ExamRepositoryCustom {
                         // 평균 점수
                         JPAExpressions.select(studentExam.seScore.avg().round().intValue())
                                 .from(studentExam)
-                                .where(studentExam.exam.eq(exam))
+                                .where(studentExam.exam.eq(exam)),
+                        exam.examStartTime,
+                        exam.examEndTime
                 ))
                 .from(exam)
                 .leftJoin(studentExam).on(studentExam.exam.eq(exam)
