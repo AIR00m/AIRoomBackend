@@ -2,6 +2,7 @@ package com.airoom.airoom.statistic.model.service;
 
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
+import com.airoom.airoom.statistic.entity.value.SummaryType;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryRequest;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryResponse;
 import com.airoom.airoom.statistic.model.repository.LearningSummaryRepository;
@@ -9,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.chrono.ChronoLocalDate;
 
 @Service
@@ -26,12 +29,24 @@ public class StatisticService {
      */
     public StudentLearningSummaryResponse getMyLearningSummaryForStudent(StudentLearningSummaryRequest request) {
         LocalDateTime today = LocalDateTime.now();
+        LocalDate lsStartDate = request.lsStartDate();
+        LocalDate lsEndDate = request.lsEndDate();
+
+        if (lsEndDate == null) {
+            lsEndDate = lsStartDate;
+        }
+
+        if (request.lsType() == SummaryType.MONTHLY) {
+            YearMonth ym = YearMonth.from(lsStartDate);
+            lsStartDate = ym.atDay(1);
+            lsEndDate = ym.atEndOfMonth();
+        }
 
         //RDB에 저장된 데이터 가져오기
-        StudentLearningSummaryResponse studentLearningSummaryResponse = learningSummaryRepository.findByClassroomStudentAndTypeAndRange(request.classroomStudentNo(), request.lsType(), request.lsStartDate(), request.lsEndDate());
+        StudentLearningSummaryResponse studentLearningSummaryResponse = learningSummaryRepository.findByClassroomStudentAndTypeAndRange(request.classroomStudentNo(), request.lsType(), lsStartDate, lsEndDate);
 
         //EndDate가 오늘 날짜라면 ES에서 최신 데이터 가져와서 보정
-        if (!request.lsEndDate().isBefore(ChronoLocalDate.from(today))) {
+        if (!lsEndDate.isBefore(ChronoLocalDate.from(today))) {
             //마지막 배치시간 이후의 데이터를 ES에서 가져오기
             LocalDateTime lastBatchTime = learningSummaryRepository.findLastBatchCreatedAt(request.classroomStudentNo(), request.lsType());
 
