@@ -1,6 +1,6 @@
 package com.airoom.airoom.common.redis;
 
-import com.airoom.airoom.common.redis.model.dto.AssignmentCreateDto;
+import com.airoom.airoom.notification.model.dto.NotificationEventDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +21,9 @@ public class RedisStreamPublisher {
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public void createAssignment(AssignmentCreateDto assignment) { // 학생에게 알림 보낼 dto 생성 후 넣기
+    public void publishNotification(NotificationEventDto notification) { // 학생에게 알림 보낼 dto 생성 후 넣기
         try {
-            String json = objectMapper.writeValueAsString(assignment);
+            String json = objectMapper.writeValueAsString(notification);//객체를 json문자열로 직렬화
 
             //ObjectMapper(ofObject) vs MapRecord(ofMap)
             //
