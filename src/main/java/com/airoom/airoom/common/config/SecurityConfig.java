@@ -104,6 +104,8 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth-> auth
+                        .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/api/presence/**").permitAll()
                         .requestMatchers("/api/agent/**").permitAll()
                         .requestMatchers("/auth/**").permitAll() // 인증
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 모니터링
