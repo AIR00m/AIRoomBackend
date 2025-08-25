@@ -128,15 +128,25 @@ public class ExamService {
     }
 
     /**
-     * 시험별 학생 정답리스트 조회
+     * 시험별 학생 정답 리스트 조회
      */
-    public List<StudentAnswerResponse> getStudentAnswers(final Long classroomStudentNo, final Long examNo) {
+    public List<StudentAnswerResponse> getStudentAnswersByClassroomStudent(final Long classroomStudentNo, final Long examNo) {
         ClassroomStudent classroomStudent = loadClassroomStudent(classroomStudentNo);
         Exam exam = loadExam(examNo);
 
         return studentAnswerRepository.findStudentAnswersByClassroomStudentAndExam(classroomStudent, exam);
     }
 
+    /**
+     * 시험별 학급 정답 리스트 조회
+     */
+    public List<StudentAnswerByClassroomResponse> getStudentAnswersByClassroom(final Long classroomNo, final Long examNo) {
+        Classroom classroom = loadClassroom(classroomNo);
+        Exam exam = loadExam(examNo);
+
+        List<StudentAnswer> studentAnswerList = studentAnswerRepository.findStudentAnswersByClassroomAndExam(classroom, exam);
+        return convertStudentAnswerToDtoAndGrouping(studentAnswerList);
+    }
 
     /**
      * 메소드 추출
@@ -146,6 +156,31 @@ public class ExamService {
         Unit unit = examProblem.getUnit();
         List<ExamProblemResponse> examProblemResponseList = examProblemRepository.findRandomByUnitAndLevelExcludingSelf(unit.getUnitNo(), level, examProblem.getEpNo(), PageRequest.of(0, 1));
         return examProblemResponseList.get(0);
+    }
+
+    private List<StudentAnswerByClassroomResponse> convertStudentAnswerToDtoAndGrouping(List<StudentAnswer> studentAnswerList) {
+        return studentAnswerList.stream()
+                .collect(Collectors.groupingBy(
+                        StudentAnswer::getClassroomStudent,
+                        Collectors.mapping(
+                                sa -> new StudentAnswerResponse(
+                                        sa.getExamProblem().getUnit().getUnitTitle(),
+                                        sa.isSaIsCorrect(),
+                                        sa.getCreatedExamProblem().getCepQuestionOrder(),
+                                        sa.getCreatedExamProblem().getCepNo(),
+                                        sa.getExamProblem().getEpNo(),
+                                        sa.getSaSolvingTime(),
+                                        sa.getSaAnswer(),
+                                        sa.getExamProblem().getEpAnswer()
+                                ),
+                                Collectors.toList()
+                        )
+                )).entrySet().stream()
+                .map(e -> new StudentAnswerByClassroomResponse(
+                        e.getKey().getClassRoomStudentNo(),
+                        e.getKey().getStudent().getMemberName(),
+                        e.getValue()
+                )).toList();
     }
 
     private Result markProblems(List<StudentAnswerRequest> studentAnswerRequests, double scorePerProblem, List<StudentAnswerResponse> studentAnswerResponseList, List<StudentAnswer> studentAnswerList, ClassroomStudent classroomStudent, Exam exam) {
