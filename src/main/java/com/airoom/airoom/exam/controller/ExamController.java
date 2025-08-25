@@ -55,7 +55,9 @@ public class ExamController implements ExamControllerSwagger {
      */
     @Override
     @GetMapping("/exam-problems/{examNo}")
-    public ExamDetailResponse getExamProblems(@PathVariable final Long examNo) {
+    public ExamDetailResponse getExamProblems(
+            @PathVariable final Long examNo
+    ) {
         return examService.getExamProblems(examNo);
     }
 
@@ -64,7 +66,9 @@ public class ExamController implements ExamControllerSwagger {
      */
     @Override
     @PostMapping("/submit")
-    public ResponseEntity<SubmitExamProblemsResponse> markAndSubmitExamProblems(@RequestBody @Valid final SubmitExamProblemsRequest request) {
+    public ResponseEntity<SubmitExamProblemsResponse> markAndSubmitExamProblems(
+            @RequestBody @Valid final SubmitExamProblemsRequest request
+    ) {
         return ResponseEntity.ok(examService.markAndSubmitExamProblems(request));
     }
 
