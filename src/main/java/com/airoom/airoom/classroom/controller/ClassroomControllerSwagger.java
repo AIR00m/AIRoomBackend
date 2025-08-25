@@ -1,5 +1,6 @@
 package com.airoom.airoom.classroom.controller;
 
+import com.airoom.airoom.classroom.model.dto.ClassroomGroupResponse;
 import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,4 +17,10 @@ public interface ClassroomControllerSwagger {
     public List<ClassroomStudentResponse> getClassroomStudentAll(
             @PathVariable Long classroomNo
     );
+
+    @Operation(
+            summary = "클래스룸 모둠 전체 조회 API",
+            description = "클래스룸 모둠을 전체 조회합니다."
+    )
+    public List<ClassroomGroupResponse> getAssignmentGroup(@PathVariable Long classroomNo);
 }
