@@ -19,7 +19,6 @@ import java.time.Duration;
 @Table(indexes = {
         @Index(name = "idx_classroom_student", columnList = "classroom_student_no, deleted_at"),
         @Index(name = "idx_exam", columnList = "exam_no, deleted_at"),
-        @Index(name = "idx_cep", columnList = "cep_no, deleted_at"),
         @Index(name = "idx_exam_cs", columnList = "exam_no, classroom_student_no, deleted_at"),
         @Index(name = "idx_ep", columnList = "ep_no, deleted_at"),
 })
