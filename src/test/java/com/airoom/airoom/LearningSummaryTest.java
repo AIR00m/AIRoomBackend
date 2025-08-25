@@ -7,6 +7,8 @@ import com.airoom.airoom.statistic.model.repository.LearningSummaryRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Rollback;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -22,6 +24,8 @@ public class LearningSummaryTest {
      * LearningSummary 더미데이터 생성
      */
     @Test
+    @Transactional
+    @Rollback
     public void insertDummyLearningSummary() {
         LearningSummaryId id1 = new LearningSummaryId(1L, SummaryType.DAILY, LocalDate.of(2025, 8, 20));
         LearningSummaryId id2 = new LearningSummaryId(1L, SummaryType.DAILY, LocalDate.of(2025, 8, 21));
