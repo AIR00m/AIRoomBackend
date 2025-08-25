@@ -45,21 +45,18 @@ public class AssignService {
     private final AssignTargetRepository assignTargetRepository;
     private final HomeworkRepository homeworkRepository;
 
-    public void createAssignment(AssignCreateRequest request) {
+    public Long createAssignment(AssignCreateRequest request) {
         //유효성 검사
         validateRequest(request);
         //assignBoard save
         AssignBoard assignBoard = createAndSaveAssignBoard(request.assignBoard());
+        Long assignBoardNo = assignBoard.getAssignBoardNo();
         //assignTarget save
         List<AssignTarget> savedTargetIds  = saveAssignTargets(assignBoard, request.assignTargets()); //모둠과제면 해당하는 아이디들과 개별과제면 타겟 아이디들
         //homeworkBoard save
         saveHomework(assignBoard, savedTargetIds);
 
-
-//        publisher.publishNotification();
-
-        log.info("과제 생성 완료 - AssignBoard ID: {}, 대상자 수: {}",
-                assignBoard.getAssignBoardNo(), savedTargetIds.size()); // 🔧 수정
+        return assignBoardNo;
     }
 
     private void createNotification(){

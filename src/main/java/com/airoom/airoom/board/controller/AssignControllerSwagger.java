@@ -19,7 +19,7 @@ public interface AssignControllerSwagger {
             summary = "과제 게시판 생성 API",
             description = "과제 게시판에 과제를 추가"
     )
-    public ResponseEntity<String> createAssignment(@RequestBody AssignCreateRequest request);
+    public ResponseEntity<Long> createAssignment(@RequestBody AssignCreateRequest request);
 
     @Operation(
             summary = "과제 게시판 전체 조회",

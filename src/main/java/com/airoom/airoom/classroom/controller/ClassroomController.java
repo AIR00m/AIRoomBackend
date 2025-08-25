@@ -1,6 +1,8 @@
 package com.airoom.airoom.classroom.controller;
 
+import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.model.dto.ClassroomGroupResponse;
+import com.airoom.airoom.classroom.model.dto.ClassroomResponse;
 import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
 import com.airoom.airoom.classroom.model.service.ClassroomService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,10 @@ public class ClassroomController implements ClassroomControllerSwagger {
     @GetMapping("/group/{classroomNo}")
     public List<ClassroomGroupResponse> getAssignmentGroup(@PathVariable Long classroomNo) {
         return classroomService.getClassroomGroupAll(classroomNo);
+    }
+    @GetMapping("/{classroomNo}")
+    public ClassroomResponse getClassroom(@PathVariable Long classroomNo) {
+        return classroomService.getClassroomByClassroomNo(classroomNo);
     }
 
 }

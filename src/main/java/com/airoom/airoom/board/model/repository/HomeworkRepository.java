@@ -11,19 +11,18 @@ import java.util.List;
 
 @Repository
 public interface HomeworkRepository extends JpaRepository<Homework, Long> {
+    @Query
     boolean existsByAssignTarget(AssignTarget assignTarget);
-   
+
     @Query("""
-    SELECT h
-    FROM Homework h
-    JOIN h.assignTarget at
-    JOIN at.assignBoard ab
-    WHERE at.groupAssignType = false
-     AND ab.assignBoardNo = :assignBoardNo
-    """)
+            SELECT h
+            FROM Homework h
+            JOIN h.assignTarget at
+            JOIN at.assignBoard ab
+            WHERE at.groupAssignType = false
+             AND ab.assignBoardNo = :assignBoardNo
+            """)
     List<Homework> findHomeworkByAssignBoardNo(Long assignBoardNo);
-
-
 
 
 }

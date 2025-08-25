@@ -3,7 +3,9 @@ package com.airoom.airoom.board.model.repository;
 import com.airoom.airoom.board.entity.AssignBoard;
 import com.airoom.airoom.board.entity.AssignTarget;
 import com.airoom.airoom.board.entity.BoardType;
+import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
 import com.airoom.airoom.board.model.dto.homework.StudentHomeworkResponse;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -14,15 +16,25 @@ import java.util.List;
 public interface AssignTargetRepository extends JpaRepository<AssignTarget, Long> {
 
     boolean existsByAssignBoardAndGroupAssignTypeTrue(AssignBoard assignBoard);
-
-    @Query("""
-                    select at
-                    from AssignTarget at
-                    join fetch at.assignBoard ab
-                    join fetch ab.classroom cr
-                    where cr.classroomNo = :classroomNo and at.groupAssignType=false and at.targetNo = :targetNo
-            """)
-    List<AssignTarget> findByAssignBoard_Classroom_ClassroomNoAndTargetNoAndGroupAssignTypeFalse(Long classroomNo, Long targetNo);
+    @Query(
+            """
+            SELECT NEW com.airoom.airoom.board.model.dto.assign.AssignListResponse(
+                    ab.assignBoardNo,
+                    ab.assignBoardTitle,
+                    at.groupAssignType,
+                    ab.assignStart,
+                    ab.assignEnd,
+                    h.homeworkSubmitType
+                    )
+            FROM AssignTarget at
+            JOIN Homework h ON h.assignTarget.assignTargetNo = at.assignTargetNo
+            JOIN h.classroom c
+            JOIN at.assignBoard ab
+            WHERE at.targetNo = :classroomStudentNo AND h.classroom.classroomNo = :classroomNo
+        """
+    )
+    List<AssignListResponse> findAssignTargetByClassroomNoAndClassroomStudentNo(@Param("classroomNo") Long classroomNo,
+                                                                                @Param("classroomStudentNo") Long classroomStudentNo);
 
     List<AssignTarget> findByAssignBoard_Classroom_ClassroomNoAndTargetNoAndGroupAssignTypeTrue(Long classroomNo, Long targetNo);
 
@@ -45,6 +57,9 @@ public interface AssignTargetRepository extends JpaRepository<AssignTarget, Long
       LEFT JOIN Attachment a
         ON a.boardNo = h.homeworkBoardNo
        AND a.boardType = :boardType
+       WHERE ab.assignBoardNo = :assignBoardNo
 """)
     List<StudentHomeworkResponse> findHomeworkListByAssignBoardNo (Long assignBoardNo, BoardType boardType);
+
+    List<AssignListResponse> makeAssignListByAssignBoardNo (Long assignBoardNo);
 }
