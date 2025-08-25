@@ -16,6 +16,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE student_exam SET deleted_at = NOW() WHERE se_no = ?")
 @AllArgsConstructor
+@Table(indexes = {
+        @Index(name = "idx_exam_no_classroom_student_no", columnList = "exam_no, classroom_student_no, deleted_at"),
+        @Index(name = "idx_exam_no", columnList = "exam_no, deleted_at"),
+        @Index(name = "idx_exam_no_se_is_done", columnList = "exam_no, se_is_done, deleted_at"),
+        @Index(name = "idx_exam_no_classroom_student_no", columnList = "exam_no, classroom_student_no, deleted_at")
+})
 /**
  * 학생 시험 엔티티
  * 시험 엔티티 생성 시 트랜잭션으로 묶어서 같이 생성

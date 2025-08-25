@@ -75,14 +75,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 4. 권한을 만들어주기
             String username = claim.getSubject(); // 회원아이디
             String role = claim.get("role", String.class); // 회원 역할(선생님,학생)
+            Long classroomNo = claim.get("classroomNo", Long.class);
             String authority = "ROLE_" + role.toUpperCase();
 
             List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(authority));
             //   사용자가 가진 권한 예)ROLE_TEACHER 같은것 -> List는 권한이 여러개 가능하므로
 
+            CustomUserDetails userDetails = new CustomUserDetails(username,classroomNo,authorities);
+
             // 5. 권한을 기반으로 출입증 만들기
             UsernamePasswordAuthenticationToken authentication
-                    = new UsernamePasswordAuthenticationToken(username, null, authorities);
+                    = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 
             // 토큰 기반이라서 비밀번호가 필요 없음
 

@@ -49,4 +49,8 @@ public class Homework extends BaseEntity {
     @JoinColumn(name = "classroom_no")
     private Classroom classroom;
     // 클래스룸 고유번호
+
+    public void updateScore(Integer score) {
+        this.homeworkScore = score;
+    }
 }

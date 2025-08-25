@@ -49,6 +49,6 @@ public interface AuthControllerSwagger {
             description = "프론트에서 access token 삭제 + 백엔드에서 refresh token"
     )
     public ResponseEntity<ResponseCookie> deleteToken(
-            @Valid @RequestBody TokenRequest tokenRequest
+
     );
 }

@@ -1,8 +1,8 @@
 package com.airoom.airoom.board.model.service;
 
-import com.airoom.airoom.board.BoardType;
 import com.airoom.airoom.board.entity.AssignBoard;
 import com.airoom.airoom.board.entity.AssignTarget;
+import com.airoom.airoom.board.entity.BoardType;
 import com.airoom.airoom.board.entity.Homework;
 import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
 import com.airoom.airoom.board.model.dto.assign.AssignListResponse;

@@ -16,6 +16,14 @@ import java.time.Duration;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE student_answer SET deleted_at = NOW() WHERE sa_no = ?")
 @AllArgsConstructor
+@Table(indexes = {
+        @Index(name = "idx_classroom_student", columnList = "classroom_student_no, deleted_at"),
+        @Index(name = "idx_exam",columnList = "exam_no, deleted_at"),
+        @Index(name = "idx_cep", columnList = "cep_no, deleted_at")
+})
+/**
+ * 학생 응답 엔티티
+ */
 public class StudentAnswer extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
