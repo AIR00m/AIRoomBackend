@@ -53,8 +53,8 @@ public class AssignController implements AssignControllerSwagger {
     /**
      * 과제 클릭시 (해당하는 게시판으로 이동)
      */
-    @GetMapping("/student/{boardNo}")
-    public ResponseEntity<AssignResponse> getAssignBoardByBoardNo(@RequestParam Long assignBoardNo) {
+    @GetMapping("/student/{assignBoardNo}")
+    public ResponseEntity<AssignResponse> getAssignBoardByBoardNo(@PathVariable Long assignBoardNo) {
         return ResponseEntity.ok().body(assignService.getAssignBoardByBoardNo(assignBoardNo));
     }
 
@@ -66,36 +66,5 @@ public class AssignController implements AssignControllerSwagger {
                         (boardNo, boardType)
         );
     }
-
-
-
-
-//
-//    @GetMapping("/list/{assignBoardNo}")
-//    public ResponseEntity<AssignmentDetailResponseDto> getAssignmentByAssignBoardNo(@PathVariable Long assignBoardNo) {
-//        try {
-//            log.info("과제 상세 조회 요청 - assignBoardNo: {}", assignBoardNo);
-//            AssignmentDetailResponseDto assignment = boardService.getAssignmentByAssignBoardNo(assignBoardNo);
-//            if (assignment == null) {
-//                return ResponseEntity.notFound().build();
-//            }
-//            return ResponseEntity.ok(assignment);
-//        } catch (Exception e) {
-//            log.error("과제 상세 조회 실패 - assignBoardNo: {}, Error: {}", assignBoardNo, e.getMessage());
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-
-    /**
-     * 과제 제출 API
-     */
-//    @PostMapping("/list/{id}/submit")
-//    public ResponseEntity<String> submitAssignment(
-//            @PathVariable Long id,
-//            @RequestBody AssignmentSubmissionDto submissionDto) {
-//        log.info("과제 제출 요청 - 과제 ID: {}, 제출 내용: {}", id, submissionDto.getContent());
-//        boardService.submitAssignment(id, submissionDto);
-//        return ResponseEntity.ok("🐥 과제가 성공적으로 제출되었습니다!");
-//    }
 
 }

@@ -6,7 +6,6 @@ import com.airoom.airoom.board.entity.BoardType;
 import com.airoom.airoom.board.entity.Homework;
 import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
 import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
-import com.airoom.airoom.board.model.dto.assign.AssignmentSubmissionRequestDto;
 import com.airoom.airoom.board.model.dto.assign.*;
 import com.airoom.airoom.board.model.dto.homework.StudentHomeworkResponse;
 import com.airoom.airoom.board.model.repository.AssignBoardRepository;
@@ -316,68 +315,12 @@ public class AssignService {
                 .collect(Collectors.toList());
     }
 
-//    @Transactional(readOnly = true)
-//    public List<AssignmentListResponseDto> getAssignmentsForStudent(Long classroomNo, Long classroomStudentNo) {
-//        List<AssignBoard> assignBoards = assignBoardRepository.findAssignmentsForStudent(classroomNo, classroomStudentNo);
-//
-//        return assignBoards.stream()
-//                .map(assignBoard -> {
-//                    // classroomStudentNo를 targetNo로 하는 AssignTarget에 대한 Homework 존재 여부 확인
-//                    boolean isSubmitted = homeworkRepository.existsByAssignTarget_AssignBoardAndAssignTarget_TargetNo(
-//                            assignBoard, classroomStudentNo
-//                    );
-//
-//                    return new AssignmentListResponseDto(
-//                            assignBoard.getAssignBoardNo(),
-//                            assignBoard.getAssignBoardTitle(),
-//                            checkIfGroupAssignment(assignBoard),
-//                            assignBoard.getAssignStart().toLocalDate().toString(),
-//                            assignBoard.getAssignEnd().toLocalDate().toString(),
-//                            isSubmitted ? "true" : "false"
-//                    );
-//                })
-//                .collect(Collectors.toList());
-//    }
-
-
     /**
      * 모둠 과제인지 확인
      */
     private boolean checkIfGroupAssignment(AssignBoard assignBoard) {
         return assignTargetRepository.existsByAssignBoardAndGroupAssignTypeTrue(assignBoard);
     }
-
-    /**
-     * 과제 상세 조회
-     */
-//    public AssignmentDetailResponseDto getAssignmentByAssignBoardNo(Long assignBoardNo) {
-//        // 1. AssignBoard 조회
-//        AssignBoard assignBoard = assignBoardRepository.findById(assignBoardNo)
-//                .orElseThrow(() -> new RuntimeException("과제를 찾을 수 없습니다."));
-//
-//        // 2. 연관 데이터 조회 및 DTO 변환
-//        return  AssignmentDetailResponseDto.builder()
-//                .assignBoardNo(assignBoard.getAssignBoardNo())
-//                .title(assignBoard.getAssignBoardTitle())
-//                .content(assignBoard.getAssignBoardContent())
-//                .startDate(assignBoard.getAssignStart().toString())
-//                .dueDate(assignBoard.getAssignEnd().toString())
-//                .isGroupAssignment(checkIfGroupAssignment(assignBoard))
-//                .targetStudents(getTargetStudents(assignBoard))
-//                .assignedGroups(getAssignedGroups(assignBoard))
-//                .teacherAttachments(getTeacherAttachments(assignBoard))
-//                .mySubmission(getMySubmission(assignBoard, currentMemberNo))
-//                .build();
-//
-//    }
-    public void submitAssignment(Long assignmentId, AssignmentSubmissionRequestDto submissionDto) {
-        log.info("과제 제출 처리 - 과제 ID: {}, 내용: {}", assignmentId, submissionDto.getContent());
-        log.info("첨부파일 개수: {}", submissionDto.getFiles() != null ? submissionDto.getFiles().size() : 0);
-
-        // 실제로는 DB에 저장하는 로직 구현
-        // 여기서는 로그만 출력
-    }
-
 
     public AssignResponse getAssignBoardByBoardNo(Long assignBoardNo) {
         AssignBoard board = assignBoardRepository.findById(assignBoardNo)
