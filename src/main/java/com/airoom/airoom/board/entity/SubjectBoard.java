@@ -41,7 +41,7 @@ public class SubjectBoard extends BaseEntity {
     private Classroom classroom;
 // 클래스룸 고유번호
 
-    public void update(String title, String content, boolean focusType) {
+    public void updateSb(String title, String content, boolean focusType) {
         this.sbTitle = title;
         this.sbContent = content;
         this.sbFocusType = focusType;
