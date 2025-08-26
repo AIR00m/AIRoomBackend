@@ -1,57 +1,64 @@
 package com.airoom.airoom.aichat.model.service;
 
 import com.airoom.airoom.aichat.model.AiProps;
+import com.airoom.airoom.aichat.model.dto.SourceDto;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+
 import java.util.*;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class QdrantClient {
+
     private final WebClient qdrantWebClient;
     private final AiProps props;
 
-    @Getter @AllArgsConstructor
-    public static class Hit {
+    @Data @AllArgsConstructor
+    public static class Point {
         private String id;
-        private double score;
+        private List<Double> vector;
         private Map<String, Object> payload;
     }
 
-    public Mono<List<Hit>> search(List<Double> vector, int topK) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("vector", vector);
-        body.put("limit", topK);
-        // 학년/언어 필터는 payload에 넣어두면 여기서 must 필터로 추가 가능
-        return qdrantWebClient.post()
-                .uri("/collections/{c}/points/search", props.getQdrant().getCollection())
-                .bodyValue(body)
+    public void upsert(List<Point> points) {
+        Map<String, Object> req = Map.of("points", points);
+        qdrantWebClient.post()
+                .uri("/collections/{col}/points", props.getQdrant().getCollection())
+                .bodyValue(req)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(res -> {
-                    List result = (List) res.get("result");
-                    List<Hit> hits = new ArrayList<>();
-                    for (Object o : result) {
-                        Map m = (Map) o;
-                        String id = String.valueOf(m.get("id"));
-                        double score = ((Number)m.get("score")).doubleValue();
-                        Map<String,Object> payload = (Map<String,Object>) m.get("payload");
-                        hits.add(new Hit(id, score, payload));
-                    }
-                    return hits;
-                });
+                .timeout(java.time.Duration.ofSeconds(15))
+                .block(); // 서비스 경계에서 동기화
     }
 
-    public Mono<Void> upsertBatch(List<Map<String,Object>> points) {
-        Map<String,Object> body = Map.of("points", points);
-        return qdrantWebClient.put()
-                .uri("/collections/{c}/points?wait=true", props.getQdrant().getCollection())
-                .bodyValue(body)
+    @SuppressWarnings("unchecked")
+    public List<SourceDto> search(List<Double> queryVec, int topK) {
+        Map<String, Object> req = new HashMap<>();
+        req.put("vector", queryVec);
+        req.put("limit", topK);
+        req.put("with_payload", true);
+        req.put("with_vector", false);
+
+        Map<String, Object> res = qdrantWebClient.post()
+                .uri("/collections/{col}/points/search", props.getQdrant().getCollection())
+                .bodyValue(req)
                 .retrieve()
-                .bodyToMono(Void.class);
+                .bodyToMono(Map.class)
+                .timeout(java.time.Duration.ofSeconds(15))
+                .block();
+
+        List<Map<String, Object>> rs = (List<Map<String, Object>>) res.get("result");
+        List<SourceDto> out = new ArrayList<>();
+        for (Map<String, Object> r : rs) {
+            String id = String.valueOf(r.get("id"));
+            double score = ((Number) r.get("score")).doubleValue();
+            Map<String, Object> payload = (Map<String, Object>) r.get("payload");
+            out.add(new SourceDto(id, score, payload));
+        }
+        return out;
     }
 }
