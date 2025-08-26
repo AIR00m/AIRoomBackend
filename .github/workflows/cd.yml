@@ -53,10 +53,12 @@ jobs:
 
             echo "[ℹ️] infra configs만 동기화 (runtime data 제외)"
             rsync -avz --delete \
-              --exclude 'qdrant/' \
-              --exclude 'grafana/' \
-              --exclude 'logstash/' \
-              /home/ubuntu/docker/ /home/ubuntu/compose/infra/
+            --exclude 'qdrant/' \
+            --exclude 'grafana/' \
+            --exclude 'logstash/' \
+            --no-perms --no-owner --no-group --omit-dir-times \
+            /home/ubuntu/docker/ /home/ubuntu/compose/infra/
+
 
             cd /home/ubuntu/compose/infra
             docker compose pull --quiet 2>&1 || true
