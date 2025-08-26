@@ -69,7 +69,20 @@ public class StatisticService {
         return studentLearningSummaryResponse;
     }
 
+    /**
+     * 교사 페이지 우리반 단원별 성취 현황
+     */
+    public List<StudentUnitSummaryResponse> getMyClassroomUnitSummary(final ClassroomLearningSummaryRequest request) {
+        Result date = validateDate(request.lsStartDate(), request.lsEndDate(), request.lsType());
 
+        Classroom classroom = loadClassroomFetchWithClassroomStudents(request);
+        List<Long> studentNos = convertClassroomToStudentNos(classroom);
+
+        List<StudentUnitSummaryResponse> studentUnitSummaryResponseList = getUnitSummaryWithoutToday(studentNos, request.lsType(), date.lsStartDate, date.lsEndDate);
+        calcAvgAccuracyRate(studentUnitSummaryResponseList);
+
+        return studentUnitSummaryResponseList;
+    }
 
 
     /**
