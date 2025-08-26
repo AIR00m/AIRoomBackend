@@ -24,4 +24,14 @@ public class HomeworkController implements HomeworkControllerSwagger {
       int saveResult =  homeworkService.saveStudentHomeworkScore(boardNo,request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/student/{homeworkBoardNo}")
+    public ResponseEntity<Void> submitHomework(@PathVariable Long homeworkBoardNo,
+                                               @RequestBody String content){
+        if (content == null || content.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        homeworkService.saveStudentHomework(homeworkBoardNo,content);
+        return  ResponseEntity.ok().build();
+    }
 }
