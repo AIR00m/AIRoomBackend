@@ -130,6 +130,7 @@ public class ExamService {
     /**
      * 시험별 학생 정답 리스트 조회
      */
+    @Transactional(readOnly = true)
     public List<StudentAnswerResponse> getStudentAnswersByClassroomStudent(final Long classroomStudentNo, final Long examNo) {
         ClassroomStudent classroomStudent = loadClassroomStudent(classroomStudentNo);
         Exam exam = loadExam(examNo);
@@ -140,6 +141,7 @@ public class ExamService {
     /**
      * 시험별 학급 정답 리스트 조회
      */
+    @Transactional(readOnly = true)
     public List<StudentAnswerByClassroomResponse> getStudentAnswersByClassroom(final Long classroomNo, final Long examNo) {
         Classroom classroom = loadClassroom(classroomNo);
         Exam exam = loadExam(examNo);
@@ -147,6 +149,10 @@ public class ExamService {
         List<StudentAnswer> studentAnswerList = studentAnswerRepository.findStudentAnswersByClassroomAndExam(classroom, exam);
         return convertStudentAnswerToDtoAndGrouping(studentAnswerList);
     }
+
+
+
+
 
     /**
      * 메소드 추출
