@@ -1,9 +1,7 @@
 package com.airoom.airoom.board.model.service;
 
-import com.airoom.airoom.board.entity.AssignBoard;
-import com.airoom.airoom.board.entity.AssignTarget;
-import com.airoom.airoom.board.entity.BoardType;
-import com.airoom.airoom.board.entity.Homework;
+import com.airoom.airoom.attach.model.repository.AttachmentRepository;
+import com.airoom.airoom.board.entity.*;
 import com.airoom.airoom.board.model.dto.assign.AssignCreateRequest;
 import com.airoom.airoom.board.model.dto.assign.AssignListResponse;
 import com.airoom.airoom.board.model.dto.assign.*;
@@ -44,6 +42,7 @@ public class AssignService {
     private final ClassroomTeacherRepository classroomTeacherRepository;
     private final AssignTargetRepository assignTargetRepository;
     private final HomeworkRepository homeworkRepository;
+    private final AttachmentRepository  attachmentRepository;
 
     public Long createAssignment(AssignCreateRequest request) {
         //유효성 검사
@@ -52,15 +51,11 @@ public class AssignService {
         AssignBoard assignBoard = createAndSaveAssignBoard(request.assignBoard());
         Long assignBoardNo = assignBoard.getAssignBoardNo();
         //assignTarget save
-        List<AssignTarget> savedTargetIds  = saveAssignTargets(assignBoard, request.assignTargets()); //모둠과제면 해당하는 아이디들과 개별과제면 타겟 아이디들
+        List<AssignTarget> savedTargetIds = saveAssignTargets(assignBoard, request.assignTargets()); //모둠과제면 해당하는 아이디들과 개별과제면 타겟 아이디들
         //homeworkBoard save
         saveHomework(assignBoard, savedTargetIds);
 
         return assignBoardNo;
-    }
-
-    private void createNotification(){
-
     }
 
     private void saveHomework(AssignBoard assignBoard, List<AssignTarget> savedAssignTargets) {
@@ -110,6 +105,7 @@ public class AssignService {
                 .homeworkScore(null) // 점수 없음
                 .build();
     }
+
     /**
      * AssignBoard 엔티티 생성 및 저장
      */
@@ -239,7 +235,10 @@ public class AssignService {
     /**
      * 학생용 과제 목록 조회
      */
-    public List<AssignListResponse> getAssignmentsForClassUser(Long classroomNo, Long classroomStudentNo, MemberRole userType) {
+    public List<AssignListResponse> getAssignmentsForClassUser(
+            Long classroomNo,
+            Long classroomStudentNo,
+            MemberRole userType) {
 
         if (MemberRole.TEACHER == userType) {
             return getAssignmentsForTeacher(classroomNo);
@@ -263,9 +262,9 @@ public class AssignService {
                         assignBoard.getAssignBoardNo(),
                         assignBoard.getAssignBoardTitle(),
                         checkIfGroupAssignment(assignBoard), // 모둠/개별 과제 구분
-                        assignBoard.getAssignStart().toLocalDate().toString(),
-                        assignBoard.getAssignEnd().toLocalDate().toString(),
-                        "N/A" // 선생님용에서는 submitStatus가 의미 없음
+                        assignBoard.getAssignStart(),
+                        assignBoard.getAssignEnd(),
+                        null // 선생님용에서는 submitStatus가 의미 없음
                 ))
                 .collect(Collectors.toList());
     }
@@ -273,43 +272,26 @@ public class AssignService {
     @Transactional(readOnly = true)
     public List<AssignListResponse> getAssignmentsForStudent(Long classroomNo, Long classroomStudentNo) {
         // 1) 해당 학생의 개별 AssignTarget 조회
-        List<AssignTarget> individualTargets = assignTargetRepository
-                .findByAssignBoard_Classroom_ClassroomNoAndTargetNoAndGroupAssignTypeFalse(
-                        classroomNo, classroomStudentNo);
+        List<AssignListResponse> individualAssignmentTarget =
+                assignTargetRepository.findAssignTargetByClassroomNoAndClassroomStudentNo(classroomNo, classroomStudentNo);
 
         // 2) 해당 학생이 속한 그룹의 모둠 AssignTarget 조회
         ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
                 .orElseThrow(() -> new IllegalArgumentException("학생을 찾을 수 없습니다."));
 
-        List<AssignTarget> groupTargets = new ArrayList<>();
+        List<AssignListResponse> groupTargets = new ArrayList<>();
         if (student.getClassroomGroup() != null) {
             groupTargets = assignTargetRepository
-                    .findByAssignBoard_Classroom_ClassroomNoAndTargetNoAndGroupAssignTypeTrue(
+                    .findByAssignBoardTypeGroupByClassroomNoAndGroupNo(
                             classroomNo, student.getClassroomGroup().getGroupNo());
         }
 
         // 3) 개별과 모둠 AssignTarget을 합쳐서 DTO 생성
-        List<AssignTarget> allTargets = new ArrayList<>();
-        allTargets.addAll(individualTargets);
+        List<AssignListResponse> allTargets = new ArrayList<>();
+        allTargets.addAll(individualAssignmentTarget);
         allTargets.addAll(groupTargets);
 
-        return allTargets.stream()
-                .map(assignTarget -> {
-                    AssignBoard assignBoard = assignTarget.getAssignBoard();
-
-                    // 제출 여부 체크 (AssignTarget 기준)
-                    boolean isSubmitted = homeworkRepository.existsByAssignTarget(assignTarget);
-
-                    return new AssignListResponse(
-                            assignBoard.getAssignBoardNo(),
-                            assignBoard.getAssignBoardTitle(),
-                            assignTarget.isGroupAssignType(), // AssignTarget의 실제 값 사용
-                            assignBoard.getAssignStart().toLocalDate().toString(),
-                            assignBoard.getAssignEnd().toLocalDate().toString(),
-                            isSubmitted ? "true" : "false"
-                    );
-                })
-                .collect(Collectors.toList());
+        return allTargets;
     }
 
     /**
@@ -319,18 +301,30 @@ public class AssignService {
         return assignTargetRepository.existsByAssignBoardAndGroupAssignTypeTrue(assignBoard);
     }
 
-    public AssignResponse getAssignBoardByBoardNo(Long assignBoardNo) {
-        AssignBoard board = assignBoardRepository.findById(assignBoardNo)
-                .orElseThrow(() -> new NotFoundException("해당하는 번호의 과제를 찾지 못했습니다 :("));
-        return AssignResponse.makeResponse(board);
+    // 학생 쪽 과제를 클릭했을때 나오는 것
+    public AssignHomeworkAllResponse getAssignBoardByBoardNo(Long assignBoardNo,Long classroomStudentNo) {
+        // 과제 게시판 제목 이름 그것에 해당하는 숙제 -> 첨부파일 제외
+        AssignResponse board
+                = assignBoardRepository.getAssignBoardByBoardNo(assignBoardNo,classroomStudentNo);
+        List<Attachment> teacherAttachment
+                = attachmentRepository.findByBoardNoAndBoardType(assignBoardNo,BoardType.ASSIGN);
+        List<Attachment> studentAttachment
+                = attachmentRepository.findByBoardNoAndBoardType(assignBoardNo,BoardType.HOMEWORK);
+
+        return new AssignHomeworkAllResponse(board,teacherAttachment,studentAttachment);
 
     }
 
+    // 선생님 쪽 과제를 클릭했을 때 나오는 것
     public AssignWithHomeworksResponse getAssignBoardWithSubmissions(Long assignBoardNo, BoardType boardType) {
         AssignBoard board = assignBoardRepository.findById(assignBoardNo)
                 .orElseThrow(() -> new NotFoundException("해당하는 번호의 과제를 찾지 못했습니다 :("));
         List<StudentHomeworkResponse> homeworks
-                = assignTargetRepository.findHomeworkListByAssignBoardNo(assignBoardNo ,boardType);
-        return new AssignWithHomeworksResponse(AssignResponse.makeResponse(board),homeworks);
+                = assignTargetRepository.findHomeworkListByAssignBoardNo(assignBoardNo, boardType);
+        AssignTarget target = assignTargetRepository.findAssignTargetByAssignBoardNo(assignBoardNo);
+
+        boolean isGroup = target.isGroupAssignType();
+
+        return new AssignWithHomeworksResponse(AssignTeacherResponse.makeResponse(board,isGroup), homeworks);
     }
 }
