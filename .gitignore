@@ -34,3 +34,4 @@ build/
 
 *.properties
 application.yml
+/docker/qdrant/storage/**

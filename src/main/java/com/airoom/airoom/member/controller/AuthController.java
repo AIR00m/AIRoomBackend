@@ -112,7 +112,7 @@ public class AuthController implements AuthControllerSwagger {
 
     }
     @PostMapping("/logout")
-    public ResponseEntity<ResponseCookie> deleteToken(@Valid @RequestBody TokenRequest tokenRequest) {
+    public ResponseEntity<ResponseCookie> deleteToken() {
         return ResponseEntity.ok(cookieUtility.deleteTokenCookie());
     }
 

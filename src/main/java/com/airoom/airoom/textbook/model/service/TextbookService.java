@@ -2,6 +2,7 @@ package com.airoom.airoom.textbook.model.service;
 
 import com.airoom.airoom.textbook.entity.Textbook;
 import com.airoom.airoom.textbook.entity.Unit;
+import com.airoom.airoom.textbook.model.dto.UnitPdfUrl;
 import com.airoom.airoom.textbook.model.dto.UnitsResponse;
 import com.airoom.airoom.textbook.model.repository.TextbookRepository;
 import com.airoom.airoom.textbook.model.repository.UnitRepository;
@@ -30,5 +31,9 @@ public class TextbookService {
     }
     public List<UnitsResponse> getUnitsByTextbookNo(Long textbookNo) {
         return unitRepository.findByTextbook_TextbookNo(textbookNo);
+    }
+
+    public List<UnitPdfUrl> getUnitByUnitNo(Long unitNo) {
+        return unitRepository.findUnitPdfUrlByUnitNo(unitNo);
     }
 }

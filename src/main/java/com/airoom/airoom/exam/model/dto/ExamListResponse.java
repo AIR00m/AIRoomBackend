@@ -2,6 +2,7 @@ package com.airoom.airoom.exam.model.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,8 +20,10 @@ public class ExamListResponse {
     private Long applicantsTotalCount;
     private Integer avgExamScore;
     private List<UnitResponse> unitResponseList = new ArrayList<>();
+    private LocalDateTime examStartTime;
+    private LocalDateTime examEndTime;
 
-    public ExamListResponse(Long examNo, String examName, String examStatus, Integer examProblemCount, Long applicantsCount, Long applicantsTotalCount, Integer avgExamScore) {
+    public ExamListResponse(Long examNo, String examName, String examStatus, Integer examProblemCount, Long applicantsCount, Long applicantsTotalCount, Integer avgExamScore, LocalDateTime examStartTime, LocalDateTime examEndTime) {
         this.examNo = examNo;
         this.examName = examName;
         this.examStatus = examStatus;
@@ -28,5 +31,7 @@ public class ExamListResponse {
         this.applicantsCount = applicantsCount;
         this.applicantsTotalCount = applicantsTotalCount;
         this.avgExamScore = avgExamScore;
+        this.examStartTime = examStartTime;
+        this.examEndTime = examEndTime;
     }
 }

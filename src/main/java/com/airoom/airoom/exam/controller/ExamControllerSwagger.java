@@ -60,4 +60,22 @@ public interface ExamControllerSwagger {
             @RequestParam("memberRole") final MemberRole memberRole
     );
 
+    @Operation(
+            summary = "시험별 학생 정답 리스트 조회 API",
+            description = "시험별 학생 정답 리스트를 조회합니다."
+    )
+    public List<StudentAnswerResponse> getStudentAnswersByClassroomStudent(
+            @PathVariable final Long classroomStudentNo,
+            @PathVariable final Long examNo
+    );
+    
+    @Operation(
+            summary = "시험별 학급 정답 리스트 조회 API",
+            description = "시험별 학급 정답 리스트를 조회합니다."
+    )
+    public List<StudentAnswerByClassroomResponse> getStudentAnswersByClassroom(
+            @PathVariable final Long classroomNo,
+            @PathVariable final Long examNo
+    );
+
 }

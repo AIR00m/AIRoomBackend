@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "aidt.security")
+@ConfigurationProperties(prefix = "agent.ingest")
 public class IngestSecurityProperties {
     /** 에이전트와 동일 키 (초기값은 에이전트 CryptoUtil의 기본키) */
     private String aesKey = "AIDT2025UserKey!";

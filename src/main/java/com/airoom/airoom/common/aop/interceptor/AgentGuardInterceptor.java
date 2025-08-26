@@ -32,6 +32,7 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
         if (!verified) {
             // 프런트가 406 & {location:"/agent-required"}를 보고 라우팅하도록 설계됨
             res.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            res.setContentType("application/json;charset=UTF-8");
             Map<String,String> body=Map.of("location","/agent-required");
             res.getWriter().print(new ObjectMapper().writeValueAsString(body));
 //            String redirect = isLocalRequest(req) ? DEV_REDIRECT : PROD_REDIRECT;
@@ -55,6 +56,9 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
                 "/auth",
                 "/api/agent",
                 "/download",
+                "/forensic",
+                "/api/forensic",
+                "/api/aichat",
                 "/assets",
                 "/favicon",
                 "/error",

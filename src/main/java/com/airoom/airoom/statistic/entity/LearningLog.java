@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 })
 /**
  * 원천 학습로그 테이블
- * 프론트 로그수집 -> Kafka API로 전송 (일정 주기/트리거)에 의해서 -> logstash 전송 -> ElasticSearch에 저장 -> Kibana 시각화 && RDB에 저장
+ * 프론트 로그수집 -> Kafka API로 전송 (일정 주기/트리거)에 의해서 -> logstash 전송 -> ElasticSearch에 저장 -> Kibana 시각화 && LEARNING_LOG(RDB)에 저장
  * 이후 요약 통계 테이블(LEARNING_SUMMARY, LEARNING_BEHAVIOR)로 배치 처리할 것!
  */
 public class LearningLog {
@@ -47,8 +47,11 @@ public class LearningLog {
     @Column(nullable = false)
     private Duration llDurationSec; //학습시간
 
+    private String selectedAnswer; //선택한 답
+
     @Builder.Default
-    private Boolean llIsCorrect = false; //정답여부 (시험의 경우에만 필요하며 바로 값을 넣어주는게 아닌 채점 기능에서 트랜잭션으로 묶어서 진행)
+    //정답여부 (시험의 경우에만 필요하며 바로 값을 넣어주는게 아닌 RDB insert 시점에 선택한 답과 ExamProblem의 답을 비교해서 정답여부 지정)
+    private Boolean llIsCorrect = false; 
 
     @PrePersist
     public void prePersist() {
