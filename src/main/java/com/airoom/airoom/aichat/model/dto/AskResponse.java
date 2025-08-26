@@ -1,8 +1,11 @@
 package com.airoom.airoom.aichat.model.dto;
-import lombok.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 import java.util.List;
 
-@Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder
+@Data @AllArgsConstructor
 public class AskResponse {
     private String answer;
     private List<SourceDto> sources;
