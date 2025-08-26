@@ -4,62 +4,69 @@ import com.airoom.airoom.aichat.model.AiProps;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-import java.util.*;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class OpenAiService {
-    private final WebClient openAiWebClient;
+
+    private final WebClient openaiWebClient;
     private final AiProps props;
 
-    public Mono<List<Double>> embed(String text) {
-        Map<String, Object> body = Map.of(
+    @SuppressWarnings("unchecked")
+    public List<Double> embed(String text) {
+        Map<String, Object> req = Map.of(
                 "model", props.getOpenai().getEmbeddingModel(),
                 "input", text
         );
-        return openAiWebClient.post().uri("/embeddings")
-                .bodyValue(body)
+        Map<String, Object> res = openaiWebClient.post()
+                .uri("/embeddings")
+                .bodyValue(req)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(res -> (List<Double>) ((Map)((List)res.get("data")).get(0)).get("embedding"));
+                .timeout(java.time.Duration.ofSeconds(20))
+                .block();
+
+        Map<String, Object> first = ((List<Map<String, Object>>) res.get("data")).get(0);
+        return (List<Double>) first.get("embedding");
     }
 
-    public Mono<Boolean> isSafe(String text) {
-        Map<String, Object> body = Map.of(
-                "model", "omni-moderation-latest",   // 필요시 text-moderation-latest
+    public boolean isFlagged(String text) {
+        Map<String, Object> req = Map.of(
+                "model", "omni-moderation-latest",
                 "input", text
         );
-        return openAiWebClient.post().uri("/moderations")
-                .bodyValue(body)
+        Map<?, ?> res = openaiWebClient.post()
+                .uri("/moderations")
+                .bodyValue(req)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(res -> {
-                    Map result = (Map)((List)res.get("results")).get(0);
-                    Object flagged = result.get("flagged");
-                    return !(flagged instanceof Boolean && (Boolean) flagged);
-                });
+                .timeout(java.time.Duration.ofSeconds(20))
+                .block();
+
+        List<Map<String, Object>> results = (List<Map<String, Object>>) res.get("results");
+        return (Boolean) results.get(0).get("flagged");
     }
 
-    public Mono<String> chat(String system, String user) {
-        Map<String, Object> body = Map.of(
+    @SuppressWarnings("unchecked")
+    public String chat(List<Map<String, String>> messages) {
+        Map<String, Object> req = Map.of(
                 "model", props.getOpenai().getChatModel(),
-                "messages", List.of(
-                        Map.of("role","system","content",system),
-                        Map.of("role","user","content",user)
-                ),
-                "temperature", 0.3,
-                "max_tokens", 300
+                "messages", messages,
+                "temperature", 0.3
         );
-        return openAiWebClient.post().uri("/chat/completions")
-                .bodyValue(body)
+        Map<String, Object> res = openaiWebClient.post()
+                .uri("/chat/completions")
+                .bodyValue(req)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(res -> {
-                    List choices = (List)res.get("choices");
-                    Map choice0 = (Map)choices.get(0);
-                    Map msg = (Map)choice0.get("message");
-                    return (String) msg.get("content");
-                });
+                .timeout(java.time.Duration.ofSeconds(60))
+                .block();
+
+        Map<String, Object> choice0 = ((List<Map<String, Object>>) res.get("choices")).get(0);
+        Map<String, Object> msg = (Map<String, Object>) choice0.get("message");
+        return (String) msg.get("content");
     }
 }
