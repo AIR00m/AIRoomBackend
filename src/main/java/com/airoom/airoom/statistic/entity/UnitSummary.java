@@ -1,5 +1,6 @@
 package com.airoom.airoom.statistic.entity;
 
+import com.airoom.airoom.common.Entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,9 +21,9 @@ import java.time.LocalDate;
  * 단원별 학습 통계 테이블
  * 일별/주별/월별 단위로 학생의 단원별 학습현황을 저장
  */
-public class UnitSummary {
+public class UnitSummary extends BaseEntity {
     @EmbeddedId
-    private UnitSummaryId id; // 복합키(학생, 단원, 통계시작일)
+    private UnitSummaryId id; // 복합키: (학생, 단원, 타입, 시작일)
 
     private LocalDate usEndDate; // 통계 종료일
 
