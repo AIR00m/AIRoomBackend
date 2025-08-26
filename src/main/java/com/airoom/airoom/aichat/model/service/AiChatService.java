@@ -3,6 +3,7 @@ package com.airoom.airoom.aichat.model.service;
 import com.airoom.airoom.aichat.entity.AiChatMessage;
 import com.airoom.airoom.aichat.entity.AiChatRoom;
 import com.airoom.airoom.aichat.entity.value.MessageType;
+import com.airoom.airoom.aichat.model.dto.AskRequest;
 import com.airoom.airoom.aichat.model.dto.AskResponse;
 import com.airoom.airoom.aichat.model.repository.AiChatMessageRepository;
 import com.airoom.airoom.aichat.model.repository.AiChatRoomRepository;
@@ -22,41 +23,36 @@ public class AiChatService {
     @Transactional
     public AskResponse ask(Long roomId, String question) {
         AiChatRoom room = roomRepo.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("room not found: "+roomId));
+                .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
 
         // Q 저장
-        AiChatMessage q = AiChatMessage.builder()
+        msgRepo.save(AiChatMessage.builder()
                 .aiChatRoom(room)
                 .acmContent(question)
                 .acmType(MessageType.QUESTION)
-                .build();
-        msgRepo.save(q);
+                .build());
 
-        // RAG
-        RagService.Result r = ragService.answer(question).block();
-
-        String answer = r.answer();
+        // 동기 RAG 호출
+        AskRequest req = new AskRequest();
+        req.setRoomId(String.valueOf(roomId));
+        req.setMessage(question);
+        AskResponse resp = ragService.ask(req);
 
         // A 저장
-        AiChatMessage a = AiChatMessage.builder()
+        msgRepo.save(AiChatMessage.builder()
                 .aiChatRoom(room)
-                .acmContent(answer)
+                .acmContent(resp.getAnswer())
                 .acmType(MessageType.ANSWER)
-                .build();
-        msgRepo.save(a);
+                .build());
 
         // 룸 메타 업데이트
-        room = AiChatRoom.builder()
+        roomRepo.save(AiChatRoom.builder()
                 .acrNo(room.getAcrNo())
                 .lastQuestion(question)
                 .lastQuestionTime(LocalDateTime.now())
                 .member(room.getMember())
-                .build();
-        roomRepo.save(room);
+                .build());
 
-        return AskResponse.builder()
-                .answer(answer)
-                .sources(r.sources())
-                .build();
+        return resp;
     }
 }
