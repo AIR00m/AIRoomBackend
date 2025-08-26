@@ -16,7 +16,7 @@ public class AiBeans {
 
     private final AiProps props;
 
-    @Bean
+    @Bean("openaiWebClient")
     public WebClient openaiWebClient() {
         return WebClient.builder()
                 .baseUrl(props.getOpenai().getBaseUrl())
@@ -28,7 +28,7 @@ public class AiBeans {
                 .build();
     }
 
-    @Bean
+    @Bean("qdrantWebClient")
     public WebClient qdrantWebClient() {
         return WebClient.builder()
                 .baseUrl(props.getQdrant().getUrl())
