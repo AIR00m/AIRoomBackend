@@ -1,5 +1,6 @@
 package com.airoom.airoom.statistic.controller;
 
+import com.airoom.airoom.statistic.model.dto.ClassroomLearningSummaryRequest;
 import com.airoom.airoom.statistic.model.dto.StudentUnitSummaryResponse;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryRequest;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryResponse;
@@ -20,7 +21,7 @@ public class StatisticController implements StatisticControllerSwagger {
      * 학생 페이지 나의 학습 요약
      */
     @Override
-    @PostMapping("/student")
+    @PostMapping("/student/summary")
     public StudentLearningSummaryResponse getMyLearningSummaryForStudent(
             @RequestBody @Valid final StudentLearningSummaryRequest request
     ) {
@@ -32,8 +33,22 @@ public class StatisticController implements StatisticControllerSwagger {
      * 학생 페이지 단원별 성취 현황
      */
     @Override
-    @GetMapping("/student/{classroomStudentNo}")
-    public List<StudentUnitSummaryResponse> getLearningSummaryByUnit(@PathVariable Long classroomStudentNo) {
-        return statisticService.getLearningSummaryByUnit(classroomStudentNo);
+    @PostMapping("/student/unit-summary")
+    public List<StudentUnitSummaryResponse> getUnitSummaryForStudent(
+            @RequestBody @Valid final StudentLearningSummaryRequest request
+    ) {
+        return statisticService.getUnitSummaryForStudent(request);
+    }
+
+
+    /**
+     * 교사 페이지 우리반 학습 요약
+     */
+    @Override
+    @PostMapping("/teacher/summary")
+    public StudentLearningSummaryResponse getMyClassroomLearningSummary(
+            @RequestBody @Valid ClassroomLearningSummaryRequest request
+    ) {
+        return statisticService.getMyClassroomLearningSummary(request);
     }
 }
