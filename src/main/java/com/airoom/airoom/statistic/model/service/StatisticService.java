@@ -3,17 +3,22 @@ package com.airoom.airoom.statistic.model.service;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.statistic.entity.value.SummaryType;
+import com.airoom.airoom.statistic.model.dto.StudentUnitSummaryResponse;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryRequest;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryResponse;
 import com.airoom.airoom.statistic.model.repository.LearningSummaryRepository;
+import com.airoom.airoom.statistic.model.repository.UnitSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.chrono.ChronoLocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +26,7 @@ import java.time.chrono.ChronoLocalDate;
 public class StatisticService {
     private final LearningSummaryRepository learningSummaryRepository;
     private final ClassroomStudentRepository classroomStudentRepository;
+    private final UnitSummaryRepository unitSummaryRepository;
 
     /**
      * 학생 페이지 나의 학습요약
@@ -56,6 +62,20 @@ public class StatisticService {
         studentLearningSummaryResponse.calc(0L, 0L, 0L, 0L);
         return studentLearningSummaryResponse;
     }
+
+    /**
+     * 학생 페이지 단원별 성취 현황
+     */
+    public List<StudentUnitSummaryResponse> getLearningSummaryByUnit(final Long classroomStudentNo) {
+        List<StudentUnitSummaryResponse> studentUnitSummaryResponseList = unitSummaryRepository.findByClassroomStudent(classroomStudentNo);
+        for (StudentUnitSummaryResponse studentUnitSummaryResponse : studentUnitSummaryResponseList) {
+            studentUnitSummaryResponse.setLsAvgAccuracyRate(
+                    BigDecimal.valueOf(studentUnitSummaryResponse.getLsTotalCorrectProblems() / (double) studentUnitSummaryResponse.getLsTotalProblemsSolved())
+                            .setScale(2, RoundingMode.HALF_UP));
+        }
+        return studentUnitSummaryResponseList;
+    }
+
 
     /**
      * 메소드 추출
