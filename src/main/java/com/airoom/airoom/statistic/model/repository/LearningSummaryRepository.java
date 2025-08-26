@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface LearningSummaryRepository extends JpaRepository<LearningSummary, LearningSummaryId> {
     @Query("""
@@ -27,10 +28,10 @@ public interface LearningSummaryRepository extends JpaRepository<LearningSummary
                 SUM(ls.lsTotalCorrectProblems)
             )
             from LearningSummary ls
-            where ls.id.lsClassroomStudentNo = :classroomStudent
+            where ls.id.lsClassroomStudentNo in :studentNos
             and ls.id.lsType = :summaryType
             and ls.id.lsStartDate >= :lsStartDate
             and ls.lsEndDate <= :lsEndDate
             """)
-    StudentLearningSummaryResponse findByClassroomStudentAndTypeAndRange(Long classroomStudent, SummaryType summaryType, LocalDate lsStartDate, LocalDate lsEndDate);
+    StudentLearningSummaryResponse findByClassroomStudentAndTypeAndRange(List<Long> studentNos, SummaryType summaryType, LocalDate lsStartDate, LocalDate lsEndDate);
 }

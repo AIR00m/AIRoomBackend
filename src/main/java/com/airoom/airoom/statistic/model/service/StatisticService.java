@@ -1,26 +1,32 @@
 package com.airoom.airoom.statistic.model.service;
 
+import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
-import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
+import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.statistic.entity.value.SummaryType;
+import com.airoom.airoom.statistic.model.dto.ClassroomLearningSummaryRequest;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryRequest;
 import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryResponse;
+import com.airoom.airoom.statistic.model.dto.StudentUnitSummaryResponse;
 import com.airoom.airoom.statistic.model.repository.LearningSummaryRepository;
+import com.airoom.airoom.statistic.model.repository.UnitSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.chrono.ChronoLocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StatisticService {
     private final LearningSummaryRepository learningSummaryRepository;
-    private final ClassroomStudentRepository classroomStudentRepository;
+    private final UnitSummaryRepository unitSummaryRepository;
+    private final ClassroomRepository classroomRepository;
 
     /**
      * 학생 페이지 나의 학습요약
@@ -28,41 +34,88 @@ public class StatisticService {
      * 오늘 일자가 포함된 경우 ES에서 데이터를 가져와서 데이터 최신화해주기
      */
     public StudentLearningSummaryResponse getMyLearningSummaryForStudent(StudentLearningSummaryRequest request) {
-        LocalDateTime today = LocalDateTime.now();
-        LocalDate lsStartDate = request.lsStartDate();
-        LocalDate lsEndDate = request.lsEndDate();
+        Result date = validateDate(request.lsStartDate(), request.lsEndDate(), request.lsType());
 
-        if (lsEndDate == null) {
-            lsEndDate = lsStartDate;
-        }
+        StudentLearningSummaryResponse studentLearningSummaryResponse = getStudentLearningSummaryWithoutToday(List.of(request.classroomStudentNo()), request.lsType(), date.lsStartDate, date.lsEndDate);
+        studentLearningSummaryResponse.calcAvgAccuracyRate();
 
-        if (request.lsType() == SummaryType.MONTHLY) {
-            YearMonth ym = YearMonth.from(lsStartDate);
-            lsStartDate = ym.atDay(1);
-            lsEndDate = ym.atEndOfMonth();
-        }
-
-        //RDB에 저장된 데이터 가져오기
-        StudentLearningSummaryResponse studentLearningSummaryResponse = learningSummaryRepository.findByClassroomStudentAndTypeAndRange(request.classroomStudentNo(), request.lsType(), lsStartDate, lsEndDate);
-
-        //EndDate가 오늘 날짜라면 ES에서 최신 데이터 가져와서 보정
-        if (!lsEndDate.isBefore(ChronoLocalDate.from(today))) {
-            //마지막 배치시간 이후의 데이터를 ES에서 가져오기
-            LocalDateTime lastBatchTime = learningSummaryRepository.findLastBatchCreatedAt(request.classroomStudentNo(), request.lsType());
-
-            //추후 logstash.conf 완성되면 ES 데이터까지 합쳐서 최신 데이터로 보정하기
-        }
-
-        studentLearningSummaryResponse.calc(0L, 0L, 0L, 0L);
         return studentLearningSummaryResponse;
     }
 
     /**
+     * 학생 페이지 단원별 성취 현황
+     */
+    public List<StudentUnitSummaryResponse> getUnitSummaryForStudent(final StudentLearningSummaryRequest request) {
+        Result date = validateDate(request.lsStartDate(), request.lsEndDate(), request.lsType());
+
+        List<StudentUnitSummaryResponse> studentUnitSummaryResponseList = getUnitSummaryWithoutToday(List.of(request.classroomStudentNo()), request.lsType(), date.lsStartDate, date.lsEndDate);
+        calcAvgAccuracyRate(studentUnitSummaryResponseList);
+
+        return studentUnitSummaryResponseList;
+    }
+
+    /**
+     * 교사용 클래스룸 학습 요약기능
+     */
+    public StudentLearningSummaryResponse getMyClassroomLearningSummary(final ClassroomLearningSummaryRequest request) {
+        Result date = validateDate(request.lsStartDate(), request.lsEndDate(), request.lsType());
+
+        Classroom classroom = loadClassroomFetchWithClassroomStudents(request);
+        List<Long> studentNos = convertClassroomToStudentNos(classroom);
+
+        StudentLearningSummaryResponse studentLearningSummaryResponse = getStudentLearningSummaryWithoutToday(studentNos, request.lsType(), date.lsStartDate, date.lsEndDate);
+        studentLearningSummaryResponse.calcAvgAccuracyRate();
+
+        return studentLearningSummaryResponse;
+    }
+
+
+
+
+    /**
      * 메소드 추출
      */
-    private ClassroomStudent loadClassroomStudent(Long classroomStudentNo) {
-        return classroomStudentRepository.findById(classroomStudentNo).orElseThrow(
-                () -> new IllegalArgumentException("잘못된 클래스룸학생 고유번호입니다. : " + classroomStudentNo)
-        );
+    private void calcAvgAccuracyRate(List<StudentUnitSummaryResponse> studentUnitSummaryResponseList) {
+        for (StudentUnitSummaryResponse studentUnitSummaryResponse : studentUnitSummaryResponseList) {
+            studentUnitSummaryResponse.setLsAvgAccuracyRate(
+                    BigDecimal.valueOf(studentUnitSummaryResponse.getLsTotalCorrectProblems() / (double) studentUnitSummaryResponse.getLsTotalProblemsSolved())
+                            .setScale(2, RoundingMode.HALF_UP));
+        }
+    }
+
+    private List<Long> convertClassroomToStudentNos(Classroom classroom) {
+        return classroom.getClassroomStudentList()
+                .stream()
+                .map(ClassroomStudent::getClassRoomStudentNo)
+                .toList();
+    }
+
+    private List<StudentUnitSummaryResponse> getUnitSummaryWithoutToday(List<Long> studentNos, SummaryType lsType, LocalDate lsStartDate, LocalDate lsEndDate) {
+        return unitSummaryRepository.findByClassroomStudent(studentNos, lsType, lsStartDate, lsEndDate);
+    }
+
+    private Result validateDate(LocalDate lsStartDate, LocalDate lsEndDate, SummaryType lsType) {
+        if (lsEndDate == null) {
+            lsEndDate = lsStartDate;
+        }
+
+        if (lsType == SummaryType.MONTHLY) {
+            YearMonth ym = YearMonth.from(lsStartDate);
+            lsStartDate = ym.atDay(1);
+            lsEndDate = ym.atEndOfMonth();
+        }
+        return new Result(lsStartDate, lsEndDate);
+    }
+
+    private StudentLearningSummaryResponse getStudentLearningSummaryWithoutToday(List<Long> studentNos, SummaryType lsType, LocalDate lsStartDate, LocalDate lsEndDate) {
+        return learningSummaryRepository.findByClassroomStudentAndTypeAndRange(studentNos, lsType, lsStartDate, lsEndDate);
+    }
+
+    private record Result(LocalDate lsStartDate, LocalDate lsEndDate) {
+
+    }
+
+    private Classroom loadClassroomFetchWithClassroomStudents(ClassroomLearningSummaryRequest request) {
+        return classroomRepository.findClassroomByClassroomNoWithClassroomStudents(request.classroomNo());
     }
 }

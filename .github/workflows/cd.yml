@@ -50,12 +50,20 @@ jobs:
             fi
 
             mkdir -p /home/ubuntu/compose/infra
-            rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/ 2>&1
+
+            echo "[ℹ️] infra configs만 동기화 (runtime data 제외)"
+            rsync -avz --delete \
+            --exclude 'qdrant/' \
+            --exclude 'grafana/' \
+            --exclude 'logstash/' \
+            --no-perms --no-owner --no-group --omit-dir-times \
+            /home/ubuntu/docker/ /home/ubuntu/compose/infra/
+
 
             cd /home/ubuntu/compose/infra
-            # 진행바/소음 줄이기
             docker compose pull --quiet 2>&1 || true
             docker compose up -d --force-recreate 2>&1
+
 
       - name: 🚀 Blue-Green Deploy (Spring Boot) + Nginx 스위치 (직렬락/큐잉)
         uses: appleboy/ssh-action@v1.0.0

@@ -27,7 +27,11 @@ public class ChatMessage extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean cmIsRead = false; //채팅 읽음 여부
+    private Boolean readByTeacher = false; //채팅 읽음 여부
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean readByStudent = false; //채팅 읽음 여부
 
     @Column(nullable = false, length = 10)
     @Enumerated(EnumType.STRING)
@@ -39,8 +43,12 @@ public class ChatMessage extends BaseEntity {
 
     @PrePersist
     public void prePersist() {
-        if (cmIsRead == null) {
-            cmIsRead = false;
+        if (readByTeacher == null) {
+            readByTeacher = false;
+        }
+
+        if (readByStudent == null) {
+            readByStudent = false;
         }
     }
 }

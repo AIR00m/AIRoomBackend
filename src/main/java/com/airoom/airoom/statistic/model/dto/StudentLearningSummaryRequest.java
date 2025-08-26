@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 public record StudentLearningSummaryRequest(
         Long classroomStudentNo, //클래스룸 학생고유번호
-        SummaryType lsType, //통계 조회기준(일별, 월별)
+        SummaryType lsType, //통계 조회기준(일별, 월별, 커스텀)
         LocalDate lsStartDate, //통계 조회 시작일
         LocalDate lsEndDate //통계 조회 종료일
 ) {
