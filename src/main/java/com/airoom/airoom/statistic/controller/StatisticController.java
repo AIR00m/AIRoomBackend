@@ -51,4 +51,14 @@ public class StatisticController implements StatisticControllerSwagger {
     ) {
         return statisticService.getMyClassroomLearningSummary(request);
     }
+
+    /**
+     * 교사 페이지 우리반 단원별 성취 현황
+     */
+    @Override
+    @PostMapping("/teacher/unit-summary")
+    public List<StudentUnitSummaryResponse> getMyClassroomUnitSummary(
+            @RequestBody @Valid ClassroomLearningSummaryRequest request) {
+        return statisticService.getMyClassroomUnitSummary(request);
+    }
 }
