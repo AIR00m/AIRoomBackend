@@ -50,10 +50,14 @@ jobs:
             fi
 
             mkdir -p /home/ubuntu/compose/infra
-            rsync -avz --delete /home/ubuntu/docker/ /home/ubuntu/compose/infra/ 2>&1
+            # 🔽 runtime 데이터는 제외 (qdrant/grafana/logstash 등)
+            rsync -avz --delete \
+              --exclude 'qdrant/storage/**' \
+              --exclude 'grafana/data/**' \
+              --exclude 'logstash/data/**' \
+              /home/ubuntu/docker/ /home/ubuntu/compose/infra/ 2>&1
 
             cd /home/ubuntu/compose/infra
-            # 진행바/소음 줄이기
             docker compose pull --quiet 2>&1 || true
             docker compose up -d --force-recreate 2>&1
 
