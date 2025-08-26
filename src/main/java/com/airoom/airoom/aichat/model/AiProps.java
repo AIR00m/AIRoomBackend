@@ -1,28 +1,33 @@
 package com.airoom.airoom.aichat.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
-@Configuration
+@Data
+@Validated
 @ConfigurationProperties(prefix = "ai")
-@Getter @Setter
 public class AiProps {
+
     private OpenAi openai = new OpenAi();
     private Qdrant qdrant = new Qdrant();
 
-    @Getter @Setter
+    @Data
     public static class OpenAi {
+        @NotBlank
         private String apiKey;
-        private String baseUrl;
-        private String chatModel;
-        private String embeddingModel;
+        private String baseUrl = "https://api.openai.com/v1";
+        private String chatModel = "gpt-4o-mini";
+        private String embeddingModel = "text-embedding-3-small";
     }
-    @Getter @Setter
+
+    @Data
     public static class Qdrant {
-        private String url;
-        private String collection;
-        private int topK;
+        @NotBlank
+        private String url;              // http://qdrant:6333 (운영), http://localhost:6333 (로컬)
+        private String collection = "ai_career_ko_v1";
+        private int topK = 5;
     }
 }
+

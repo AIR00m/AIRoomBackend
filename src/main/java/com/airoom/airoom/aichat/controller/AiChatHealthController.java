@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,8 +17,8 @@ import java.util.Map;
 public class AiChatHealthController {
 
     // AiBeans에서 만든 두 클라이언트가 주입됩니다.
-    private final WebClient openAiWebClient;
-    private final WebClient qdrantWebClient;
+    private final @Qualifier("openaiWebClient") WebClient openAiWebClient;
+    private final @Qualifier("qdrantWebClient") WebClient qdrantWebClient;
 
     @GetMapping(value = "/health", produces = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, String> health() {
@@ -30,6 +31,7 @@ public class AiChatHealthController {
                     .uri("/models")
                     .retrieve()
                     .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofSeconds(10))
                     .block();
         } catch (Exception e) {
             openai = "fail:" + e.getClass().getSimpleName();
@@ -41,6 +43,7 @@ public class AiChatHealthController {
                     .uri("/collections")
                     .retrieve()
                     .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofSeconds(5))
                     .block();
         } catch (Exception e) {
             qdrant = "fail:" + e.getClass().getSimpleName();

@@ -1,8 +1,9 @@
 package com.airoom.airoom.aichat.model.dto;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter @Setter
+import lombok.Data;
+
+@Data
 public class AskRequest {
-    private String question;
+    private String roomId;   // 옵션
+    private String message;  // 필수
 }
