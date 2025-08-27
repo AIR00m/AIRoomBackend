@@ -49,7 +49,7 @@ public class AgentDownloadController {
 
         if (rr.resource == null || !rr.resource.exists()) {
             log.warn("[AGENT-DOWNLOAD] NOT FOUND - source={}, path={}, error={}", rr.source, rr.path, rr.error);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).headers(headers).build();
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).headers(headers).build();
         }
 
         // 파일 이름(한글 안전)
