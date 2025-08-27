@@ -17,4 +17,5 @@ public class ChatMessageRequest {
     private String content;
     private MemberRole writerRole;
     private LocalDateTime sentAt;
+
 }

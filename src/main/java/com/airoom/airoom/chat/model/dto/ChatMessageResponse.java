@@ -18,4 +18,6 @@ public class ChatMessageResponse {
     private String content;
     private MemberRole writerRole;
     private LocalDateTime sentAt;
+    private String studentName;
+    private String teacherName;
 }
