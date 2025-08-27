@@ -117,7 +117,8 @@ public class ExamRepositoryImpl implements ExamRepositoryCustom {
                                 .from(studentExam)
                                 .where(studentExam.exam.eq(exam)),
                         exam.examStartTime,
-                        exam.examEndTime
+                        exam.examEndTime,
+                        studentExam.seIsDone
                 ))
                 .from(exam)
                 .leftJoin(studentExam).on(studentExam.exam.eq(exam)

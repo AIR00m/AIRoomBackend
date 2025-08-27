@@ -20,7 +20,6 @@ import java.time.LocalDateTime;
         @Index(name = "idx_exam_no_classroom_student_no", columnList = "exam_no, classroom_student_no, deleted_at"),
         @Index(name = "idx_exam_no", columnList = "exam_no, deleted_at"),
         @Index(name = "idx_exam_no_se_is_done", columnList = "exam_no, se_is_done, deleted_at"),
-        @Index(name = "idx_exam_no_classroom_student_no", columnList = "exam_no, classroom_student_no, deleted_at")
 })
 /**
  * 학생 시험 엔티티

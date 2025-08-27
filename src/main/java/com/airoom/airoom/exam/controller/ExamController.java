@@ -55,7 +55,9 @@ public class ExamController implements ExamControllerSwagger {
      */
     @Override
     @GetMapping("/exam-problems/{examNo}")
-    public ExamDetailResponse getExamProblems(@PathVariable final Long examNo) {
+    public ExamDetailResponse getExamProblems(
+            @PathVariable final Long examNo
+    ) {
         return examService.getExamProblems(examNo);
     }
 
@@ -64,7 +66,9 @@ public class ExamController implements ExamControllerSwagger {
      */
     @Override
     @PostMapping("/submit")
-    public ResponseEntity<SubmitExamProblemsResponse> markAndSubmitExamProblems(@RequestBody @Valid final SubmitExamProblemsRequest request) {
+    public ResponseEntity<SubmitExamProblemsResponse> markAndSubmitExamProblems(
+            @RequestBody @Valid final SubmitExamProblemsRequest request
+    ) {
         return ResponseEntity.ok(examService.markAndSubmitExamProblems(request));
     }
 
@@ -80,7 +84,32 @@ public class ExamController implements ExamControllerSwagger {
     ) {
         return examService.getExams(classroomMemberNo, examStatus, memberRole);
     }
-    
+
+
+    /**
+     * 시험별 학생의 정답 리스트 조회
+     */
+    @Override
+    @GetMapping("/answer/student/{classroomStudentNo}/{examNo}")
+    public List<StudentAnswerResponse> getStudentAnswersByClassroomStudent(
+            @PathVariable final Long classroomStudentNo,
+            @PathVariable final Long examNo
+    ) {
+        return examService.getStudentAnswersByClassroomStudent(classroomStudentNo, examNo);
+    }
+
+
+    /**
+     * 시험별 학급의 정답 리스트 조회
+     */
+    @GetMapping("/answer/classroom/{classroomNo}/{examNo}")
+    @Override
+    public List<StudentAnswerByClassroomResponse> getStudentAnswersByClassroom(
+            @PathVariable final Long classroomNo,
+            @PathVariable final Long examNo
+    ) {
+        return examService.getStudentAnswersByClassroom(classroomNo, examNo);
+    }
 
     //시험 수정,삭제 기능은 제외
 }
