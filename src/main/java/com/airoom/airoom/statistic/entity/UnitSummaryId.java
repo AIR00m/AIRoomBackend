@@ -23,7 +23,7 @@ public class UnitSummaryId implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
-    private SummaryType usType; // DAILY, MONTHLY, CUSTOM
+    private SummaryType usType; // DAILY, MONTHLY
 
     private LocalDate usStartDate; // 시작일
 }

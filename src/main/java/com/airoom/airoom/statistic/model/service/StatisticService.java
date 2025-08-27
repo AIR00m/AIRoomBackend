@@ -118,7 +118,7 @@ public class StatisticService {
     private void calcAvgAccuracyRate(List<StudentUnitSummaryResponse> studentUnitSummaryResponseList) {
         for (StudentUnitSummaryResponse studentUnitSummaryResponse : studentUnitSummaryResponseList) {
             studentUnitSummaryResponse.setLsAvgAccuracyRate(
-                    BigDecimal.valueOf(studentUnitSummaryResponse.getLsTotalCorrectProblems() / (double) studentUnitSummaryResponse.getLsTotalProblemsSolved())
+                    BigDecimal.valueOf(studentUnitSummaryResponse.getLsTotalCorrectProblems() * 100 / (double) studentUnitSummaryResponse.getLsTotalProblemsSolved())
                             .setScale(2, RoundingMode.HALF_UP));
         }
     }
