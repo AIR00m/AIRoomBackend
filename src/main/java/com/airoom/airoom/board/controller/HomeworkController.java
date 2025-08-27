@@ -1,5 +1,6 @@
 package com.airoom.airoom.board.controller;
 
+import com.airoom.airoom.board.model.dto.homework.HomeworkContentRequest;
 import com.airoom.airoom.board.model.dto.homework.TeacherHomeworkRequest;
 import com.airoom.airoom.board.model.service.HomeworkService;
 import lombok.RequiredArgsConstructor;
@@ -25,13 +26,10 @@ public class HomeworkController implements HomeworkControllerSwagger {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/student/{homeworkBoardNo}")
+        @PostMapping("/student/{homeworkBoardNo}")
     public ResponseEntity<Void> submitHomework(@PathVariable Long homeworkBoardNo,
-                                               @RequestBody String content){
-        if (content == null || content.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-        homeworkService.saveStudentHomework(homeworkBoardNo,content);
+                                               @RequestBody HomeworkContentRequest content){
+        homeworkService.saveStudentHomework(homeworkBoardNo,content.getContent());
         return  ResponseEntity.ok().build();
     }
 }

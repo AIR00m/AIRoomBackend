@@ -73,8 +73,7 @@ public interface AssignTargetRepository extends JpaRepository<AssignTarget, Long
       JOIN h.assignTarget at
       JOIN at.assignBoard ab
       JOIN h.member m
-      LEFT JOIN Attachment a
-        ON a.boardNo = h.homeworkBoardNo
+      LEFT JOIN Attachment a ON a.boardNo = h.homeworkBoardNo
        AND a.boardType = :boardType
        WHERE ab.assignBoardNo = :assignBoardNo
 """)
@@ -87,5 +86,5 @@ public interface AssignTargetRepository extends JpaRepository<AssignTarget, Long
             WHERE at.assignBoard.assignBoardNo = :assignBoardNo
         """
     )
-    AssignTarget findAssignTargetByAssignBoardNo(Long assignBoardNo);
+    List<AssignTarget> findAssignTargetByAssignBoardNo(Long assignBoardNo);
 }

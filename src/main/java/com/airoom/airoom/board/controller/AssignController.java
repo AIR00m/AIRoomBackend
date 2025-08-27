@@ -55,12 +55,12 @@ public class AssignController implements AssignControllerSwagger {
         return ResponseEntity.ok().body(assignService.getAssignBoardByBoardNo(assignBoardNo,classroomStudentNo));
     }
 
-    @GetMapping("/teacher/{boardNo}")
+    @GetMapping("/{assignBoardNo}/teacher")
     public ResponseEntity<AssignWithHomeworksResponse> getAssignTeacherByBoardNo
-            (@PathVariable Long boardNo, @RequestParam BoardType boardType) {
+            (@PathVariable Long assignBoardNo ) {
         return ResponseEntity.ok().body(
                 assignService.getAssignBoardWithSubmissions
-                        (boardNo, boardType)
+                        (assignBoardNo)
         );
     }
 

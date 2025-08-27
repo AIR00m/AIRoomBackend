@@ -316,14 +316,15 @@ public class AssignService {
     }
 
     // 선생님 쪽 과제를 클릭했을 때 나오는 것
-    public AssignWithHomeworksResponse getAssignBoardWithSubmissions(Long assignBoardNo, BoardType boardType) {
+    public AssignWithHomeworksResponse getAssignBoardWithSubmissions(Long assignBoardNo) {
         AssignBoard board = assignBoardRepository.findById(assignBoardNo)
                 .orElseThrow(() -> new NotFoundException("해당하는 번호의 과제를 찾지 못했습니다 :("));
         List<StudentHomeworkResponse> homeworks
-                = assignTargetRepository.findHomeworkListByAssignBoardNo(assignBoardNo, boardType);
-        AssignTarget target = assignTargetRepository.findAssignTargetByAssignBoardNo(assignBoardNo);
+                = assignTargetRepository.findHomeworkListByAssignBoardNo(assignBoardNo, BoardType.HOMEWORK);
 
-        boolean isGroup = target.isGroupAssignType();
+        List<AssignTarget> targets = assignTargetRepository.findAssignTargetByAssignBoardNo(assignBoardNo);
+
+        boolean isGroup = targets.get(1).isGroupAssignType();
 
         return new AssignWithHomeworksResponse(AssignTeacherResponse.makeResponse(board,isGroup), homeworks);
     }
