@@ -14,14 +14,14 @@ import java.util.List;
 public interface UnitSummaryRepository extends JpaRepository<UnitSummary, UnitSummaryId> {
     @Query("""
                 select new com.airoom.airoom.statistic.model.dto.StudentUnitSummaryResponse(
-                    SUM(us.usTotalProblemsSolved),
-                    SUM(us.usTotalCorrectProblems),
+                    cast(coalesce( SUM(us.usTotalProblemsSolved),0) as long),
+                    cast(coalesce( SUM(us.usTotalCorrectProblems),0) as long),
                     u.unitTitle,
                     u.unitNum
                 )
-                from UnitSummary us, Unit u
-                where u.unitNo = us.id.usUnitNo
-                and us.id.usClassroomStudentNo in :studentNos
+                from UnitSummary us
+                left join Unit u on us.id.usUnitNo = u.unitNo
+                where us.id.usClassroomStudentNo in :studentNos
                 and us.id.usType = :summaryType
                 and us.id.usStartDate >= :usStartDate
                 and us.usEndDate <= :usEndDate
@@ -32,15 +32,15 @@ public interface UnitSummaryRepository extends JpaRepository<UnitSummary, UnitSu
     @Query("""
                 select new com.airoom.airoom.statistic.model.dto.StudentUnitSummaryDetailResponse(
                     cs.student.memberName,
-                    SUM(us.usTotalProblemsSolved),
-                    SUM(us.usTotalCorrectProblems),
+                    cast(coalesce( SUM(us.usTotalProblemsSolved),0) as long),
+                    cast(coalesce( SUM(us.usTotalCorrectProblems),0) as long),
                     u.unitTitle,
                     u.unitNum
                 )
-                from UnitSummary us, Unit u, ClassroomStudent cs
-                where u.unitNo = us.id.usUnitNo
-                  and cs.classRoomStudentNo = us.id.usClassroomStudentNo
-                  and us.id.usClassroomStudentNo in :studentNos
+                from UnitSummary us
+                left join Unit u on u.unitNo = us.id.usUnitNo
+                left join ClassroomStudent cs on us.id.usClassroomStudentNo = cs.classRoomStudentNo
+                where us.id.usClassroomStudentNo in :studentNos
                   and us.id.usType = :summaryType
                   and us.id.usStartDate >= :usStartDate
                   and us.usEndDate <= :usEndDate
