@@ -5,6 +5,7 @@ import org.springframework.core.io.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
 @RestController
@@ -16,11 +17,11 @@ public class AgentDownloadController {
     private String filePath;
 
     // 운영: 클래스패스에 포함된 바이너리로 내려줌 (우선순위 2)
-    @Value("${agent.download.classpath:agent/SecureAgent-1.0.1.exe}")
+    @Value("${agent.download.classpath:agent/보안 지킴이-1.9.3 설치.exe}")
     private String classpathFile;
 
     // 노출 파일명
-    @Value("${agent.download.filename:SecureAgent-1.0.1.exe}")
+    @Value("${agent.download.filename:보안 지킴이-1.9.3 설치.exe}")
     private String downloadName;
 
     @GetMapping("/agent")
@@ -31,7 +32,9 @@ public class AgentDownloadController {
         }
 
         long length = getContentLength(res);
-        ContentDisposition cd = ContentDisposition.attachment().filename(downloadName).build();
+        ContentDisposition cd = ContentDisposition.attachment()
+                .filename(downloadName, StandardCharsets.UTF_8) // 한글 파일명 안전
+                .build();
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, cd.toString())
