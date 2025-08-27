@@ -1,11 +1,17 @@
 package com.airoom.airoom.chat.model.service;
 
+import com.airoom.airoom.chat.entity.ChatRoom;
 import com.airoom.airoom.chat.model.dto.ChatMessageRequest;
 import com.airoom.airoom.chat.model.dto.ChatMessageResponse;
+import com.airoom.airoom.chat.model.repository.ChatRoomRepository;
 import com.airoom.airoom.common.value.MemberRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.lettuce.core.RedisBusyException;
+import io.lettuce.core.RedisException;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.connection.stream.Record;
@@ -23,73 +29,37 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class ChatMessageConsumer {
-    private final RedisConnectionFactory connectionFactory;
     private final ChatMessageService messageService;
+    private final ChatReadService readService;
+    private final ChatRoomRepository roomRepository;
     private final StringRedisTemplate redis;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
 
+    private Thread consumerThread;
+    private volatile boolean running = true;
+
     private static final String STREAM = "chat:stream";
-    private static final String GROUP  = "chat-group";
-
-    /*@PostConstruct
-    public void consume() {
-
-        // 옵션 세팅
-       StreamMessageListenerContainer.StreamMessageListenerContainerOptions<Object, MapRecord<Object, Object, Object>> options =
-               StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
-                .pollTimeout(Duration.ofSeconds(2))   // 블로킹 시간
-                .batchSize(20)                        // 한번에 읽을 개수
-                .targetType(ObjectRecord.class).serializer(RedisSerializer.json())
-                .build();
-
-        StreamMessageListenerContainer<Object, MapRecord<Object, Object, Object>> container = StreamMessageListenerContainer.create(connectionFactory, options);
-
-        // 수동 ACK 모드
-        container.receive(
-                Consumer.from("chat-group", "consumer-1"),
-                StreamOffset.create("chat:stream", ReadOffset.lastConsumed()),
-                record -> {
-                    //Map<String, String> data = (Map<String, String>) record.getValue();
-
-                    try {
-                        String json =(String) record.getValue().get("payload");
-                        // === 트랜잭션 안에서 처리 ===
-                        *//*Long crNo = Long.parseLong(data.get("crNo"));
-                        String content = data.get("content");
-                        MemberRole writerRole = MemberRole.valueOf(data.get("writerRole"));
-                        LocalDateTime sentAt = LocalDateTime.parse(data.get("sentAt"));*//*
-                        ChatMessageRequest req = objectMapper.readValue(json, ChatMessageRequest.class);
-
-                        // DB 저장 (트랜잭션 적용됨)
-                        Long msgId = messageService.saveMessage(req.getCrNo(), req.getContent(), req.getWriterRole(), req.getSentAt());
-
-                        // 브로드캐스트
-                        ChatMessageResponse dto = ChatMessageResponse.builder()
-                                .crNo(req.getCrNo())
-                                .messageId(msgId)
-                                .content(req.getContent())
-                                .writerRole(req.getWriterRole())
-                                .sentAt(req.getSentAt())
-                                .build();
-                        messagingTemplate.convertAndSend("/topic/chat/" + req.getCrNo(), dto);
-
-                        // 성공하면 ACK
-                        redis.opsForStream().acknowledge(STREAM, GROUP, record.getId());
-
-                    } catch (Exception e) {
-                        // 실패 시 ACK 안 함 → PEL(Pending) 에 남음
-                        // 이후 XAUTOCLAIM 같은 방식으로 재처리 가능
-                        System.err.println("Consume error: " + e.getMessage());
-                    }
-                });
-
-        container.start();
-    }*/
+    private static final String GROUP = "chat-group";
 
     @PostConstruct
+    public void initConsumer() {
+        // 1. 그룹이 없으면 생성
+        try {
+            redis.opsForStream().createGroup(STREAM, ReadOffset.latest(), GROUP);
+            System.out.println("Consumer Group created");
+        } catch (RedisSystemException e) {
+            if (e.getCause() instanceof RedisBusyException) {
+                System.out.println("Consumer Group already exists");
+            }
+        }
+        // 2. 이후 consume() 실행
+        consume();
+    }
+
+    //@PostConstruct
     public void consume() {
-        new Thread(()-> {
+        consumerThread = new Thread(() -> {
             while (true) {
                 try {
                     List<MapRecord<String, Object, Object>> records = redis.opsForStream().read(
@@ -106,8 +76,6 @@ public class ChatMessageConsumer {
                             //    (RedisSerializer.json()을 안 쓰고 직접 ObjectMapper 사용)
                             ChatMessageRequest req =
                                     objectMapper.convertValue(record.getValue(), ChatMessageRequest.class);
-                            System.out.println("RECORD >>> " + record);
-                            System.out.println("VALUE >>> " + record.getValue());
 
                             // 3. DB 저장
                             Long msgId = messageService.saveMessage(
@@ -116,6 +84,9 @@ public class ChatMessageConsumer {
                                     req.getWriterRole(),
                                     req.getSentAt()
                             );
+
+                            MemberRole receiver = (req.getWriterRole() == MemberRole.TEACHER) ? MemberRole.STUDENT : MemberRole.TEACHER;
+                            readService.incrementUnread(req.getCrNo(), receiver);
 
                             // 4. 브로드캐스트
                             ChatMessageResponse dto = ChatMessageResponse.builder()
@@ -126,18 +97,69 @@ public class ChatMessageConsumer {
                                     .sentAt(req.getSentAt())
                                     .build();
                             messagingTemplate.convertAndSend("/topic/chat/" + req.getCrNo(), dto);
-
+                            sendUnreadNotification(req.getCrNo(), req.getWriterRole());
                             // 5. ACK (정상 처리 시)
                             redis.opsForStream().acknowledge(STREAM, GROUP, record.getId());
 
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                        } catch (RedisSystemException e) {
+                            if (e.getCause() instanceof RedisException && e.getCause().getMessage().contains("Connection closed")) {
+                                System.out.println("Redis 연결 종료됨. 스레드 중지.");
+                                break;
+                            }
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+
                 }
             }
-        }).start();
+        });
+        consumerThread.start();
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        running = false;
+        if (consumerThread != null && consumerThread.isAlive()) {
+            consumerThread.interrupt();
+        }
+        System.out.println("ChatMessageConsumer thread 종료");
+    }
+
+    private void sendUnreadNotification(Long roomId, MemberRole senderRole) {
+        try {
+            // 채팅방 정보 조회
+            ChatRoom room = roomRepository.findById(roomId).orElseThrow();
+
+            // 상대방 결정 (보낸 사람이 아닌 상대방에게만 알림)
+            if (senderRole == MemberRole.TEACHER) {
+                // 선생님이 보낸 경우 → 학생에게 알림
+                long unreadCount = readService.getTotalUnread(
+                        room.getClassroomStudent().getClassRoomStudentNo(),
+                        MemberRole.STUDENT
+                );
+
+                Map<String, Long> notification = Map.of("totalUnread", unreadCount);
+                messagingTemplate.convertAndSend(
+                        "/topic/unread/student/" + room.getClassroomStudent().getClassRoomStudentNo(),
+                        notification
+                );
+
+            } else if (senderRole == MemberRole.STUDENT) {
+                // 학생이 보낸 경우 → 선생님에게 알림
+                long unreadCount = readService.getTotalUnread(
+                        room.getClassroomTeacher().getClassroomTeacherNo(),
+                        MemberRole.TEACHER
+                );
+
+                Map<String, Long> notification = Map.of("totalUnread", unreadCount);
+                messagingTemplate.convertAndSend(
+                        "/topic/unread/teacher/" + room.getClassroomTeacher().getClassroomTeacherNo(),
+                        notification
+                );
+            }
+
+        } catch (Exception e) {
+            System.err.println("미읽음 알림 전송 실패: " + e.getMessage());
+        }
     }
 }
