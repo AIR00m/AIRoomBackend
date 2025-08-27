@@ -36,4 +36,9 @@ public class ChatRoom extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_student_no")
     private ClassroomStudent classroomStudent; //클래스룸 학생
+
+    public void updateCR(String lastMessage, LocalDateTime lastMessageTime) {
+        this.lastMessage=lastMessage;
+        this.lastMessageTime=lastMessageTime;
+    }
 }
