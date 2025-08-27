@@ -25,7 +25,7 @@ public class Notification extends BaseEntity {
     private String notificationUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 100)
     private NotificationType notificationType;
 
     @Enumerated(EnumType.STRING)
