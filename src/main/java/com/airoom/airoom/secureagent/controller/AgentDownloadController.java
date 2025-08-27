@@ -32,7 +32,7 @@ public class AgentDownloadController {
     @Value("${agent.download.filename:secureagent-1.9.5.exe}")
     private String downloadName;
 
-    @Value("${agent.download.s3.enabled:false}")
+    @Value("${agent.download.s3.enabled:true}")
     private boolean s3Enabled;
     @Value("${agent.download.s3.public-url:}")
     private String s3PublicUrl;
