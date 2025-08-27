@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_classroom_student", columnList = "classroom_student_no"), //학생별 로그조회용
         @Index(name = "idx_classroom_student_start_time", columnList = "classroom_student_no, ll_start_time"), //기간별 학생로그 조회용
         @Index(name = "idx_unit", columnList = "unit_no"), //단원별 조회용
+        @Index(name = "idx_unit_start_time", columnList = "unit_no, ll_start_time"), //단원별 기간별 조회용
         @Index(name = "idx_cep", columnList = "cep_no"), //시험문제별 조회용
         @Index(name = "idx_log_type", columnList = "ll_type") //로그 타입별 조회용
 })
