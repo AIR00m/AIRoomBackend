@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
-import static com.airoom.airoom.common.redis.RedisStreamKey.ASSIGNMENT_PUB;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -30,8 +28,10 @@ public class RedisStreamPublisher {
             MapRecord<String, String, String> record =
                     StreamRecords.newRecord()
                             .ofMap(Map.of("payload", json))//payload 설정
-                            .withStreamKey(ASSIGNMENT_PUB.getKey());//스트림 키 지정
-            log.info("publish event");
+                            .withStreamKey(RedisStreamKey.NOTIFICATION_STREAM.getKey());//스트림 키 지정
+
+            log.info("알림 메시지 발행 - Type: {}, 대상자 수: {}", notification.notificationType(), notification.targetMemberNos().size());
+
             redisTemplate.opsForStream().add(record);
         } catch (Exception e) {
             log.error(e.getMessage(), e);

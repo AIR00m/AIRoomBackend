@@ -22,9 +22,6 @@ public class Notification extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long notificationNo;
 
-    @Column(nullable = false)
-    private String notificationContent;
-
     private String notificationUrl;
 
     @Enumerated(EnumType.STRING)

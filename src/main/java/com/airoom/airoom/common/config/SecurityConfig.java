@@ -112,6 +112,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                         // 프리플라이트(브라우저가 실제 요청 전에 서버에 보내는 사전 검사 요청) -> 막히게 되면 실제 API 호출 전에 실패 함
                         .requestMatchers("/install/**","/agent-required/**","/download/agent").permitAll()
+                        .requestMatchers("/sse/**").permitAll()
                         .anyRequest().authenticated() // 다른 것에 대한것은 인증이 필요
                 )
 

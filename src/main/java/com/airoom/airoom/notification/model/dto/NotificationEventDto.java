@@ -1,17 +1,14 @@
 package com.airoom.airoom.notification.model.dto;
 
 import com.airoom.airoom.notification.entity.value.NotificationType;
-import com.airoom.airoom.notification.entity.value.ReadType;
-import org.w3c.dom.stylesheets.LinkStyle;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 public record NotificationEventDto(
 
-       String notificationContent,
-       String notificationUrl,
-       NotificationType notificationType,
-       ReadType notificationReadType,
+       String notificationUrl, //NotificationType.location
+       NotificationType notificationType, // LocationUrl+msg
        List<Long>  targetMemberNos
 ) {
 }

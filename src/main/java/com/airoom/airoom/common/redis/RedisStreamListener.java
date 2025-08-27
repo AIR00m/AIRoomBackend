@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
-import static com.airoom.airoom.common.redis.RedisStreamKey.ASSIGNMENT_PUB;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -30,7 +28,7 @@ public class RedisStreamListener {
     //애플리케이션 시작 시 @PostConstruct로 리스너 초기화
     //객체 생성하고 의존성 주입이 끝나고 나서 한번만 호출
     //Redis 스트림 구독 리스너를 애플리케이션 시작 시점에 자동으로 실행하되, 의존성 주입이 끝난 안전한 시점에서 실행하기 위해서
-    public void createAssignment() {
+    public void NotificationListener() {
         //ListenerContainer의 옵션 설정
         //
         StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> options =
@@ -41,18 +39,18 @@ public class RedisStreamListener {
 
         StreamMessageListenerContainer<String, MapRecord<String, String, String>>
                 container = StreamMessageListenerContainer.create(redisTemplate.getConnectionFactory(), options);
-        // 첫번째는 redis랑 연결을 해야하니, redisConnectionFactory를 넣어주고
+        // 첫번째는 redis랑 연결을 해야하니, 템플릿에서 설정된 기존 풀 재사용하도록 redisConnectionFactory를 넣어주고
         // 두번째는 우리가 어떤 메시지를 수신할 것인지, 어떤 주기로 폴링할 것인지에 대한 옵션을 만들었기 때문에 옵션도 주입한다.
-
+        //컨테이너의 역할은 백그라운드에서 지속적으로 리스너 함수를 실행하고 구독을 관리
         container.receive(
-//                (과거 메시지 무시)
-                StreamOffset.create(ASSIGNMENT_PUB.getKey(), ReadOffset.latest()),
+//                (과거 메시지 무시하고 최신 메세지부터 읽기 시작)
+                StreamOffset.create(RedisStreamKey.NOTIFICATION_STREAM.getKey(), ReadOffset.latest()),
                 message -> {
                     try {
                         String payload = message.getValue().get("payload");
-                        log.info("payload : {}", payload);
+                        log.info("payload!!!!!!!!! : {}", payload);
                         NotificationEventDto notificationEventDto = objectMapper.readValue(payload, NotificationEventDto.class);
-                        notificationService.assignmentNotification(notificationEventDto);
+                        notificationService.sendNotification(notificationEventDto);
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }
