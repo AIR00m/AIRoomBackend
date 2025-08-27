@@ -7,6 +7,7 @@ import com.airoom.airoom.statistic.entity.value.SummaryType;
 import com.airoom.airoom.statistic.model.dto.*;
 import com.airoom.airoom.statistic.model.repository.LearningSummaryRepository;
 import com.airoom.airoom.statistic.model.repository.UnitSummaryRepository;
+import com.airoom.airoom.textbook.model.repository.TextbookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class StatisticService {
     private final LearningSummaryRepository learningSummaryRepository;
     private final UnitSummaryRepository unitSummaryRepository;
     private final ClassroomRepository classroomRepository;
+    private final TextbookRepository textbookRepository;
 
     /**
      * 학생 페이지 나의 학습요약
@@ -96,7 +98,19 @@ public class StatisticService {
         return studentUnitSummaryDetailResponseList;
     }
 
-    
+    /**
+     * 교사 페이지 우리반 학습 현황 관리
+     */
+    public List<ClassroomLearningSummaryAllResponse> getMyClassroomLearningSummaryAll(final ClassroomLearningSummaryRequest request) {
+        Classroom classroom = loadClassroomFetchWithClassroomStudents(request);
+        List<Long> studentNos = convertClassroomToStudentNos(classroom);
+
+        List<ClassroomLearningSummaryAllResponse> classroomLearningSummaryAllResponseList = learningSummaryRepository.findByClassroomStudentAll(studentNos);
+        calcAvgAll(classroomLearningSummaryAllResponseList, classroom);
+
+        return classroomLearningSummaryAllResponseList;
+    }
+
 
     /**
      * 메소드 추출
@@ -106,6 +120,14 @@ public class StatisticService {
             studentUnitSummaryResponse.setLsAvgAccuracyRate(
                     BigDecimal.valueOf(studentUnitSummaryResponse.getLsTotalCorrectProblems() / (double) studentUnitSummaryResponse.getLsTotalProblemsSolved())
                             .setScale(2, RoundingMode.HALF_UP));
+        }
+    }
+
+    private void calcAvgAll(List<ClassroomLearningSummaryAllResponse> classroomLearningSummaryAllResponseList, Classroom classroom) {
+        Long textbookTotalPages = textbookRepository.findTextbookPagesByClassroom(classroom);
+        for (ClassroomLearningSummaryAllResponse classroomLearningSummaryAllResponse : classroomLearningSummaryAllResponseList) {
+            classroomLearningSummaryAllResponse.setTextbookTotalPages(textbookTotalPages);
+            classroomLearningSummaryAllResponse.calcAvgAll();
         }
     }
 
