@@ -20,7 +20,8 @@ import java.time.LocalDate;
         indexes = {
                 @Index(name = "idx_ls_pk", columnList = "ls_classroom_student_no, ls_type, ls_start_date, deleted_at"),
                 @Index(name = "idx_ls_pk_end_date", columnList = "ls_classroom_student_no, ls_type, ls_start_date, ls_end_date, deleted_at"),
-                @Index(name = "idx_ls_pk_exclude_start_date", columnList = "ls_classroom_student_no, ls_type, ls_end_date, deleted_at")
+                @Index(name = "idx_ls_pk_exclude_start_date", columnList = "ls_classroom_student_no, ls_type, ls_end_date, deleted_at"),
+                @Index(name = "idx_ls_student_type_created", columnList = "ls_classroom_student_no, ls_type, created_at DESC, deleted_at")
         }
 )
 /**
@@ -45,7 +46,7 @@ public class LearningSummary extends BaseEntity {
     private Long lsTotalLearningTimeMs; //집계용 컬럼
 
     private Integer lsTotalProblemsSolved; //문제풀이 수
-    
+
     private Integer lsTotalCorrectProblems; //정답 수
 
     @Column(precision = 5, scale = 2)
