@@ -49,4 +49,12 @@ public interface StatisticControllerSwagger {
     public List<StudentUnitSummaryDetailResponse> getMyClassroomUnitSummaryDetail(
             @RequestBody @Valid ClassroomLearningSummaryRequest request
     );
+
+    @Operation(
+            summary = "교사 페이지 우리반 학습 현황 관리 API",
+            description = "교사 페이지에서 우리반 학습 현황 관리를 조회합니다."
+    )
+    public List<ClassroomLearningSummaryAllResponse> getMyClassroomLearningSummaryAll(
+            @RequestBody @Valid ClassroomLearningSummaryRequest request
+    );
 }
