@@ -25,17 +25,12 @@ public class AgentDownloadController {
     private String filePath;
 
     // 운영: 클래스패스에 포함된 바이너리로 내려줌 (우선순위 2)
-    @Value("${agent.download.classpath:agent/secureagent-1.9.5.exe}")
+    @Value("${agent.download.classpath:agent/보안지킴이-2.0.0.exe}")
     private String classpathFile;
 
     // 노출 파일명
-    @Value("${agent.download.filename:secureagent-1.9.5.exe}")
+    @Value("${agent.download.filename:보안지킴이-2.0.0.exe}")
     private String downloadName;
-
-    @Value("${agent.download.s3.enabled:true}")
-    private boolean s3Enabled;
-    @Value("${agent.download.s3.public-url:}")
-    private String s3PublicUrl;
 
     /** 내부 진단용 결과 객체 */
     private static final class ResolveResult {
@@ -49,17 +44,6 @@ public class AgentDownloadController {
     /** 실제 다운로드 (GET) */
     @GetMapping("/agent")
     public ResponseEntity<Resource> downloadAgent() {
-        // 0) S3 공개 URL 리다이렉트
-        if (s3Enabled && s3PublicUrl != null && !s3PublicUrl.isBlank()) {
-            HttpHeaders h = new HttpHeaders();
-            h.add("X-Agent-Redirect-Url", s3PublicUrl);
-            log.info("[AGENT-DOWNLOAD] REDIRECT to S3 public url: {}", s3PublicUrl);
-            return ResponseEntity.status(HttpStatus.FOUND) // 302
-                    .headers(h)
-                    .location(URI.create(s3PublicUrl))
-                    .build();
-        }
-
         ResolveResult rr = resolve();
 
         HttpHeaders headers = buildDiagHeaders(rr);
