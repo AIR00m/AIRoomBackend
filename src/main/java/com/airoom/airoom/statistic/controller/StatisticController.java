@@ -1,9 +1,6 @@
 package com.airoom.airoom.statistic.controller;
 
-import com.airoom.airoom.statistic.model.dto.ClassroomLearningSummaryRequest;
-import com.airoom.airoom.statistic.model.dto.StudentUnitSummaryResponse;
-import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryRequest;
-import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryResponse;
+import com.airoom.airoom.statistic.model.dto.*;
 import com.airoom.airoom.statistic.model.service.StatisticService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +44,7 @@ public class StatisticController implements StatisticControllerSwagger {
     @Override
     @PostMapping("/teacher/summary")
     public StudentLearningSummaryResponse getMyClassroomLearningSummary(
-            @RequestBody @Valid ClassroomLearningSummaryRequest request
+            @RequestBody @Valid final ClassroomLearningSummaryRequest request
     ) {
         return statisticService.getMyClassroomLearningSummary(request);
     }
@@ -58,7 +55,18 @@ public class StatisticController implements StatisticControllerSwagger {
     @Override
     @PostMapping("/teacher/unit-summary")
     public List<StudentUnitSummaryResponse> getMyClassroomUnitSummary(
-            @RequestBody @Valid ClassroomLearningSummaryRequest request) {
+            @RequestBody @Valid final ClassroomLearningSummaryRequest request) {
         return statisticService.getMyClassroomUnitSummary(request);
+    }
+
+    /**
+     * 교사 페이지 우리반 단원별 상세 현황
+     */
+    @Override
+    @PostMapping("/teacher/unit-summary/detail")
+    public List<StudentUnitSummaryDetailResponse> getMyClassroomUnitSummaryDetail(
+            @RequestBody @Valid final ClassroomLearningSummaryRequest request
+    ) {
+        return statisticService.getMyClassroomUnitSummaryDetail(request);
     }
 }

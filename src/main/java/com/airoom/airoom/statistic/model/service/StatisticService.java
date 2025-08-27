@@ -4,10 +4,7 @@ import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.statistic.entity.value.SummaryType;
-import com.airoom.airoom.statistic.model.dto.ClassroomLearningSummaryRequest;
-import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryRequest;
-import com.airoom.airoom.statistic.model.dto.StudentLearningSummaryResponse;
-import com.airoom.airoom.statistic.model.dto.StudentUnitSummaryResponse;
+import com.airoom.airoom.statistic.model.dto.*;
 import com.airoom.airoom.statistic.model.repository.LearningSummaryRepository;
 import com.airoom.airoom.statistic.model.repository.UnitSummaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -84,6 +81,22 @@ public class StatisticService {
         return studentUnitSummaryResponseList;
     }
 
+    /**
+     * 교사 페이지 우리반 단원별 상세 현황
+     */
+    public List<StudentUnitSummaryDetailResponse> getMyClassroomUnitSummaryDetail(final ClassroomLearningSummaryRequest request) {
+        Result date = validateDate(request.lsStartDate(), request.lsEndDate(), request.lsType());
+
+        Classroom classroom = loadClassroomFetchWithClassroomStudents(request);
+        List<Long> studentNos = convertClassroomToStudentNos(classroom);
+
+        List<StudentUnitSummaryDetailResponse> studentUnitSummaryDetailResponseList = getUnitSummaryByStudentAndUnitWithoutToday(request, studentNos, date);
+        calcListAvgAccuracyRate(studentUnitSummaryDetailResponseList);
+
+        return studentUnitSummaryDetailResponseList;
+    }
+
+    
 
     /**
      * 메소드 추출
@@ -96,11 +109,21 @@ public class StatisticService {
         }
     }
 
+    private void calcListAvgAccuracyRate(List<StudentUnitSummaryDetailResponse> studentUnitSummaryDetailResponseList) {
+        for (StudentUnitSummaryDetailResponse studentUnitSummaryDetailResponse : studentUnitSummaryDetailResponseList) {
+            studentUnitSummaryDetailResponse.calcAvgAccuracyRate();
+        }
+    }
+
     private List<Long> convertClassroomToStudentNos(Classroom classroom) {
         return classroom.getClassroomStudentList()
                 .stream()
                 .map(ClassroomStudent::getClassRoomStudentNo)
                 .toList();
+    }
+
+    private List<StudentUnitSummaryDetailResponse> getUnitSummaryByStudentAndUnitWithoutToday(ClassroomLearningSummaryRequest request, List<Long> studentNos, Result date) {
+        return unitSummaryRepository.findByClassroomStudentAndUnit(studentNos, request.lsType(), date.lsStartDate, date.lsEndDate);
     }
 
     private List<StudentUnitSummaryResponse> getUnitSummaryWithoutToday(List<Long> studentNos, SummaryType lsType, LocalDate lsStartDate, LocalDate lsEndDate) {
