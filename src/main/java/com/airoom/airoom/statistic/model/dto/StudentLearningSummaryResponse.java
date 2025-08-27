@@ -10,12 +10,15 @@ import java.math.RoundingMode;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+/**
+ * 학습 요약(학생별, 우리반) DTO
+ */
 public class StudentLearningSummaryResponse {
-    private Long lsTotalLearningDays; //총 학습일
-    private Long lsTotalLearningTime; //총 학습시간(밀리초)
+    private Long lsTotalLearningDays; //총 학습일(필수)
+    private Long lsTotalLearningTime; //총 학습시간(밀리초)(필수)
     private Long lsTotalProblemsSolved; //총 문제풀이 수
     private Long lsTotalCorrectProblems; //총 정답 수
-    private BigDecimal lsAvgAccuracyRate; //평균 정답률
+    private BigDecimal lsAvgAccuracyRate; //평균 정답률(필수)
 
     public StudentLearningSummaryResponse(Long lsTotalLearningDays, Long lsTotalLearningTime, Long lsTotalProblemsSolved, Long lsTotalCorrectProblems) {
         this.lsTotalLearningDays = lsTotalLearningDays;

@@ -11,12 +11,12 @@ import java.math.RoundingMode;
 @NoArgsConstructor
 @Builder
 public class StudentUnitSummaryDetailResponse {
-    private String usClassroomStudentName; //클래스룸 학생이름
+    private String usClassroomStudentName; //클래스룸 학생이름(필수)
     private Long usTotalProblemsSolved; //총 문제풀이 수
     private Long usTotalCorrectProblems; //총 정답 수
-    private BigDecimal usAvgAccuracyRate; //평균 정답률
-    private String unitTitle; //단원명
-    private Integer unitNum; //단원번호
+    private BigDecimal usAvgAccuracyRate; //평균 정답률(필수)
+    private String unitTitle; //단원명(필수)
+    private Integer unitNum; //단원번호(필수)
 
     public StudentUnitSummaryDetailResponse(String usClassroomStudentName, Long usTotalProblemsSolved, Long usTotalCorrectProblems, String unitTitle, Integer unitNum) {
         this.usClassroomStudentName = usClassroomStudentName;
