@@ -24,7 +24,7 @@ public class UnitSummaryTest {
     @Rollback
     void saveDummyUnitSummaries() {
         // 학생번호 고정
-        Long classroomStudentNo = 1L;
+        Long classroomStudentNo = 2L;
 
         // 단원 1 ~ 4 더미 데이터
         for (long unitNo = 1; unitNo <= 4; unitNo++) {

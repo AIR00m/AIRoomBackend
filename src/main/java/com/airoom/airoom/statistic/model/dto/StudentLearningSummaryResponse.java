@@ -24,17 +24,7 @@ public class StudentLearningSummaryResponse {
         this.lsTotalCorrectProblems = lsTotalCorrectProblems;
     }
 
-    public void calc(Long addDays, Long addTime, Long addSolved, Long addCorrect) {
-        if (this.lsTotalLearningDays == null) this.lsTotalLearningDays = 0L;
-        if (this.lsTotalLearningTime == null) this.lsTotalLearningTime = 0L;
-        if (this.lsTotalProblemsSolved == null) this.lsTotalProblemsSolved = 0L;
-        if (this.lsTotalCorrectProblems == null) this.lsTotalCorrectProblems = 0L;
-
-        this.lsTotalLearningDays += addDays;
-        this.lsTotalLearningTime += addTime;
-        this.lsTotalProblemsSolved += addSolved;
-        this.lsTotalCorrectProblems += addCorrect;
-
+    public void calcAvgAccuracyRate() {
         if (this.lsTotalProblemsSolved > 0) {
             this.lsAvgAccuracyRate = BigDecimal.valueOf(this.lsTotalCorrectProblems * 100.0 / this.lsTotalProblemsSolved)
                     .setScale(2, RoundingMode.HALF_UP); // 소수점 2자리 반올림

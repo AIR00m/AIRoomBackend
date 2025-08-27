@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -41,4 +40,13 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
             """
     )
     Optional<Long> getClassroomNoByTextbookNoAndStudentId(@Param("textbookNo") Long textbookNo, @Param("memberId") String memberId);
+
+
+    @Query("""
+            select distinct c
+            from Classroom c
+            left join fetch c.classroomStudentList st
+            where c.classroomNo = :classroomNo
+            """)
+    Classroom findClassroomByClassroomNoWithClassroomStudents(Long classroomNo);
 }
