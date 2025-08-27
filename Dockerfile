@@ -2,9 +2,13 @@
 FROM openjdk:17-slim
 
 # curl 설치
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends curl tzdata; \
+    ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime; \
+    echo "Asia/Seoul" > /etc/timezone; \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 
 # JAR 복사
 ARG JAR_FILE=target/*.jar
