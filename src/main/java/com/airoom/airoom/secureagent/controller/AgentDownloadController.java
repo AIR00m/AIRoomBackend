@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
+import java.net.URI;
 
 @RestController
 @RequestMapping("/download")
@@ -31,6 +32,11 @@ public class AgentDownloadController {
     @Value("${agent.download.filename:secureagent-1.9.5.exe}")
     private String downloadName;
 
+    @Value("${agent.download.s3.enabled:false}")
+    private boolean s3Enabled;
+    @Value("${agent.download.s3.public-url:}")
+    private String s3PublicUrl;
+
     /** 내부 진단용 결과 객체 */
     private static final class ResolveResult {
         Resource resource;
@@ -43,6 +49,17 @@ public class AgentDownloadController {
     /** 실제 다운로드 (GET) */
     @GetMapping("/agent")
     public ResponseEntity<Resource> downloadAgent() {
+        // 0) S3 공개 URL 리다이렉트
+        if (s3Enabled && s3PublicUrl != null && !s3PublicUrl.isBlank()) {
+            HttpHeaders h = new HttpHeaders();
+            h.add("X-Agent-Redirect-Url", s3PublicUrl);
+            log.info("[AGENT-DOWNLOAD] REDIRECT to S3 public url: {}", s3PublicUrl);
+            return ResponseEntity.status(HttpStatus.FOUND) // 302
+                    .headers(h)
+                    .location(URI.create(s3PublicUrl))
+                    .build();
+        }
+
         ResolveResult rr = resolve();
 
         HttpHeaders headers = buildDiagHeaders(rr);
@@ -68,15 +85,6 @@ public class AgentDownloadController {
 
         log.info("[AGENT-DOWNLOAD] OK - source={}, path={}, length={}", rr.source, rr.path, rr.length);
         return builder.body(rr.resource);
-    }
-
-    /** 헤더만 확인하고 싶을 때 (curl -I 로 빠른 진단) */
-    @RequestMapping(value = "/agent", method = RequestMethod.HEAD)
-    public ResponseEntity<Void> headAgent() {
-        ResolveResult rr = resolve();
-        HttpHeaders headers = buildDiagHeaders(rr);
-        HttpStatus status = (rr.resource != null && rr.resource.exists()) ? HttpStatus.OK : HttpStatus.NOT_FOUND;
-        return new ResponseEntity<>(headers, status);
     }
 
     /** 상세 디버그 JSON (설정/클래스패스 목록/실시간 경로 등) */
