@@ -15,4 +15,6 @@ public class ChatRoomResponse {
     private Long crNo;
     private String lastMessage;
     private LocalDateTime lastMessageTime;
+    private Long unreadCount;
+    private String studentName;
 }

@@ -21,12 +21,13 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ClassroomTeacherRepository teacherRepository;
     private final ClassroomStudentRepository studentRepository;
+    private final ChatReadService chatReadService;
 
     @Transactional
     public ChatRoom getOrCreateRoom(Long classroomTeacherNo, Long classroomStudentNo) {
-        ClassroomTeacher classroomTeacher= teacherRepository.findById(classroomTeacherNo)
+        ClassroomTeacher classroomTeacher = teacherRepository.findById(classroomTeacherNo)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-        ClassroomStudent classroomStudent= studentRepository.findById(classroomStudentNo)
+        ClassroomStudent classroomStudent = studentRepository.findById(classroomStudentNo)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         return chatRoomRepository.findByClassroomTeacherAndClassroomStudent(classroomTeacher, classroomStudent)
                 .orElseGet(() -> {
@@ -49,7 +50,7 @@ public class ChatRoomService {
     }
 
     public List<ChatRoomResponse> getChatRooms(Long classroomTeacherNo) {
-        ClassroomTeacher classroomTeacher= teacherRepository.findById(classroomTeacherNo)
+        ClassroomTeacher classroomTeacher = teacherRepository.findById(classroomTeacherNo)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         return chatRoomRepository.findByClassroomTeacher(classroomTeacher).stream()
                 .map(this::buildChatRoomResponse).toList();
@@ -59,6 +60,7 @@ public class ChatRoomService {
     private ChatRoomResponse buildChatRoomResponse(ChatRoom chatRoom) {
         return ChatRoomResponse.builder()
                 .crNo(chatRoom.getCrNo())
+                .unreadCount(chatReadService.getUnread(chatRoom.getCrNo(), MemberRole.TEACHER))
                 .lastMessage(chatRoom.getLastMessage())
                 .lastMessageTime(chatRoom.getLastMessageTime())
                 .build();

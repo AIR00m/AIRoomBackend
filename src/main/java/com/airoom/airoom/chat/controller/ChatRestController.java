@@ -2,12 +2,10 @@ package com.airoom.airoom.chat.controller;
 
 import com.airoom.airoom.chat.entity.ChatMessage;
 import com.airoom.airoom.chat.entity.ChatRoom;
-import com.airoom.airoom.chat.model.dto.ChatMessageResponse;
-import com.airoom.airoom.chat.model.dto.ChatRoomRequest;
-import com.airoom.airoom.chat.model.dto.ChatRoomResponse;
-import com.airoom.airoom.chat.model.dto.ScrollRequest;
+import com.airoom.airoom.chat.model.dto.*;
 import com.airoom.airoom.chat.model.service.ChatMessageProducer;
 import com.airoom.airoom.chat.model.service.ChatMessageService;
+import com.airoom.airoom.chat.model.service.ChatReadService;
 import com.airoom.airoom.chat.model.service.ChatRoomService;
 import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
 import com.airoom.airoom.classroom.model.service.ClassroomService;
@@ -16,15 +14,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chat")
 @Slf4j
-public class ChatRestController implements ChatRestSwagger{
+public class ChatRestController implements ChatRestSwagger {
     private final ChatRoomService roomService;
     private final ChatMessageService messageService;
     private final ClassroomService classroomService;
+    private final ChatReadService readService;
     private final ChatMessageProducer producer;
 
     // 교사: 학생과 대화하기 → 채팅방 생성/조회
@@ -41,6 +41,7 @@ public class ChatRestController implements ChatRestSwagger{
     public List<ChatRoomResponse> getChatRooms(@PathVariable Long classroomTeacherNo) {
         return roomService.getChatRooms(classroomTeacherNo);
     }
+
     // 교사: 학생 목록
     @GetMapping("/students/list/{classroomNo}")
     public List<ClassroomStudentResponse> getChatStudents(@PathVariable Long classroomNo) {
@@ -56,8 +57,23 @@ public class ChatRestController implements ChatRestSwagger{
     // 무한스크롤 메시지
     @PostMapping("/rooms/messages")
     public List<ChatMessageResponse> messages(@RequestBody ScrollRequest scrollRequest) {
-        log.info("scroll request: roomId={}, beforeId={}", scrollRequest.getCrNo(), scrollRequest.getBeforeId());
-
         return messageService.scroll(scrollRequest.getCrNo(), scrollRequest.getBeforeId());
     }
+
+    //헤더 채팅 알림
+    @PostMapping("/unread/total")
+    public UnreadResponse getTotalUnread(@RequestBody UnreadRequest unreadRequest) {
+        long count = readService.getTotalUnread(unreadRequest.getClassroomMemberNo(), unreadRequest.getMemberRole());
+        return UnreadResponse.builder().totalUnread(count).build();
+    }
+
+    /*@GetMapping("/student-name")
+    public String getStudentName() {
+
+    }
+
+    @GetMapping("/teacher-name")
+    public String getTeacherName(){
+
+    }*/
 }

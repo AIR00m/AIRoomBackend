@@ -32,12 +32,14 @@ public class ChatMessageService {
                 .chatRoom(room)
                 .cmContent(content)
                 .cmWriterType(writerRole)
+                .readByTeacher(writerRole == MemberRole.TEACHER)
+                .readByStudent(writerRole == MemberRole.STUDENT)
                 .build();
 
         chatMessageRepository.save(message);
 
         // 채팅방 마지막 메시지 업데이트
-        room.updateCR(content,sentAt);
+        room.updateCR(content, sentAt);
 
         return message.getCmNo();
     }
@@ -53,7 +55,6 @@ public class ChatMessageService {
                 .map(this::buildChatMessageResponse).collect(Collectors.toList())
                 : chatMessageRepository.findByChatRoomAndCmNoLessThanOrderByCmNoDesc(room, beforeId, p).stream()
                 .map(this::buildChatMessageResponse).collect(Collectors.toList());
-        // 화면에서 아래→위 순서를 원하면 역순 반환
         Collections.reverse(list);
         return list;
     }
