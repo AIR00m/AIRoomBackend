@@ -5,7 +5,7 @@ import com.airoom.airoom.board.model.dto.homework.StudentHomeworkResponse;
 import java.util.List;
 
 public record AssignWithHomeworksResponse (
-        AssignResponse assignResponse,
+        AssignTeacherResponse assignTeacherResponse,
         List<StudentHomeworkResponse> studentHomeworkResponses
 ){
 }
