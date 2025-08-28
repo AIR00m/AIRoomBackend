@@ -5,13 +5,17 @@ import com.airoom.airoom.aichat.entity.AiChatRoom;
 import com.airoom.airoom.aichat.entity.value.MessageType;
 import com.airoom.airoom.aichat.model.dto.AskRequest;
 import com.airoom.airoom.aichat.model.dto.AskResponse;
+import com.airoom.airoom.aichat.model.dto.ChatDto;
 import com.airoom.airoom.aichat.model.repository.AiChatMessageRepository;
 import com.airoom.airoom.aichat.model.repository.AiChatRoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -55,4 +59,26 @@ public class AiChatService {
 
         return resp;
     }
+
+    @Transactional(readOnly = true)
+    public List<ChatDto.MsgRes> getMessages(Long roomId, Long beforeId, int limit) {
+        int size = Math.max(1, Math.min(limit, 100));
+        Pageable p = PageRequest.of(0, size);
+
+        List<AiChatMessage> list = (beforeId == null)
+                ? msgRepo.findByAiChatRoom_AcrNoOrderByAcmNoDesc(roomId, p)
+                : msgRepo.findByAiChatRoom_AcrNoAndAcmNoLessThanOrderByAcmNoDesc(roomId, beforeId, p);
+
+        // 최신→과거로 내려오므로 프론트에서 reverse()해서 보여주기 좋음
+        return list.stream().map(ChatDto.MsgRes::from).toList();
+    }
+
+    @Transactional
+    public void deleteRoom(Long roomId){
+        // 1) 메시지 soft delete
+        msgRepo.softDeleteByRoom(roomId);
+        // 2) 방 soft delete (엔티티에 @SQLDelete 있음)
+        roomRepo.deleteById(roomId);
+    }
+
 }
