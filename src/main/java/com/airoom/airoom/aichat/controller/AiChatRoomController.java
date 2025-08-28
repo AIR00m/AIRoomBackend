@@ -4,6 +4,7 @@ package com.airoom.airoom.aichat.controller;
 import com.airoom.airoom.aichat.entity.AiChatRoom;
 import com.airoom.airoom.aichat.model.dto.ChatDto.*;
 import com.airoom.airoom.aichat.model.repository.AiChatRoomRepository;
+import com.airoom.airoom.aichat.model.service.AiChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -12,11 +13,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/aichat/rooms")
+@RequestMapping("/aichat/rooms")
 @RequiredArgsConstructor
 public class AiChatRoomController {
 
     private final AiChatRoomRepository roomRepo;
+    private final AiChatService aiChatService;
 
     // 방 생성 (memberNo는 프론트에서 전달; 추후 JWT로 교체 가능)
     @PostMapping
@@ -40,4 +42,11 @@ public class AiChatRoomController {
                 .map(RoomRes::from).toList();
         return ResponseEntity.ok(rooms);
     }
+
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<Void> delete(@PathVariable Long roomId){
+        aiChatService.deleteRoom(roomId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
