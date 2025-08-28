@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/textbooks")
-public class TextbookController {
+public class TextbookController implements TextbookSwagger{
 
     private final TextbookService textbookService;
 
