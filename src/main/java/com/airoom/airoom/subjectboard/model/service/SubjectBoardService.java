@@ -78,7 +78,7 @@ public class SubjectBoardService {
                 .orElseThrow(() -> new NotFoundException("게시글 없음"));
 
         // 1. 게시글 내용 수정
-        board.update(request.getTitle(), request.getContent(), request.isFocusType());
+        board.updateSb(request.getTitle(), request.getContent(), request.isFocusType());
 
         // 2. 삭제 요청된 첨부파일 제거 (S3 + DB)
         if (request.getDeleteAttachments() != null) {

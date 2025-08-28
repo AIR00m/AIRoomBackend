@@ -17,6 +17,10 @@ import org.hibernate.annotations.SQLRestriction;
 /**
  * 진도 엔티티
  */
+@Table(indexes = {
+        @Index(name = "idx_progress_cs_unit", columnList = "classroom_student_no, unit_no, deleted_at")
+})
+
 public class Progress extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

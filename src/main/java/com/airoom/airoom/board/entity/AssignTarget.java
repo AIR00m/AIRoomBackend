@@ -15,6 +15,9 @@ import org.hibernate.annotations.SQLRestriction;
 // Soft Delete 방식
 @SQLDelete(sql = "UPDATE assign_target SET deleted_at = NOW() WHERE assign_target_no = ?")
 @SQLRestriction("deleted_at IS NULL")
+@Table(indexes = {
+        @Index(name = "idx_at_target_type_del", columnList = "target_no, group_assign_type, deleted_at")
+})
 public class AssignTarget extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,5 +1,6 @@
 package com.airoom.airoom.textbook.model.repository;
 
+import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.textbook.entity.Textbook;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -28,4 +29,13 @@ public interface TextbookRepository extends JpaRepository<Textbook, Long> {
         WHERE m.member_no = :memberNo
     """, nativeQuery = true)
     List<Textbook> getAllTextbooksByStudentMemberNo(@Param("memberNo") Long memberNo);
+
+    @Query("""
+            select sum(u.unitPages)
+                from ClassroomTeacher ct
+                join ct.textbook t
+                join Unit u on u.textbook = t
+                where ct.classroom = :classroom
+            """)
+    Long findTextbookPagesByClassroom(Classroom classroom);
 }

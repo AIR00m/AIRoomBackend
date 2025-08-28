@@ -13,7 +13,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/classroom")
+@RequestMapping("/api/classroom")
 public class ClassroomController implements ClassroomControllerSwagger {
     private final ClassroomService classroomService;
 
