@@ -58,6 +58,7 @@ public class AgentGuardInterceptor implements HandlerInterceptor {
                 "/download",
                 "/forensic",
                 "/api/forensic",
+                "/aichat/health",
                 "/assets",
                 "/favicon",
                 "/error",
