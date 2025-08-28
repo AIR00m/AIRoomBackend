@@ -55,7 +55,8 @@ public class OpenAiService {
         Map<String, Object> req = Map.of(
                 "model", props.getOpenai().getChatModel(),
                 "messages", messages,
-                "temperature", 0.3
+                "temperature", 0.65,            // ← 톤을 조금 더 밝고 자연스럽게
+                "max_tokens", 700               // ← 과도한 장문 방지
         );
         Map<String, Object> res = openaiWebClient.post()
                 .uri("/chat/completions")
