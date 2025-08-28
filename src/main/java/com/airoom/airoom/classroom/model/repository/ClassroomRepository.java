@@ -1,6 +1,7 @@
 package com.airoom.airoom.classroom.model.repository;
 
 import com.airoom.airoom.classroom.entity.Classroom;
+import com.airoom.airoom.classroom.model.dto.ClassroomResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,4 +50,18 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
             where c.classroomNo = :classroomNo
             """)
     Classroom findClassroomByClassroomNoWithClassroomStudents(Long classroomNo);
+
+    @Query("""
+           SELECT NEW com.airoom.airoom.classroom.model.dto.ClassroomResponse(
+                      c.classroomNo,
+                      c.classroomSchool,
+                      c.classroomGrade,
+                      c.classroomClass,
+                      c.classroomYear,
+                      c.classroomSemester
+                      )
+           FROM Classroom c
+           where c.classroomNo = :classroomNo
+                                                """)
+    ClassroomResponse getClassroomByClassroomNo (Long classroomNo);
 }
