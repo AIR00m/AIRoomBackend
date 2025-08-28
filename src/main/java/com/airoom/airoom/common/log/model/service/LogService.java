@@ -33,7 +33,7 @@ public class LogService {
 
             logData.put("examNo", request.examNo());
             logData.put("studentNo", request.classroomStudentNo());
-            logData.put("classroomStudentNo", request.classroomStudentNo());
+            logData.put("classroomNo", request.classroomNo());
             logData.put("problemNo", request.problemNo() != null ? request.problemNo() : 0L);
             logData.put("solvingTime", request.solvingTime() != null ? request.solvingTime() : 0L);
 
