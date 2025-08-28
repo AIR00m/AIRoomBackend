@@ -19,6 +19,7 @@ import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
 import com.airoom.airoom.common.redis.RedisStreamPublisher;
 import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.member.entity.Member;
+import com.airoom.airoom.notification.entity.value.NotificationType;
 import com.airoom.airoom.notification.model.dto.NotificationEventDto;
 import com.amazonaws.services.kms.model.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +56,46 @@ public class AssignService {
         //homeworkBoard save
         saveHomework(assignBoard, savedTargetIds);
 
+        sendAssignmentNotification(savedTargetIds);
+
+        log.info("과제 생성 완료 - AssignBoard ID: {}, 대상자 수: {}",
+                assignBoard.getAssignBoardNo(), savedTargetIds.size()); // 🔧 수정
         return assignBoardNo;
+    }
+
+    private void sendAssignmentNotification(List<AssignTarget> savedTargets) {
+
+        boolean isGroupAssignment = savedTargets.get(0).isGroupAssignType();
+        //그룹여부 확인
+        NotificationType notificationType = isGroupAssignment ? NotificationType.NEW_GROUP_ASSIGNMENT : NotificationType.NEW_ASSIGNMENT;
+        //알림받을 멤버들의 ID
+        List<Long> targetMemberNos = getNotificationTargetMemberNos(savedTargets);
+
+        //알림 DTO생성
+        NotificationEventDto notificationEventDto = new NotificationEventDto(
+                notificationType.getLocation(), notificationType ,targetMemberNos);
+
+        //알림 DTO 메세지 발행
+        publisher.publishNotification(notificationEventDto);
+
+    }
+//알림받을 멤버들의 ID
+    private List<Long> getNotificationTargetMemberNos(List<AssignTarget> savedTargets) {
+
+        List<Long> memberNos = new ArrayList<>();
+        for (AssignTarget assignTarget : savedTargets) {
+            if(assignTarget.isGroupAssignType()){
+                Long groupNo = assignTarget.getTargetNo();
+                List<ClassroomStudent> groupMembers = classroomGroupRepository.findByGroupNo(groupNo);
+                memberNos.addAll(groupMembers.stream().map(cls->cls.getStudent().getMemberNo()).toList());
+            }else{
+                ClassroomStudent students = classroomStudentRepository.findById(assignTarget.getTargetNo())
+                        .orElseThrow(()->new IllegalArgumentException("학생을 찾을수없습니다"));
+                     memberNos.add(students.getStudent().getMemberNo());
+            }
+        }
+
+        return memberNos;
     }
 
     private void saveHomework(AssignBoard assignBoard, List<AssignTarget> savedAssignTargets) {
@@ -105,7 +145,6 @@ public class AssignService {
                 .homeworkScore(null) // 점수 없음
                 .build();
     }
-
     /**
      * AssignBoard 엔티티 생성 및 저장
      */
