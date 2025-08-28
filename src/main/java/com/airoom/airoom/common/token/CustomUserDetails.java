@@ -12,6 +12,8 @@ import java.util.Collection;
 public class CustomUserDetails implements UserDetails {
     private final String username;
     private final Long classroomNo;
+    private final Long memberNo;
+    private final String role;
     private final Collection<? extends GrantedAuthority> authorities;
 
     @Override
