@@ -28,6 +28,7 @@ public class TextbookController {
     /* 단원 조회 */
     @GetMapping("/units/pdf/{unitNo}")
     public List<UnitPdfUrl> getUnitByUnitNo(@PathVariable("unitNo") Long unitNo) {
+        System.out.println("pdf정보가져오기 시도");
         return textbookService.getUnitByUnitNo(unitNo);
     }
 }
