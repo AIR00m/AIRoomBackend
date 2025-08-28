@@ -1,17 +1,20 @@
-// src/main/java/.../aichat/controller/AiChatRoomController.java
 package com.airoom.airoom.aichat.controller;
 
 import com.airoom.airoom.aichat.entity.AiChatRoom;
 import com.airoom.airoom.aichat.model.dto.ChatDto.*;
 import com.airoom.airoom.aichat.model.repository.AiChatRoomRepository;
 import com.airoom.airoom.aichat.model.service.AiChatService;
+import com.airoom.airoom.common.token.CustomUserDetails;
+import com.airoom.airoom.member.entity.Member;
+import com.airoom.airoom.member.model.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// AiChatRoomController.java
 @RestController
 @RequestMapping("/aichat/rooms")
 @RequiredArgsConstructor
@@ -19,13 +22,20 @@ public class AiChatRoomController {
 
     private final AiChatRoomRepository roomRepo;
     private final AiChatService aiChatService;
+    private final MemberRepository memberRepo;
 
-    // 방 생성 (memberNo는 프론트에서 전달; 추후 JWT로 교체 가능)
+    private CustomUserDetails me() {
+        return (CustomUserDetails) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+    }
+
     @PostMapping
-    public ResponseEntity<RoomRes> create(@RequestBody RoomCreateReq req){
-        // 최소 필드만 사용. member 세팅은 추후 JWT ↔ Member 조회로 강화 가능.
+    public ResponseEntity<RoomRes> create() {
+        var me = me();
+        // 회원 프록시만 얻어서 FK 세팅 (쿼리 안 나감)
+        Member owner = memberRepo.getReferenceById(me.getMemberNo());
         AiChatRoom room = AiChatRoom.builder()
-                .member(null) // TODO: memberRepo.findById(req.memberNo)로 연결 가능하면 세팅
+                .member(owner)
                 .lastQuestion(null)
                 .lastQuestionTime(null)
                 .build();
@@ -33,20 +43,20 @@ public class AiChatRoomController {
         return ResponseEntity.ok(RoomRes.from(room));
     }
 
-    // 내 방 목록
     @GetMapping
-    public ResponseEntity<List<RoomRes>> list(@RequestParam Long memberNo){
-        // 지금은 member 연동 전이므로 일단 전체 최신 N개 리턴(데모용).
-        // 실제론 memberNo 기준 where member_no = ? 필요.
-        var rooms = roomRepo.findAll(PageRequest.of(0, 50)).stream()
-                .map(RoomRes::from).toList();
+    public ResponseEntity<List<RoomRes>> list() {
+        var me = me();
+        var rooms = roomRepo
+                .findByMember_MemberNoOrderByLastQuestionTimeDesc(me.getMemberNo())
+                .stream().map(RoomRes::from).toList();
         return ResponseEntity.ok(rooms);
     }
 
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> delete(@PathVariable Long roomId){
-        aiChatService.deleteRoom(roomId);
+        aiChatService.deleteRoom(roomId); // 소유권 검증은 서비스에서 한 번 더
         return ResponseEntity.noContent().build();
     }
-
 }
+
+
