@@ -1,11 +1,14 @@
 package com.airoom.airoom.presence;
 
+import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
+import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.presence.dto.PresenceEvent;
 import com.airoom.airoom.presence.dto.PresenceListItem;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,23 +16,30 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PresenceService {
 
     private final StringRedisTemplate redis;
     private final SimpMessagingTemplate messaging;
+    // =========================== [변경점 1: Repository 주입] ===========================
+    private final ClassroomStudentRepository classroomStudentRepository;
+    // =================================================================================
 
     // 온라인 판정(하트비트 주기보다 살짝 크게), Redis TTL(여유)
-    private static final long ONLINE_WINDOW_MS = 35_000;
-    private static final long TTL_SECONDS = 120;
+    private static final long ONLINE_WINDOW_MS = 10_000;
+    private static final long TTL_SECONDS = 60;
 
     private String key(long classNo, String userId) {
         return "presence:%d:%s".formatted(classNo, userId);
     }
 
     private boolean isOnline(long lastSeen) {
+        // [수정] lastSeen이 0일 경우를 대비한 방어 코드 추가
+        if (lastSeen == 0L) return false;
         return (Instant.now().toEpochMilli() - lastSeen) < ONLINE_WINDOW_MS;
     }
 
@@ -61,59 +71,44 @@ public class PresenceService {
     /** (선택) 즉시 오프라인 알림 */
     public void offlineNow(long classNo, String userId) {
         long now = Instant.now().toEpochMilli();
-        // 정책 1: "방금 오프라인 됨" 의미로 now 사용(기본)
         broadcast(classNo, userId, false, now);
-
-        // 정책 2(선택): 직전 하트비트 시각으로 보내고 싶으면 아래 사용
-        // String v = redis.opsForValue().get(key(classNo, userId));
-        // long last = (v != null) ? Long.parseLong(v) : now;
-        // broadcast(classNo, userId, false, last);
     }
 
-    /** 반 스냅샷: Redis 값(lastSeen) 읽어 온라인 여부 계산 */
+    // =========================== [변경점 2: snapshot 메서드 교체] ===========================
+    /** 반 스냅샷: DB에서 전체 학생 목록을 가져온 뒤, Redis 값으로 온라인 여부 계산 */
     public List<PresenceListItem> snapshot(long classNo) {
-        String pattern = "presence:" + classNo + ":*";
-        List<String> keys = new ArrayList<>();
+        // 1. DB에서 해당 반의 '전체 학생 목록'을 DTO 형태로 가져옵니다.
+        List<ClassroomStudentResponse> allStudentsInClass = classroomStudentRepository.findClassroomStudentsByClassroomNo(classNo);
 
-        redis.execute((RedisConnection conn) -> {
-            try (var cursor = conn.keyCommands().scan(
-                    ScanOptions.scanOptions().match(pattern).count(1000).build())) {
-                cursor.forEachRemaining(b -> keys.add(new String(b, StandardCharsets.UTF_8)));
-            }
-            return null;
-        });
+        // 2. 각 학생 DTO에 대해 Redis에서 온라인 상태를 확인하여 최종 목록을 만듭니다.
+        return allStudentsInClass.stream()
+                .map(studentDto -> {
+                    String userId = studentDto.studentId(); // DTO에서 학생 ID 가져오기
+                    String redisKey = key(classNo, userId);
 
-        if (keys.isEmpty()) return Collections.emptyList();
+                    String lastSeenStr = redis.opsForValue().get(redisKey);
 
-        List<String> values = redis.opsForValue().multiGet(keys);
-        if (values == null) values = Collections.emptyList();
+                    long lastSeen = 0L;
+                    if (lastSeenStr != null) {
+                        try {
+                            lastSeen = Long.parseLong(lastSeenStr);
+                        } catch (NumberFormatException e) {
+                            // 값 변환 실패 시 0으로 처리 (오프라인)
+                        }
+                    }
 
-        List<PresenceListItem> out = new ArrayList<>();
-        for (int i = 0; i < keys.size(); i++) {
-            String[] parts = keys.get(i).split(":"); // presence:{classNo}:{userId}
-            if (parts.length != 3) continue;
+                    boolean isOnline = isOnline(lastSeen);
 
-            long cNo;
-            try { cNo = Long.parseLong(parts[1]); } catch (Exception e) { continue; }
-            String uId = parts[2];
-
-            long last = 0L;
-            try {
-                String v = (i < values.size()) ? values.get(i) : null;
-                last = (v != null) ? Long.parseLong(v) : 0L;
-            } catch (Exception ignore) {}
-
-            boolean online = last > 0 && isOnline(last);
-            out.add(new PresenceListItem(uId, cNo, online, last));
-        }
-
-        out.sort(Comparator.<PresenceListItem, Boolean>comparing(PresenceListItem::online).reversed()
-                .thenComparing(PresenceListItem::userId));
-        return out;
+                    // PresenceListItem DTO 형식에 맞게 반환
+                    return new PresenceListItem(userId, classNo, isOnline, lastSeen, studentDto.studentName());
+                })
+                .collect(Collectors.toList());
     }
+    // =================================================================================
 
     /** 교사에게 브로드캐스트: /topic/presence.{classNo} */
     private void broadcast(long classNo, String userId, boolean online, long lastSeen) {
+        log.info("Broadcasting event -> to: /topic/presence.{}, userId: {}, online: {}", classNo, userId, online);
         PresenceEvent evt = new PresenceEvent(userId, classNo, online, lastSeen);
         messaging.convertAndSend("/topic/presence." + classNo, evt);
     }

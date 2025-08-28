@@ -11,19 +11,7 @@ public record AssignResponse(
         LocalDateTime startTime,
         LocalDateTime endTime,
         String content,
-        BoardType boardType
-
-) {
-    public static AssignResponse makeResponse(AssignBoard board) {
-        return new AssignResponse(
-                board.getAssignBoardNo(),
-                board.getAssignBoardTitle(),
-                board.getAssignStart(),
-                board.getAssignEnd(),
-                board.getAssignBoardContent(),
-                BoardType.ASSIGN
-
-        );
-
-    }
-}
+        boolean isGroupAssignType,
+        Long homeworkBoardNo,
+        String homeworkBoardContent
+) { }
