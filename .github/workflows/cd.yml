@@ -55,7 +55,6 @@ jobs:
             rsync -avz --delete \
             --exclude 'qdrant/' \
             --exclude 'grafana/' \
-            --exclude 'logstash/' \
             --no-perms --no-owner --no-group --omit-dir-times \
             /home/ubuntu/docker/ /home/ubuntu/compose/infra/
 
