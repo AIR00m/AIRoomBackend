@@ -4,6 +4,7 @@ import com.airoom.airoom.classroom.model.dto.ClassroomGroupResponse;
 import com.airoom.airoom.classroom.entity.Classroom;
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.entity.ClassroomTeacher;
+import com.airoom.airoom.classroom.model.dto.ClassroomResponse;
 import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
 import com.airoom.airoom.classroom.model.repository.ClassroomGroupRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
@@ -59,5 +60,9 @@ public class ClassroomService {
 
     public Long getClassStudentNoByClassRoomNoAndId(Long classroomNo, String memberId){
         return classroomStudentRepository.getClassStudentNoByClassRoomNo(classroomNo,memberId);
+    }
+
+    public ClassroomResponse getClassroomByClassroomNo(Long classroomNo) {
+        return classroomRepository.getClassroomByClassroomNo(classroomNo);
     }
 }

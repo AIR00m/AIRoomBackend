@@ -14,4 +14,6 @@ public interface AttachmentRepository extends JpaRepository<Attachment,Long> {
     List<Attachment> findByBoardNoAndBoardType(Long boardNo, BoardType boardType);
 
     boolean existsByBoardNoAndBoardType(Long boardNo, BoardType boardType);
+
+
 }

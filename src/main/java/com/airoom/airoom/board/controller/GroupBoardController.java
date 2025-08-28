@@ -31,8 +31,7 @@ public class GroupBoardController implements GroupBoardControllerSwagger{
     }
 
     // 모둠 게시판 게시글 작성
-    @PostMapping("/{groupNo}/board")
-    public ResponseEntity<Void> saveBoard(@PathVariable("groupNo") Long groupNo,
+    @PostMapping("/{groupNo}/board")    public ResponseEntity<Void> saveBoard(@PathVariable("groupNo") Long groupNo,
                                        @RequestBody GroupBoardRequest request,
                                        @AuthenticationPrincipal CustomUserDetails user) {
 

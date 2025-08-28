@@ -6,7 +6,7 @@ public record StudentHomeworkResponse
         (
                 Long memberNo,
                 String memberName,
-                Boolean homeworkSubmitType,
+                boolean homeworkSubmitType,
                 LocalDateTime createdAt,
                 LocalDateTime updatedAt,
                 String originalName,
