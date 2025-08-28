@@ -18,9 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.core.Ordered;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -65,14 +62,14 @@ public class SecurityConfig {
     }
 
     //CORS 필터를 체인의 최상단으로 올려서 프리플라이트(OPTIONS)에 CORS 헤더가 확실히 붙도록 보장
-    @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsConfigurationSource source) {
-        // SecurityConfig에 이미 있는 corsConfigurationSource() 빈을 사용
-        FilterRegistrationBean<CorsFilter> bean =
-                new FilterRegistrationBean<>(new CorsFilter((UrlBasedCorsConfigurationSource) source));
-        bean.setOrder(Ordered.HIGHEST_PRECEDENCE); // 최우선으로 실행
-        return bean;
-    }
+//    @Bean
+//    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsConfigurationSource source) {
+//        // SecurityConfig에 이미 있는 corsConfigurationSource() 빈을 사용
+//        FilterRegistrationBean<CorsFilter> bean =
+//                new FilterRegistrationBean<>(new CorsFilter((UrlBasedCorsConfigurationSource) source));
+//        bean.setOrder(Ordered.HIGHEST_PRECEDENCE); // 최우선으로 실행
+//        return bean;
+//    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource)
