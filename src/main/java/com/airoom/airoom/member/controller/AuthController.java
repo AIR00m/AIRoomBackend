@@ -89,11 +89,13 @@ public class AuthController implements AuthControllerSwagger {
             classroomClaims.put("classroomNo", classroomNo);
             Long classroomTeacherNo = classroomService.getClassTeacherNoByClassRoomNo(classroomNo);
             classroomClaims.put("classroomTeacherNo", classroomTeacherNo);
+            classroomClaims.put("memberNo", member.getMemberNo());
         } else {
             Long classroomNo = classroomService.getClassroomNoByStudentId(tokenRequest.memberId(), tokenRequest.textbookNo());
             classroomClaims.put("classroomNo", classroomNo);
             Long classRoomStudentNo = classroomService.getClassStudentNoByClassRoomNoAndId(classroomNo, member.getMemberId());
             classroomClaims.put("classRoomStudentNo", classRoomStudentNo);
+            classroomClaims.put("memberNo", member.getMemberNo());
         }
 
         // 3. 서버에서 토큰을 발급
