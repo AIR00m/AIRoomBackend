@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
@@ -20,45 +23,85 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 public class RedisStreamListener {
+
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     private final NotificationService notificationService;
 
-    @PostConstruct
-    //애플리케이션 시작 시 @PostConstruct로 리스너 초기화
-    //객체 생성하고 의존성 주입이 끝나고 나서 한번만 호출
-    //Redis 스트림 구독 리스너를 애플리케이션 시작 시점에 자동으로 실행하되, 의존성 주입이 끝난 안전한 시점에서 실행하기 위해서
-    public void NotificationListener() {
-
+    @EventListener(ApplicationReadyEvent.class) // 애플리케이션 기동 완료 후 실행
+    public void init() {
         log.info("Redis Stream Listener 초기화 시작");
-        //ListenerContainer의 옵션 설정
-        //
+
+        // Consumer Group 생성 (없을 경우에만)
+        createConsumerGroupIfNotExists();
+
+        // Listener 옵션 설정
         StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> options =
                 StreamMessageListenerContainerOptions
                         .builder()
-                        .pollTimeout(Duration.ofSeconds(1))
+                        .pollTimeout(Duration.ofSeconds(2)) // 2초마다 폴링
+                        .batchSize(10)                      // 한번에 최대 10개 읽기
                         .build();
 
-        StreamMessageListenerContainer<String, MapRecord<String, String, String>>
-                container = StreamMessageListenerContainer.create(redisTemplate.getConnectionFactory(), options);
-        // 첫번째는 redis랑 연결을 해야하니, 템플릿에서 설정된 기존 풀 재사용하도록 redisConnectionFactory를 넣어주고
-        // 두번째는 우리가 어떤 메시지를 수신할 것인지, 어떤 주기로 폴링할 것인지에 대한 옵션을 만들었기 때문에 옵션도 주입한다.
-        //컨테이너의 역할은 백그라운드에서 지속적으로 리스너 함수를 실행하고 구독을 관리
+        // Listener Container 생성
+        StreamMessageListenerContainer<String, MapRecord<String, String, String>> container =
+                StreamMessageListenerContainer.create(redisTemplate.getConnectionFactory(), options);
+
+        // ✅ 수동 ACK 기반 구독
         container.receive(
-//                (과거 메시지 무시하고 최신 메세지부터 읽기 시작)
-                StreamOffset.create(RedisStreamKey.NOTIFICATION_STREAM.getKey(), ReadOffset.latest()),
+                Consumer.from(
+                        RedisStreamKey.CONSUMER_GROUP.getKey(),
+                        RedisStreamKey.CONSUMER_NAME.getKey()
+                ),
+                StreamOffset.create(
+                        RedisStreamKey.NOTIFICATION_STREAM.getKey(),
+                        ReadOffset.lastConsumed()
+                ),
                 message -> {
                     try {
                         String payload = message.getValue().get("payload");
-                        log.info("payload!!!!!!!!! : {}", payload);
-                        NotificationEventDto notificationEventDto = objectMapper.readValue(payload, NotificationEventDto.class);
-                        notificationService.sendNotification(notificationEventDto);
+                        log.info("Redis Stream 수신 payload: {}", payload);
+
+                        NotificationEventDto dto = objectMapper.readValue(payload, NotificationEventDto.class);
+                        notificationService.sendNotification(dto);
+
+                        // ✅ 처리 성공 시 ACK
+                        redisTemplate.opsForStream().acknowledge(
+                                RedisStreamKey.CONSUMER_GROUP.getKey(),
+                                message
+                        );
+                        log.debug("메시지 ACK 완료: {}", message.getId());
+
                     } catch (Exception e) {
-                        log.error(e.getMessage(), e);
+                        log.error("메시지 처리 실패: {}", e.getMessage(), e);
+                        // ACK 하지 않음 → 이후 XPENDING 상태로 남아 재처리 가능
                     }
                 }
         );
 
         container.start();
+        log.info("Redis Stream Listener 시작 완료 (Group: {}, Consumer: {})",
+                RedisStreamKey.CONSUMER_GROUP.getKey(),
+                RedisStreamKey.CONSUMER_NAME.getKey());
+    }
+
+    /**
+     * Consumer Group이 존재하지 않으면 생성
+     */
+    private void createConsumerGroupIfNotExists() {
+        try {
+            redisTemplate.opsForStream().createGroup(
+                    RedisStreamKey.NOTIFICATION_STREAM.getKey(),
+                    ReadOffset.latest(),
+                    RedisStreamKey.CONSUMER_GROUP.getKey()
+            );
+            log.info("✅ Consumer Group '{}' 생성 완료", RedisStreamKey.CONSUMER_GROUP.getKey());
+        } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
+                log.info("⚠️ Consumer Group '{}' 이미 존재", RedisStreamKey.CONSUMER_GROUP.getKey());
+            } else {
+                log.error("❌ Consumer Group '{}' 생성 실패: {}", RedisStreamKey.CONSUMER_GROUP.getKey(), e.getMessage(), e);
+            }
+        }
     }
 }

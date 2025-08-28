@@ -33,6 +33,8 @@ public class RedisStreamPublisher {
             log.info("알림 메시지 발행 - Type: {}, 대상자 수: {}", notification.notificationType(), notification.targetMemberNos().size());
 
             redisTemplate.opsForStream().add(record);
+            log.info("알림 메시지 발행 성공");
+
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
