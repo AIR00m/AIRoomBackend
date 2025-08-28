@@ -1,8 +1,8 @@
 package com.airoom.airoom.classroom.model.repository;
 
 import com.airoom.airoom.classroom.entity.ClassroomGroup;
+import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.model.dto.ClassroomGroupResponse;
-import com.airoom.airoom.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +20,10 @@ public interface ClassroomGroupRepository extends JpaRepository<ClassroomGroup, 
             FROM ClassroomGroup cg
             WHERE cg.classroom.classroomNo = :classroomNo
             """)
-    //AND cg.deletedAt IS NULL
     List<ClassroomGroupResponse> findClassroomGroupsByClassroomNo(@Param("classroomNo") Long classroomNo);
+
+    @Query("""
+            select cs from ClassroomStudent  cs where cs.classroomGroup.groupNo = :groupNo
+            """)
+    List<ClassroomStudent> findByGroupNo(Long groupNo);
 }

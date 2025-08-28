@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum RedisStreamKey {
-    ASSIGNMENT_PUB("assignment_pub");
+    NOTIFICATION_STREAM("notification_stream"),
+    CONSUMER_GROUP("notification_group"),
+    CONSUMER_NAME("notification_consumer");
+
     private final String key;
 }

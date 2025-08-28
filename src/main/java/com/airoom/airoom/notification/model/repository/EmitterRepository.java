@@ -1,18 +1,20 @@
 package com.airoom.airoom.notification.model.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 public class EmitterRepository {
 
     //private final Map<Long, Object> lastEventCache = new ConcurrentHashMap<>();
     //브라우저가 연결이 끊겼다가 다시 연결되었을때 놓친 알림을 재전송하려고 마지막에 보낸 알림을 백업하는 map
     private final Map<Long, SseEmitter> sseEmitterMap = new ConcurrentHashMap<>();
+
 
     //SSE는 이벤트 발생시 전송을 위해 저장해놔야함. SSE는 쉽게 끊기고 생명주기가 짧아서 DB에 저장하기 부적합함
     //네트워크 불안정, 서버 재시작 등으로 끊길수있음
@@ -38,19 +40,25 @@ public class EmitterRepository {
 
     //emitter를 저장하고 기존 연결이 있다면 제거 후 저장
     public void saveEmitter(Long memberNo, SseEmitter emitter) {
-        deleteEmitter(memberNo);//emitter 제거 메소드
+        deleteEmitter(memberNo);//emitter 제거 메소드 , 기존 연결 정리
         //이렇게 하면 여러 탭에서 브라우저를 열면 한쪽 연결이 끊어짐
         sseEmitterMap.put(memberNo,emitter);
+        log.info("SSE 연결 저장 - memberNo: {}", memberNo);
     }
 
     //emitter 제거 메소드
-    public void deleteEmitter(Long memberNO) {
-        SseEmitter emitter = sseEmitterMap.remove(memberNO);
+    public void deleteEmitter(Long memberNo) {
+        SseEmitter emitter = sseEmitterMap.remove(memberNo);
         if (emitter != null) {
             emitter.complete();
             //연결을 정상적으로 종료시켜주는 메소드
+            log.info("SSE 연결 제거 - memberNo: {}", memberNo);
         }
-
-
+    }
+    public SseEmitter getEmitter(Long memberNo) {
+        return sseEmitterMap.get(memberNo);
+    }
+    public int getConnectedCount() {
+        return sseEmitterMap.size();
     }
 }

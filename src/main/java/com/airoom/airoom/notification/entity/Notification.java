@@ -12,7 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Entity
 @Getter
 @Builder
-@SQLRestriction("DELETE_AT IS NULL")
+@SQLRestriction("DELETED_AT IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql="UPDATE notification SET deleted_at = NOW() WHERE notification_no = ?")
 @AllArgsConstructor
@@ -44,4 +44,39 @@ public class Notification extends BaseEntity {
             notificationReadType=ReadType.N;
         }
     }
+// ==================== 도메인 메서드 추가 ====================
+
+    /**
+     * 알림을 읽음 상태로 변경
+     */
+    public void markAsRead() {
+        if (this.notificationReadType == ReadType.N) {
+            this.notificationReadType = ReadType.Y;
+        }
+    }
+
+    /**
+     * 알림을 읽지 않음 상태로 변경
+     */
+    public void markAsUnread() {
+        if (this.notificationReadType == ReadType.Y) {
+            this.notificationReadType = ReadType.N;
+        }
+    }
+
+    /**
+     * 읽음 상태인지 확인
+     */
+    public boolean isRead() {
+        return this.notificationReadType == ReadType.Y;
+    }
+
+    /**
+     * 읽지 않음 상태인지 확인
+     */
+    public boolean isUnread() {
+        return this.notificationReadType == ReadType.N;
+    }
+
+
 }
