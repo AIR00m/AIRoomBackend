@@ -118,8 +118,7 @@ public class SecurityConfig {
                                 "/agent-required/**",
                                 "/download/agent",
                                 "/api/forensic/**",
-                                "/forensic/**",
-                                "/api/aichat/**").permitAll()
+                                "/forensic/**").permitAll()
                         .anyRequest().authenticated() // 다른 것에 대한것은 인증이 필요
                 )
 
