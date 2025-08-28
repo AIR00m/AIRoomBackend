@@ -14,15 +14,16 @@ import java.io.IOException;
 @Slf4j
 public class EmitterService {
 
-//    private final RedisTemplate<String, Object> redisTemplate;
     private final EmitterRepository emitterRepository;
 
+    
+    //이건 화면에서 보내는 연결 신청
     public SseEmitter connectEmitter(Long memberNo) {
 
         //emitter는 연결 시켜주는 통로
 
         //emitter객체생성, 생성자를 통해 만료시간 1시간 설정
-        SseEmitter emitter = new SseEmitter(30*60*1000L);
+        SseEmitter emitter = new SseEmitter(5*60*1000L);
         //만료시간이 되면 자동으로 브라우저에서 서버에 재연결을 요청
 
         //사용자별 연결 저장을 위한 사용자 정보 받아서 Map에 주입
@@ -67,11 +68,13 @@ public class EmitterService {
         } catch (IOException e) {
             emitterRepository.deleteEmitter(memberNo); // emitter 정리
             log.warn("연결 전송 실패", e);
+            return null;
         }
 
        return emitter;
     }
 
+    //이건 백엔드에서 보내는 알림 전송 신청
     public void sendNotificationToMember(Long memberNo, NotificationDto notification) {
         SseEmitter emitter = emitterRepository.getEmitter(memberNo);
 

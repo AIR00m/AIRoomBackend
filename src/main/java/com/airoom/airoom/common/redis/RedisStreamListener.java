@@ -29,6 +29,8 @@ public class RedisStreamListener {
     //객체 생성하고 의존성 주입이 끝나고 나서 한번만 호출
     //Redis 스트림 구독 리스너를 애플리케이션 시작 시점에 자동으로 실행하되, 의존성 주입이 끝난 안전한 시점에서 실행하기 위해서
     public void NotificationListener() {
+
+        log.info("Redis Stream Listener 초기화 시작");
         //ListenerContainer의 옵션 설정
         //
         StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> options =

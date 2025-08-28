@@ -1,16 +1,12 @@
 package com.airoom.airoom.notification.controller;
 
-import com.airoom.airoom.common.token.CustomUserDetails;
 import com.airoom.airoom.member.model.service.MemberService;
-import com.airoom.airoom.notification.model.repository.EmitterRepository;
 import com.airoom.airoom.notification.model.service.EmitterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,11 +17,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/sse") // 경로 통일
-public class SseController {
+@RequestMapping("/sse")
+public class SseController implements SseControllerSwagger {
 
     private final EmitterService emitterService;
     private final MemberService memberService;
+
     @GetMapping(value = "/connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<SseEmitter> connect(@RequestParam("memberId") String memberId) {
         try {
