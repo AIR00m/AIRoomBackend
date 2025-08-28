@@ -14,14 +14,16 @@ import org.springframework.transaction.PlatformTransactionManager;
 @RequiredArgsConstructor
 public class LearningAggregationJobConfig {
     public static final String JOB_NAME = "learningAggregationJob";
-    public static final String STEP_SUMMARY = "aggregateLearningSummaryStep";
-    public static final String STEP_UNIT = "aggregateUnitSummaryStep";
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
 
-    @Bean
-    public Job learningAggregationJob(Step aggregateLearningSummaryStep, Step aggregateUnitSummaryStep) {
+    private static final String STEP_SUMMARY = "aggregateLearningSummaryStep";
+    private static final String STEP_UNIT    = "aggregateUnitSummaryStep";
+
+    @Bean(name = JOB_NAME)
+    public Job learningAggregationJob(Step aggregateLearningSummaryStep,
+                                      Step aggregateUnitSummaryStep) {
         return new JobBuilder(JOB_NAME, jobRepository)
                 .start(aggregateLearningSummaryStep)
                 .next(aggregateUnitSummaryStep)

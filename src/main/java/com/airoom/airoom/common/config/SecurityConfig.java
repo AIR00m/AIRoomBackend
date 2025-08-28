@@ -114,6 +114,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()// Swagger API
                         .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                         // 프리플라이트(브라우저가 실제 요청 전에 서버에 보내는 사전 검사 요청) -> 막히게 되면 실제 API 호출 전에 실패 함
+                        .requestMatchers("/install/**","/agent-required/**","/download/agent").permitAll()
+                        .requestMatchers("/sse/**").permitAll()
                         .requestMatchers("/install/**",
                                 "/agent-required/**",
                                 "/download/agent",

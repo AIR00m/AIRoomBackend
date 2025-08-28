@@ -53,7 +53,7 @@ public class ClassroomLearningSummaryAllResponse {
         }
 
         if (studentTotalSubmitAssign > 0) {
-            this.studentAvgAssignScore = BigDecimal.valueOf(this.studentTotalAssignScore * 100.0 / this.studentTotalSubmitAssign)
+            this.studentAvgAssignScore = BigDecimal.valueOf(this.studentTotalAssignScore / this.studentTotalSubmitAssign)
                     .setScale(2, RoundingMode.HALF_UP);
         } else {
             this.studentAvgAssignScore = BigDecimal.ZERO;
