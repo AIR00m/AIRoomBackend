@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.Map;
 import java.util.Objects;
@@ -19,60 +20,77 @@ public class LearningSummaryAggregationTasklet implements Tasklet {
     private final JdbcTemplate jdbc;
 
     @Override
-    public RepeatStatus execute(StepContribution contribution, ChunkContext context) {
-        Map<String, Object> params = context.getStepContext().getJobParameters();
+    public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) {
+        Map<String, Object> params = chunkContext.getStepContext().getJobParameters();
 
-        String summaryType = Objects.toString(params.get("summaryType")); //DAILY, MONTHLY
-        LocalDate targetDate = LocalDate.parse(Objects.toString(params.get("targetDate"))); //기준일
+        String summaryType = Objects.toString(params.get("summaryType"), "DAILY"); // DAILY or MONTHLY
+        LocalDate targetDate = LocalDate.parse(
+                Objects.toString(params.get("targetDate"), LocalDate.now().toString())
+        );
 
-        //집계 구간 결정
-        LocalDate fromDate;
-        LocalDate toDate;
+        // 날짜 경계 계산
+        final LocalDate startDate;         // 요약의 시작일(포함)
+        final LocalDate endDateInclusive;  // 요약의 종료일(포함)
         if ("MONTHLY".equalsIgnoreCase(summaryType)) {
             YearMonth ym = YearMonth.from(targetDate);
-            fromDate = ym.atDay(1);
-            toDate = ym.atEndOfMonth();
+            startDate = ym.atDay(1);
+            endDateInclusive = ym.atEndOfMonth();
         } else {
-            fromDate = targetDate;
-            toDate = targetDate;
+            startDate = targetDate;
+            endDateInclusive = targetDate;
         }
 
+        // WHERE 절에는 [startOfDay, nextStartOfDay) 사용 (닫힌 구간 문제/타임존 엣지 방지)
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endExclusive = endDateInclusive.plusDays(1).atStartOfDay();
+
+        // 집계 SQL (airoom 스키마 명시)
         String sql = """
-                INSERT INTO learning_summary (
-                    ls_classroom_student_no, ls_start_date, ls_type,
-                    ls_end_date, ls_total_learning_days, ls_total_learning_time,
-                    ls_total_problems_solved, ls_total_correct_problems, ls_accuracy_rate,
-                    created_at, updated_at
-                )
+                INSERT INTO airoom.learning_summary
+                (ls_classroom_student_no, ls_type, ls_start_date, ls_end_date,
+                 ls_total_learning_days, ls_total_learning_time, 
+                 ls_total_problems_solved, ls_total_correct_problems, ls_accuracy_rate,
+                 created_at, updated_at)
                 SELECT
-                  t.ls_classroom_student_no,
-                  ?, ?, ?,
-                  t.days, t.time_ms,
-                  t.solved, t.correct,
-                  COALESCE(ROUND(100.0 * t.correct / NULLIF(t.solved, 0), 2), 0) AS ls_accuracy_rate,
-                  NOW(), NOW()
-                FROM (
-                  SELECT
-                    ll.classroom_student_no                             AS ls_classroom_student_no,
-                    COUNT(DISTINCT DATE(ll.ll_start_time))              AS days,
-                    SUM(ll.ll_duration_sec * 1000)                      AS time_ms,
-                    SUM(CASE WHEN ll.ll_type='EXAM' THEN 1 ELSE 0 END)  AS solved,
-                    SUM(CASE WHEN ll.ll_type='EXAM' AND ll.ll_is_correct = 1 THEN 1 ELSE 0 END) AS correct
-                  FROM learning_log ll
-                  WHERE ll.ll_start_time >= ? AND ll.ll_start_time < ?
-                  GROUP BY ll.classroom_student_no
-                ) AS t
+                    l.classroom_student_no                                   AS cs_no,
+                    ?                                                        AS ls_type,
+                    ?                                                        AS ls_start_date,
+                    ?                                                        AS ls_end_date,
+                    COUNT(DISTINCT DATE(l.ll_start_time))                    AS days,
+                    SUM(l.ll_duration_sec) * 1000                            AS total_time_ms,
+                    SUM(CASE WHEN l.ll_is_correct IS NOT NULL THEN 1 ELSE 0 END) AS solved,
+                    SUM(CASE WHEN l.ll_is_correct = b'1' THEN 1 ELSE 0 END)  AS correct,
+                    CASE 
+                        WHEN SUM(CASE WHEN l.ll_is_correct IS NOT NULL THEN 1 ELSE 0 END) > 0
+                        THEN ROUND(
+                            SUM(CASE WHEN l.ll_is_correct = b'1' THEN 1 ELSE 0 END) * 100.0
+                            / SUM(CASE WHEN l.ll_is_correct IS NOT NULL THEN 1 ELSE 0 END), 2
+                        )
+                        ELSE 0
+                    END                                                      AS accuracy,
+                    NOW(), NOW()
+                FROM airoom.learning_log l
+                WHERE l.ll_start_time >= ?
+                  AND l.ll_start_time <  ?
+                GROUP BY l.classroom_student_no
                 ON DUPLICATE KEY UPDATE
-                  ls_end_date               = VALUES(ls_end_date),
-                  ls_total_learning_days    = VALUES(ls_total_learning_days),
-                  ls_total_learning_time    = VALUES(ls_total_learning_time),
-                  ls_total_problems_solved  = VALUES(ls_total_problems_solved),
-                  ls_total_correct_problems = VALUES(ls_total_correct_problems),
-                  ls_accuracy_rate          = VALUES(ls_accuracy_rate),
-                  updated_at                = VALUES(updated_at);
+                    ls_end_date               = VALUES(ls_end_date),
+                    ls_total_learning_days    = VALUES(ls_total_learning_days),
+                    ls_total_learning_time    = VALUES(ls_total_learning_time),
+                    ls_total_problems_solved  = VALUES(ls_total_problems_solved),
+                    ls_total_correct_problems = VALUES(ls_total_correct_problems),
+                    ls_accuracy_rate          = VALUES(ls_accuracy_rate),
+                    updated_at                = VALUES(updated_at);
                 """;
 
-        jdbc.update(sql, fromDate, summaryType.toUpperCase(), toDate, fromDate, toDate);
+        jdbc.update(
+                sql,
+                summaryType.toUpperCase(),    // ?
+                startDate,                    // ?
+                endDateInclusive,             // ?
+                startDateTime,                // ?
+                endExclusive                  // ?
+        );
 
         return RepeatStatus.FINISHED;
     }
