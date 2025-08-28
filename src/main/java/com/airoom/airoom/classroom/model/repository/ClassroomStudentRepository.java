@@ -13,7 +13,7 @@ import java.util.List;
 public interface ClassroomStudentRepository extends JpaRepository<ClassroomStudent, Long> {
     @Query("""
                 select new com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse(
-                                cs.classRoomStudentNo, st.memberName
+                                cs.classRoomStudentNo, st.memberName, st.memberId
                 )
                 from ClassroomStudent cs
                 join cs.student st
