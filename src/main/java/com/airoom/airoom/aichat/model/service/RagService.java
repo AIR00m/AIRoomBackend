@@ -23,10 +23,9 @@ public class RagService {
             return new AskResponse("질문이 비어있어요. 무엇이 궁금한가요?", List.of());
         }
 
-        // (선택) 프론트/백엔드 어디서든 넣어줄 수 있는 학생 컨텍스트
-        // 예: req.context = { memberNo: 3, grade: 2, readingLevel: "초저", interests:["축구"], recentScores:{math:82}}
+        // ---- (선택) 학생 컨텍스트 (Controller/Service에서 주입 가능) ----
         Map<String, Object> ctxMap = Optional.ofNullable(req.getContext()).orElseGet(Map::of);
-        String studentProfile = buildStudentProfile(ctxMap); // ↓ 아래 헬퍼가 텍스트로 풀어줌
+        String studentProfile = buildStudentProfile(ctxMap);
 
         // 1) 질문 모더레이션
         if (openAiService.isFlagged(user)) {
@@ -34,28 +33,24 @@ public class RagService {
         }
 
         try {
-            // 2) 임베딩 → 3) 검색
+            // 2) 임베딩 → 3) Qdrant 검색
             List<Double> qvec = openAiService.embed(user);
             List<SourceDto> top = qdrantClient.search(qvec, props.getQdrant().getTopK());
 
-            // 4) 컨텍스트 문자열
+            // 4) 컨텍스트 블록
             String ctx = buildContextBlock(top);
 
-            // 5) 메시지 구성
-            List<Map<String, String>> msgs;
-            if (top == null || top.isEmpty()) {
-                // 컨텍스트 없음 → 폴백: 일반 지식으로 초1·초2 톤 답변
-                msgs = List.of(
-                        Map.of("role","system","content", systemPromptFallback(studentProfile)),
-                        Map.of("role","user","content", user)
-                );
-            } else {
-                // 컨텍스트 있음 → 컨텍스트 우선 + 부족하면 보충
-                msgs = List.of(
-                        Map.of("role","system","content", systemPromptWithContext(studentProfile)),
-                        Map.of("role","user","content", "질문: " + user + "\n\n---\n컨텍스트:\n" + ctx)
-                );
-            }
+            // 5) 메시지
+            List<Map<String, String>> msgs =
+                    (top == null || top.isEmpty())
+                            ? List.of(
+                            Map.of("role","system","content", systemPromptFallback(studentProfile)),
+                            Map.of("role","user","content", user)
+                    )
+                            : List.of(
+                            Map.of("role","system","content", systemPromptWithContext(studentProfile)),
+                            Map.of("role","user","content", "질문: " + user + "\n\n---\n컨텍스트:\n" + ctx)
+                    );
 
             String answer = openAiService.chat(msgs);
 
@@ -67,7 +62,7 @@ public class RagService {
             return new AskResponse(answer, (top == null ? List.of() : top));
 
         } catch (Exception e) {
-            // 예외 시에도 폴백
+            // Qdrant/네트워크 등 예외 시에도 폴백
             List<Map<String, String>> fb = List.of(
                     Map.of("role","system","content", systemPromptFallback(studentProfile)),
                     Map.of("role","user","content", user)
@@ -83,10 +78,10 @@ public class RagService {
     /* ---------- 프롬프트 ---------- */
 
     private String systemPromptWithContext(String studentProfile) {
-        // 초1·초2 대상 특화
         return """
-                너는 한국어로 답변하는 초등학생 1학년과 2학년 학습 도우미야.
-                말투는 부드럽고 친절한 존댓말을 사용하고, 어려운 단어는 쉬운 말로 풀어서 설명해.
+                너는 한국어로 답변하는 **초등학교 1~2학년 전용** 학습 도우미야.
+                말투는 밝고 다정하고 부드럽고 친절한 존댓말을 사용하고, 어려운 말은 쓰지 말고 쉬운 어휘로 설명해줘.
+                이모지는 너무 많이 쓰지 말고 ✨, 😊 정도만 가끔 사용해.
                 문장은 짧고, 핵심을 불릿으로 정리하고, 아주 간단한 예시(생활 속 비유)를 1개 정도 포함해.
                 먼저 '컨텍스트'에서 근거를 찾아 답하고, 부족하면 일반 교과 상식으로 보충하되 추측은 하지 않아.
                 컨텍스트를 사용했다면 마지막에 '출처 요약: 문서 1, 3'처럼 사용한 문서 번호만 적어.
@@ -98,9 +93,10 @@ public class RagService {
 
     private String systemPromptFallback(String studentProfile) {
         return """
-                너는 한국어로 답변하는 초등학생 1학년과 2학년 학습 도우미야.
-                문장은 짧게, 쉬운 어휘로 설명하고, 핵심은 불릿으로 정리해.
-                개념을 먼저 간단히 말하고, 생활 속 예시 1개를 들어 이해를 도와줘.
+                너는 한국어로 답변하는 **초등학교 1~2학년 전용** 학습 도우미야.
+                말투는 밝고 다정하고 부드럽고 친절한 존댓말을 사용하고, 어려운 말은 쓰지 말고 쉬운 어휘로 설명해줘.
+                이모지는 너무 많이 쓰지 말고 ✨, 😊 정도만 가끔 사용해.
+                문장은 짧고, 핵심을 불릿으로 정리하고, 아주 간단한 예시(생활 속 비유)를 1개 정도 포함해.
                 추측은 하지 말고, 모르면 모른다고 말해.
                 
                 [학생 프로필]
@@ -123,11 +119,9 @@ public class RagService {
         return ctx.toString();
     }
 
-    // AskRequest.context 로 받은 정보를 간단한 텍스트로 풀어 프롬프트에 넣음
     private String buildStudentProfile(Map<String, Object> ctx) {
         if (ctx == null || ctx.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
-        // 자유 키: grade, readingLevel, interests, recentScores, strengths, weaknesses, examHistory 등
         appendIfPresent(sb, ctx, "memberNo", "회원번호");
         appendIfPresent(sb, ctx, "grade", "학년");
         appendIfPresent(sb, ctx, "readingLevel", "읽기 수준");
@@ -135,9 +129,7 @@ public class RagService {
         appendIfPresent(sb, ctx, "weaknesses", "보완 필요");
         appendIfPresent(sb, ctx, "interests", "관심사");
         Object scores = ctx.get("recentScores");
-        if (scores != null) {
-            sb.append("- 최근 점수: ").append(scores).append("\n");
-        }
+        if (scores != null) sb.append("- 최근 점수: ").append(scores).append("\n");
         return sb.toString().trim();
     }
     private void appendIfPresent(StringBuilder sb, Map<String, Object> ctx, String key, String label){
