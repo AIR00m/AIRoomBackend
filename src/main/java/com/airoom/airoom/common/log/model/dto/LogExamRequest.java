@@ -2,6 +2,7 @@ package com.airoom.airoom.common.log.model.dto;
 
 public record LogExamRequest(
     Long examNo, //시험 번호
+    Long classroomNo,
     Long classroomStudentNo, //학생 번호
     Long timestamp, // 현재 시간
     Long solvingTime, // 문제 풀이 시간
