@@ -20,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class AiChatService {
     private final AiChatMessageRepository msgRepo;
     private final RagService ragService;
     private final MemberRepository memberRepo;
+    private final StudentContextService studentContextService;
 
     private Long currentMemberNo() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
@@ -51,11 +53,14 @@ public class AiChatService {
                 .acmContent(question)
                 .acmType(MessageType.QUESTION)
                 .build());
+        //  개인 컨텍스트 생성
+        Map<String,Object> ctx = studentContextService.build(room.getMember().getMemberNo());
 
-        // 동기 RAG 호출
+        // RAG 호출
         AskRequest req = new AskRequest();
         req.setRoomId(String.valueOf(roomId));
         req.setMessage(question);
+        req.setContext(ctx);
         AskResponse resp = ragService.ask(req);
 
         // A 저장
