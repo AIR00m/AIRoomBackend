@@ -12,6 +12,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
+
 
 @Slf4j
 @Service
@@ -30,7 +32,19 @@ public class QdrantClient {
 
     /** wait=true 로 업서트하고, 실패 시 에러 바디 로깅 */
     public void upsertWait(List<Point> points) {
-        Map<String, Object> req = Map.of("points", points);
+        // 1) points -> batch 포맷으로 변환
+        List<String> ids = points.stream().map(Point::getId).collect(Collectors.toList());
+        List<List<Double>> vectors = points.stream().map(Point::getVector).collect(Collectors.toList());
+        List<Map<String,Object>> payloads = points.stream().map(Point::getPayload).collect(Collectors.toList());
+
+        Map<String, Object> batch = Map.of(
+                "ids", ids,
+                "vectors", vectors,
+                "payloads", payloads
+        );
+        Map<String, Object> req = Map.of("batch", batch);
+
+        // 2) 업서트 (wait=true) + 에러바디 로깅
         try {
             qdrantWebClient.post()
                     .uri("/collections/{col}/points?wait=true", props.getQdrant().getCollection())
