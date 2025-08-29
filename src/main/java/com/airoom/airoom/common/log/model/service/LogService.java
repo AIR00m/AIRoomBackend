@@ -54,7 +54,7 @@ public class LogService {
             // Kafka로 전송 (exam-logs 토픽)
             kafkaProducerService.sendExamLog(logData);
 
-            log.debug("시험 로그 처리 완료: examNo={}, eventType={}",
+            log.info("시험 로그 처리 완료: examNo={}, eventType={}",
                     request.examNo(), logData.get("eventType"));
 
         } catch (Exception e) {
