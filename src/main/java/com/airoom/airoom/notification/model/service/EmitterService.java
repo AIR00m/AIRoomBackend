@@ -1,5 +1,6 @@
 package com.airoom.airoom.notification.model.service;
 
+import com.airoom.airoom.member.model.repository.MemberRepository;
 import com.airoom.airoom.notification.model.dto.NotificationDto;
 import com.airoom.airoom.notification.model.repository.EmitterRepository;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -15,14 +19,23 @@ import java.io.IOException;
 public class EmitterService {
 
     private final EmitterRepository emitterRepository;
+    private final MemberRepository memberRepository;
 
-    
+    // keep-alive 전송용 스케줄러 (전역, 데몬스레드로 관리)
+//    private static final ScheduledExecutorService  scheduler =
+//            Executors.newScheduledThreadPool(1, r -> {
+//                Thread t = new Thread(r);
+//                t.setDaemon(true);
+//                t.setName("sse-keepalive");
+//                return t;
+//            });
+
     //이건 화면에서 보내는 연결 신청
     public SseEmitter connectEmitter(Long memberNo) {
 
         //emitter는 연결 시켜주는 통로
 
-        //emitter객체생성, 생성자를 통해 만료시간 1시간 설정
+        //emitter객체생성, 생성자를 통해 만료시간 5분 설정
         SseEmitter emitter = new SseEmitter(5*60*1000L);
         //만료시간이 되면 자동으로 브라우저에서 서버에 재연결을 요청
 
@@ -42,10 +55,10 @@ public class EmitterService {
             log.info("SSE 연결 타임아웃 - memberNo: {}", memberNo);
         });//시간이 만료됐을때? 근데 재요청한다매
 
-//        emitter.onError((e) -> {
-//            emitterRepository.deleteEmitter(memberNo);
-//            log.warn("SSE 연결 에러 - memberNo: {}", memberNo, e);
-//        });//연결중 네트워크 오류 등 에러가 발생했을때
+        emitter.onError((e) -> {
+            emitterRepository.deleteEmitter(memberNo);
+            log.warn("SSE 연결 에러 - memberNo: {}", memberNo, e);
+        });//연결중 네트워크 오류 등 에러가 발생했을때
 
 
         //미전송 알림 재전송
@@ -65,21 +78,36 @@ public class EmitterService {
 
             //이때 작성한 이벤트의 이름은 클라이언트가 이벤트를 불러올때 사용할 수 있음
             //connection이 끊기면 emitter만료
+
+            // --- 주기적 keep-alive ---
+//            scheduler.scheduleAtFixedRate(() -> {
+//                try {
+//                    emitter.send(SseEmitter.event().name("ping").data("keepalive"));
+//                } catch (IOException e) {
+//                    emitterRepository.deleteEmitter(memberNo);
+//                    log.debug("keep-alive 실패 → emitter 종료 - memberNo: {}", memberNo);
+//                }
+//            }, 25, 25, TimeUnit.SECONDS);
+//
         } catch (IOException e) {
-            emitterRepository.deleteEmitter(memberNo); // emitter 정리
-            log.warn("연결 전송 실패", e);
-            return null;
+            emitterRepository.deleteEmitter(memberNo);
+            log.warn("SSE 초기 연결 실패 - memberNo: {}", memberNo, e);
         }
 
-       return emitter;
+        return emitter; // 🔥 complete() 호출하지 말 것!
     }
 
     //이건 백엔드에서 보내는 알림 전송 신청
     public void sendNotificationToMember(Long memberNo, NotificationDto notification) {
-        SseEmitter emitter = emitterRepository.getEmitter(memberNo);
+
+        log.info("sendNotificationToMember 호출 - memberNo: {}, 알림타입: {}",memberNo, notification.getNotificationType());
+
+                SseEmitter emitter = emitterRepository.getEmitter(memberNo);
 
         if (emitter != null) {
+            log.info("[sendNotificationToMember] Emitter 발견 - memberNo: {}", memberNo);
             try {
+
                 emitter.send(SseEmitter.event()
                         .name("notification")  // 이벤트 타입
                         .data(notification));  // 알림 데이터
@@ -90,6 +118,7 @@ public class EmitterService {
             } catch (IOException e) {
                 log.warn("SSE 알림 전송 실패 - memberNo: {}", memberNo, e);
                 emitterRepository.deleteEmitter(memberNo); // 실패 시 연결 정리
+                log.info("에러로 인해 emitter 삭제됨 - memberNo: {}", memberNo);
             }
         } else {
             log.debug("SSE 연결 없음 - memberNo: {}", memberNo);

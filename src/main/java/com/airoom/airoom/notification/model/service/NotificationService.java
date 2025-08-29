@@ -179,7 +179,7 @@ public class NotificationService {
                 Notification savedNotification = notificationRepository.save(notification);
                 //2.DTO 생성
                 NotificationDto notificationDto = NotificationDto.fromEntity(savedNotification);
-
+                log.info("[NotificationService] 알림 저장 완료 - memberNo: {}, notificationNo: {}", memberNo, savedNotification.getNotificationNo());
                 //3. SSE 전송
                 emitterService.sendNotificationToMember(memberNo, notificationDto);
 
