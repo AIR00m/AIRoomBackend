@@ -62,7 +62,7 @@ public class CsvIngestService {
         }
 
         // 2) 설명 CSV 인덱싱
-        List<QdrantClient.Point> batch = new ArrayList<>(64);
+        List<QdrantClient.Point> batch = new ArrayList<>(16);
         int total = 0;
 
         try (Reader r = new InputStreamReader(
@@ -103,6 +103,7 @@ public class CsvIngestService {
 
                 if (batch.size() >= 64) {
                     qdrant.upsert(batch);
+                    log.info("[CsvIngestService] upserted batch size={}", batch.size());
                     batch.clear();
                 }
             }
