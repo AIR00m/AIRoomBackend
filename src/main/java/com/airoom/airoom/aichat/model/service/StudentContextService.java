@@ -20,6 +20,15 @@ public class StudentContextService {
     private final LearningSummaryRepository lsRepo;
     private final UnitSummaryRepository usRepo;
 
+    /*
+    가치 있는 정보(간단·안정·효과 순):
+        회원 프로필(필수): Member.memberNo/Name/School/Gender/Grade/Class
+        최근 시험/점수(있으면): StudentExam(seScore, seIsDone, seEndTime), 최근 1개
+        학습 요약(있으면): LearningSummary 최근 일/월 단위 1개(학습일수, 총학습시간, 정답률)
+        단원 성과(선택): UnitSummary 상위 정확도/시간 단원 1~2개
+        클래스룸 정보(선택): ClassroomStudent → Classroom(학교/학년/반 중복 확인)
+    */
+
     @Transactional(readOnly = true)
     public Map<String, Object> build(Long memberNo) {
         Map<String,Object> out = new LinkedHashMap<>();

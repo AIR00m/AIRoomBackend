@@ -72,4 +72,16 @@ public class QdrantClient {
         }
         return out;
     }
+
+    @SuppressWarnings("unchecked")
+    public int count() {
+        Map<String,Object> body = Map.of("filter", Map.of()); // 전체 카운트
+        Map<String,Object> res = qdrantWebClient.post()
+                .uri("/collections/{col}/points/count?exact=true", props.getQdrant().getCollection())
+                .bodyValue(body).retrieve().bodyToMono(Map.class)
+                .timeout(java.time.Duration.ofSeconds(10)).block();
+
+        Map<String,Object> result = (Map<String,Object>) res.get("result");
+        return ((Number) result.get("count")).intValue();
+    }
 }
