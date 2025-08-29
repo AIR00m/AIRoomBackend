@@ -90,7 +90,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(authority));
             //   사용자가 가진 권한 예)ROLE_TEACHER 같은것 -> List는 권한이 여러개 가능하므로
 
-            CustomUserDetails userDetails = new CustomUserDetails(username, memberNo, classroomNo, role, authorities);
+            CustomUserDetails userDetails = new CustomUserDetails(username, classroomNo, memberNo, role, authorities);
 
             // 5. 권한을 기반으로 출입증 만들기
             UsernamePasswordAuthenticationToken authentication
