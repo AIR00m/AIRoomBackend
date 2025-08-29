@@ -36,12 +36,23 @@ public class QdrantClient {
     }
 
     @SuppressWarnings("unchecked")
-    public List<SourceDto> search(List<Double> queryVec, int topK) {
+    public List<SourceDto> search(List<Double> queryVec, int topK,  Double threshold) {
         Map<String, Object> req = new HashMap<>();
         req.put("vector", queryVec);
         req.put("limit", topK);
         req.put("with_payload", true);
         req.put("with_vector", false);
+
+        // 컷오프
+        if (threshold != null) req.put("score_threshold", threshold);
+
+        // 필터(lang=ko, grade=[1,2])
+        Map<String,Object> filter = Map.of("must", List.of(
+                Map.of("key","lang",  "match", Map.of("value","ko")),
+                Map.of("key","grade", "match", Map.of("value",1)),
+                Map.of("key","grade", "match", Map.of("value",2))
+        ));
+        req.put("filter", filter);
 
         Map<String, Object> res = qdrantWebClient.post()
                 .uri("/collections/{col}/points/search", props.getQdrant().getCollection())

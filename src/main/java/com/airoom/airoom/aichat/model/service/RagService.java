@@ -35,7 +35,7 @@ public class RagService {
         try {
             // 2) 임베딩 → 3) Qdrant 검색
             List<Double> qvec = openAiService.embed(user);
-            List<SourceDto> top = qdrantClient.search(qvec, props.getQdrant().getTopK());
+            List<SourceDto> top = qdrantClient.search(qvec, props.getQdrant().getTopK(), 0.2);
 
             // 4) 컨텍스트 블록
             String ctx = buildContextBlock(top);
