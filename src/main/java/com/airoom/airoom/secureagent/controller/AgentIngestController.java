@@ -17,7 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/agent")
-@CrossOrigin("*")
+//@CrossOrigin("*")
 public class AgentIngestController {
 
     private static final String TOPIC_SECURE_LOGS   = "secure-agent-logs";

@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/aichat")
+@RequestMapping("/aichat")
 public class AiChatHealthController {
 
     private final WebClient openaiWebClient;

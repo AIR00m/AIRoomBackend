@@ -78,6 +78,7 @@ services:
       - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     ports:
       - "5044:5044"
+      - "9600:9600"
     environment:
       LS_JAVA_OPTS: "-Xms512m -Xmx512m"
     depends_on:

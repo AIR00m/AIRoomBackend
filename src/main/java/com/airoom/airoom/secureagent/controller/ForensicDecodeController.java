@@ -12,7 +12,7 @@ import java.nio.file.Files;
 
 @RestController
 @RequestMapping("/api/forensic")
-@CrossOrigin(origins="*")
+//@CrossOrigin(origins="*")
 public class ForensicDecodeController {
 
     private final ForensicDecodeService service;

@@ -33,9 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/install/**",
             "/forensic/**",
             "/api/forensic/**",
-            "/api/aichat/**",
             "/agent-required/**",
             "/auth/**",
+            "/aichat/health/**",
             "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"); // 필터에 적용 받지 않을 위치 경로를 추가
 
 
@@ -78,13 +78,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 4. 권한을 만들어주기
             String username = claim.getSubject(); // 회원아이디
             String role = claim.get("role", String.class); // 회원 역할(선생님,학생)
-            Long classroomNo = claim.get("classroomNo", Long.class);
+            Long classroomNo = coerceLong(claim.get("classroomNo"));
+
+            Long memberNo = coerceLong(claim.get("memberNo"));
+            if (memberNo == null) memberNo = coerceLong(claim.get("classRoomStudentNo"));
+            if (memberNo == null) memberNo = coerceLong(claim.get("classRoomTeacherNo"));
+
+
             String authority = "ROLE_" + role.toUpperCase();
 
             List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(authority));
             //   사용자가 가진 권한 예)ROLE_TEACHER 같은것 -> List는 권한이 여러개 가능하므로
 
-            CustomUserDetails userDetails = new CustomUserDetails(username,classroomNo,authorities);
+            CustomUserDetails userDetails = new CustomUserDetails(username, classroomNo, memberNo, role, authorities);
 
             // 5. 권한을 기반으로 출입증 만들기
             UsernamePasswordAuthenticationToken authentication
@@ -108,7 +114,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-
+    private Long coerceLong(Object v){
+        if (v == null) return null;
+        if (v instanceof Number n) return n.longValue();
+        if (v instanceof String s && !s.isBlank()) return Long.valueOf(s);
+        return null;
+    }
 }
 
 
