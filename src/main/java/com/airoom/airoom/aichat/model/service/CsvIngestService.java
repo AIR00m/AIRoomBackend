@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.input.BOMInputStream;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
@@ -42,11 +43,12 @@ public class CsvIngestService {
     public void ingest() throws Exception {
         String descPath = getenv("DESC_PATH", "classpath:data/0824_jobs_description.csv");
         String qaPath   = getenv("QA_PATH",   "classpath:data/0824_jobs_qa.csv");
-        Charset enc = Charset.forName(getenv("CSV_ENCODING", StandardCharsets.UTF_8.name()));
 
         // 1) QA 맵 (id=job, question)
         Map<String, List<String>> qaMap = new HashMap<>();
-        try (Reader r = new InputStreamReader(open(qaPath).getInputStream(), enc);
+        try (Reader r = new InputStreamReader(
+                new BOMInputStream(open(qaPath).getInputStream()),
+                StandardCharsets.UTF_8);
              CSVParser p = CSVFormat.DEFAULT.withFirstRecordAsHeader().withTrim().parse(r)) {
             for (CSVRecord rec : p) {
                 String id = safe(rec, "job");
@@ -63,7 +65,9 @@ public class CsvIngestService {
         List<QdrantClient.Point> batch = new ArrayList<>(64);
         int total = 0;
 
-        try (Reader r = new InputStreamReader(open(descPath).getInputStream(), enc);
+        try (Reader r = new InputStreamReader(
+                new BOMInputStream(open(descPath).getInputStream()),
+                StandardCharsets.UTF_8);
              CSVParser p = CSVFormat.DEFAULT.withFirstRecordAsHeader().withTrim().parse(r)) {
 
             for (CSVRecord rec : p) {
