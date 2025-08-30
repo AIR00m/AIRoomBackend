@@ -32,13 +32,14 @@ public class LogService {
             Map<String, Object> logData = new HashMap<>();
 
             logData.put("examNo", request.examNo());
-            logData.put("studentNo", request.classroomStudentNo());
+            logData.put("classroomStudentNo", request.classroomStudentNo());
             logData.put("classroomNo", request.classroomNo());
             logData.put("problemNo", request.problemNo() != null ? request.problemNo() : 0L);
-            logData.put("solvingTime", request.solvingTime() != null ? request.solvingTime() : 0L);
 
             // 타임스탬프 변환
             String isoTimestamp = convertTimestampToISO(request.timestamp());
+            String isoSolvingTime = convertTimestampToISO(request.solvingTime());
+            logData.put("solvingTime", isoSolvingTime);
             logData.put("timestamp", isoTimestamp);
             logData.put("processedAt", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
