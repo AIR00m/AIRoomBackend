@@ -1,6 +1,6 @@
 services:
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluence/cp-kafka:latest
     container_name: kafka
     ports:
       - "9092:9092"
