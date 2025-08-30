@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -25,38 +26,137 @@ public class QdrantClient {
 
     @Data @AllArgsConstructor
     public static class Point {
-        private String id;                    // UUID 문자열 사용
+        private String id;
         private List<Double> vector;
         private Map<String, Object> payload;
     }
 
-    /** wait=true 로 업서트하고, 실패 시 에러 바디 로깅 */
+    // 캐시된 스키마
+    private volatile Optional<CollectionSchema> cachedSchema = Optional.empty();
+
+    @Data
+    static class CollectionSchema {
+        // namedVectors가 비어있지 않으면 이름 있는 벡터
+        Map<String, VectorConf> namedVectors; // 예: {"text": {size:1536,...}}
+        VectorConf singleVector;              // 예: {size:1536,...} (기본 벡터)
+        boolean isNamed() { return namedVectors != null && !namedVectors.isEmpty(); }
+        String firstVectorName() { return isNamed() ? namedVectors.keySet().iterator().next() : null; }
+        int dimension() {
+            if (isNamed()) return namedVectors.values().iterator().next().getSize();
+            return singleVector.getSize();
+        }
+    }
+    @Data
+    static class VectorConf { int size; String distance; }
+
+    private CollectionSchema describeCollection() {
+        return cachedSchema.orElseGet(() -> {
+            Map res = qdrantWebClient.get()
+                    .uri("/collections/{col}", props.getQdrant().getCollection())
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            // JSON 파싱 최소화: 필요한 부분만 안전하게 꺼내기
+            Map result = (Map) res.get("result");
+            Map config = (Map) result.get("config");
+            Map params = (Map) config.get("params");
+            Object vectors = params.get("vectors");
+
+            CollectionSchema schema = new CollectionSchema();
+            if (vectors instanceof Map) {
+                // 이름 있는 벡터인 경우: {"text": {...}} 형태
+                Map<String,Object> mv = (Map<String,Object>) vectors;
+                boolean looksSingle = mv.containsKey("size") && mv.containsKey("distance");
+                if (looksSingle) {
+                    // 단일 벡터
+                    VectorConf vc = new VectorConf();
+                    vc.setSize(((Number) mv.get("size")).intValue());
+                    vc.setDistance(String.valueOf(mv.get("distance")));
+                    schema.setSingleVector(vc);
+                } else {
+                    Map<String,VectorConf> named = new LinkedHashMap<>();
+                    for (var e : mv.entrySet()) {
+                        Map val = (Map) e.getValue();
+                        VectorConf vc = new VectorConf();
+                        vc.setSize(((Number) val.get("size")).intValue());
+                        vc.setDistance(String.valueOf(val.get("distance")));
+                        named.put(e.getKey(), vc);
+                    }
+                    schema.setNamedVectors(named);
+                }
+            } else {
+                throw new IllegalStateException("Unexpected vectors format from Qdrant");
+            }
+            cachedSchema = Optional.of(schema);
+            log.info("[Qdrant] schema loaded: named={}, dim={}, name={}",
+                    schema.isNamed(), schema.dimension(), schema.firstVectorName());
+            return schema;
+        });
+    }
+
+    /** wait=true 업서트 (스키마에 맞춰 포맷 자동 선택, 에러 바디 항상 로깅) */
     public void upsertWait(List<Point> points) {
-        // 1) points -> batch 포맷으로 변환
-        List<String> ids = points.stream().map(Point::getId).collect(Collectors.toList());
-        List<List<Double>> vectors = points.stream().map(Point::getVector).collect(Collectors.toList());
-        List<Map<String,Object>> payloads = points.stream().map(Point::getPayload).collect(Collectors.toList());
+        var schema = describeCollection();
 
-        Map<String, Object> batch = Map.of(
-                "ids", ids,
-                "vectors", vectors,
-                "payloads", payloads
+        // 1) points 포맷 시도
+        Map<String, Object> pointsBody = Map.of(
+                "points", points.stream().map(p -> {
+                    Map<String,Object> m = new LinkedHashMap<>();
+                    m.put("id", p.getId());
+                    if (schema.isNamed()) {
+                        m.put("vector", Map.of(schema.firstVectorName(), p.getVector()));
+                    } else {
+                        m.put("vector", p.getVector());
+                    }
+                    m.put("payload", p.getPayload());
+                    return m;
+                }).toList()
         );
-        Map<String, Object> req = Map.of("batch", batch);
 
-        // 2) 업서트 (wait=true) + 에러바디 로깅
         try {
-            qdrantWebClient.post()
+            qdrantWebClient.put()
                     .uri("/collections/{col}/points?wait=true", props.getQdrant().getCollection())
-                    .bodyValue(req)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(pointsBody)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .timeout(Duration.ofSeconds(30))
                     .block();
+            return;
         } catch (WebClientResponseException e) {
-            log.error("[Qdrant] upsert failed {} body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
-            throw e;
+            log.error("[Qdrant] upsert(points) 400 body={}", e.getResponseBodyAsString());
         }
+
+        // 2) batch 포맷 재시도
+        List<Object> ids = new ArrayList<>(points.size());
+        List<List<Double>> vectors = new ArrayList<>(points.size());
+        List<Map<String, Object>> payloads = new ArrayList<>(points.size());
+        for (Point p : points) {
+            ids.add(p.getId());
+            vectors.add(p.getVector());
+            payloads.add(p.getPayload());
+        }
+
+        Map<String,Object> batchBody = schema.isNamed()
+                ? Map.of("batch", Map.of(
+                "ids", ids,
+                "vectors", Map.of(schema.firstVectorName(), vectors),
+                "payloads", payloads
+        ))
+                : Map.of("batch", Map.of(
+                "ids", ids,
+                "vectors", vectors,
+                "payloads", payloads
+        ));
+
+        qdrantWebClient.put()
+                .uri("/collections/{col}/points?wait=true", props.getQdrant().getCollection())
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(batchBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofSeconds(30))
+                .block();
     }
 
     @SuppressWarnings("unchecked")
