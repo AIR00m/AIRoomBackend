@@ -6,12 +6,15 @@ import com.airoom.airoom.classroom.entity.ClassroomTeacher;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
+import com.airoom.airoom.common.redis.RedisStreamPublisher;
 import com.airoom.airoom.common.value.MemberRole;
 import com.airoom.airoom.exam.entity.*;
 import com.airoom.airoom.exam.entity.value.ExamStatus;
 import com.airoom.airoom.exam.entity.value.ProblemLevel;
 import com.airoom.airoom.exam.model.dto.*;
 import com.airoom.airoom.exam.model.repository.*;
+import com.airoom.airoom.notification.entity.value.NotificationType;
+import com.airoom.airoom.notification.model.dto.NotificationEventDto;
 import com.airoom.airoom.textbook.entity.Unit;
 import com.airoom.airoom.textbook.model.repository.UnitRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,7 @@ public class ExamService {
     private final StudentAnswerRepository studentAnswerRepository;
     private final ClassroomTeacherRepository classroomTeacherRepository;
     private final StudentExamRepository studentExamRepository;
+    private final RedisStreamPublisher publisher;
 
     /**
      * 시험 생성
@@ -49,8 +53,25 @@ public class ExamService {
         addExamProblemToExam(request.epNoList(), exam);
         addClassroomStudentToExam(request.classroomStudentNoList(), classroom, exam);
 
+        sendExamNotification(request.classroomStudentNoList());
+
         Exam savedExam = examRepository.save(exam);
         return savedExam.getExamNo();
+    }
+
+    private void sendExamNotification(List<Long> classroomStudents){
+        // ClassroomStudent PK를 실제 Member의 memberNo로 변환
+        List<Long> targetMemberNos = classroomStudents.stream()
+                .map(classroomStudentNo -> {
+                    ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
+                            .orElseThrow(() -> new IllegalArgumentException("학생을 찾을 수 없습니다: " + classroomStudentNo));
+                    return student.getStudent().getMemberNo(); // 실제 Member의 memberNo 반환
+                })
+                .toList();
+        NotificationEventDto notificationEventDto = new NotificationEventDto(
+                NotificationType.NEW_EXAM.getLocation(),NotificationType.NEW_EXAM,targetMemberNos
+        );
+        publisher.publishNotification(notificationEventDto);
     }
 
     /**

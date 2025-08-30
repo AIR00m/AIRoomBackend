@@ -172,6 +172,7 @@ public class NotificationService {
                 notificationEventDto.targetMemberNos().size());
 
         // 각 대상자별로 개별 알림 생성
+        //타겟 멤버 아이디(memberNo)임 출제시 학생의 알림이 들어있음
         notificationEventDto.targetMemberNos().forEach(memberNo -> {
             try{
                 // 1. Notification Entity 생성 및 저장
@@ -191,8 +192,6 @@ public class NotificationService {
 
         log.info("알림 처리 완료");
     }
-
-
 
     private Notification createNotificationEntity(Long memberNo, NotificationEventDto eventDto) {
         Member member = Member.builder().memberNo(memberNo).build(); // 프록시 객체

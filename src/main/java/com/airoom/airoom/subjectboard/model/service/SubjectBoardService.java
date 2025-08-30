@@ -8,11 +8,17 @@ import com.airoom.airoom.board.entity.Attachment;
 import com.airoom.airoom.board.entity.BoardType;
 import com.airoom.airoom.board.entity.SubjectBoard;
 import com.airoom.airoom.classroom.entity.Classroom;
+import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.classroom.entity.ClassroomTeacher;
+import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
 import com.airoom.airoom.classroom.model.repository.ClassroomRepository;
+import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.classroom.model.repository.ClassroomTeacherRepository;
+import com.airoom.airoom.common.redis.RedisStreamPublisher;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.repository.MemberRepository;
+import com.airoom.airoom.notification.entity.value.NotificationType;
+import com.airoom.airoom.notification.model.dto.NotificationEventDto;
 import com.airoom.airoom.subjectboard.model.dto.SubjectBoardListResponse;
 import com.airoom.airoom.subjectboard.model.dto.SubjectBoardRequest;
 import com.airoom.airoom.subjectboard.model.dto.SubjectBoardViewResponse;
@@ -34,7 +40,9 @@ public class SubjectBoardService {
     private final ClassroomRepository classroomRepository;
     private final AttachmentRepository attachmentRepository;
     private final ClassroomTeacherRepository classroomTeacherRepository;
+    private final ClassroomStudentRepository classroomStudentRepository;
 
+    private final RedisStreamPublisher publisher;
     private final PresignedUrlService presignedUrlService;
     private final AttachmentService attachmentService;
 
@@ -68,10 +76,32 @@ public class SubjectBoardService {
 
         SubjectBoard board = buildSubjectBoard(request, member, classroom);
 
+        List<Long> classroomStudents = classroomStudentRepository
+                .findClassroomStudentNosByClassroomNo(request.getClassroomNo());
+
+        sendBoardNotification(classroomStudents);
+
         SubjectBoard savedBoard = subjectBoardRepository.save(board);
 
         return savedBoard.getSbNo();
+
     }
+
+    private void sendBoardNotification(List<Long> classroomStudents) {
+
+        List<Long> targetMemberNos = classroomStudents.stream()
+                .map(classroomStudentNo ->{
+                    ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
+                            .orElseThrow(()-> new IllegalArgumentException("학생을 찾을 수 없습니다."));
+                    return student.getStudent().getMemberNo();
+                }).toList();
+
+        NotificationEventDto notificationEventDto = new NotificationEventDto(
+                NotificationType.NEW_MATERIAL.getLocation(), NotificationType.NEW_MATERIAL,targetMemberNos);
+        publisher.publishNotification(notificationEventDto);
+
+    }
+
 
     public void updateSubjectBoard(Long boardNo, SubjectBoardRequest request) {
         SubjectBoard board = subjectBoardRepository.findById(boardNo)
