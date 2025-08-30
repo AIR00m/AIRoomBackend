@@ -48,4 +48,6 @@ public interface UnitSummaryRepository extends JpaRepository<UnitSummary, UnitSu
                 order by us.id.usClassroomStudentNo, u.unitNum
             """)
     List<StudentUnitSummaryDetailResponse> findByClassroomStudentAndUnit(List<Long> studentNos, SummaryType summaryType, LocalDate usStartDate, LocalDate usEndDate);
+
+    List<UnitSummary> findTop2ById_UsClassroomStudentNoOrderByUsAccuracyRateDesc(Long csNo);
 }

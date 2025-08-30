@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LearningSummaryRepository extends JpaRepository<LearningSummary, LearningSummaryId> {
@@ -65,4 +66,5 @@ public interface LearningSummaryRepository extends JpaRepository<LearningSummary
             """)
     List<ClassroomLearningSummaryAllResponse> findByClassroomStudentAll(List<Long> studentNos);
 
+    Optional<LearningSummary> findTopById_LsClassroomStudentNoOrderByCreatedAtDesc(Long csNo);
 }

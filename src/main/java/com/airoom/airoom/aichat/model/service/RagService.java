@@ -20,7 +20,7 @@ public class RagService {
     public AskResponse ask(AskRequest req) {
         String user = Optional.ofNullable(req.getMessage()).orElse("").trim();
         if (user.isEmpty()) {
-            return new AskResponse("질문이 비어있어요. 무엇이 궁금한가요?", List.of());
+            return new AskResponse("질문이 비어있어요. 무엇이 궁금한가요?", List.of(), List.of());
         }
 
         // ---- (선택) 학생 컨텍스트 (Controller/Service에서 주입 가능) ----
@@ -29,16 +29,22 @@ public class RagService {
 
         // 1) 질문 모더레이션
         if (openAiService.isFlagged(user)) {
-            return new AskResponse("안전하지 않은 내용이 감지되어 답변할 수 없어요. 다른 질문을 해주세요.", List.of());
+            return new AskResponse("안전하지 않은 내용이 감지되어 답변할 수 없어요. 다른 질문을 해주세요.", List.of(), List.of());
         }
 
         try {
             // 2) 임베딩 → 3) Qdrant 검색
             List<Double> qvec = openAiService.embed(user);
-            List<SourceDto> top = qdrantClient.search(qvec, props.getQdrant().getTopK());
+            List<SourceDto> top = qdrantClient.search(qvec, props.getQdrant().getTopK(), 0.2);
 
-            // 4) 컨텍스트 블록
+            // 4) 컨텍스트 & 인덱스 매핑
             String ctx = buildContextBlock(top);
+            List<AskResponse.SourceIndex> indices = new ArrayList<>();
+            for (int i = 0; i < (top == null ? 0 : top.size()); i++) {
+                var s = top.get(i);
+                var title = String.valueOf(s.getPayload().getOrDefault("title",""));
+                indices.add(new AskResponse.SourceIndex(i+1, s.getId(), title));
+            }
 
             // 5) 메시지
             List<Map<String, String>> msgs =
@@ -59,7 +65,7 @@ public class RagService {
                 answer = "안전하지 않은 내용이 포함될 가능성이 있어 답변을 수정했어요. 다른 방식으로 질문을 시도해 주세요.";
             }
 
-            return new AskResponse(answer, (top == null ? List.of() : top));
+            return new AskResponse(answer, (top == null ? List.of() : top), List.of());
 
         } catch (Exception e) {
             // Qdrant/네트워크 등 예외 시에도 폴백
@@ -71,7 +77,7 @@ public class RagService {
             if (openAiService.isFlagged(answer)) {
                 answer = "안전하지 않은 내용이 포함될 가능성이 있어 답변을 수정했어요. 다른 방식으로 질문을 시도해 주세요.";
             }
-            return new AskResponse(answer, List.of());
+            return new AskResponse(answer, List.of(), List.of());
         }
     }
 
