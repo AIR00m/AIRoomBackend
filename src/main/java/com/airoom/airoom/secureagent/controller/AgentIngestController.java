@@ -6,6 +6,7 @@ import com.airoom.airoom.secureagent.support.CryptoSupport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,6 +16,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/agent")
 //@CrossOrigin("*")
@@ -92,6 +94,6 @@ public class AgentIngestController {
 
     private void publish(String topic, String value) {
         if (kafka != null) kafka.send(topic, value);
-        else System.out.println("[INGEST] " + topic + " → " + value);
+        else log.info("[INGEST] " + topic + " → " + value);
     }
 }
