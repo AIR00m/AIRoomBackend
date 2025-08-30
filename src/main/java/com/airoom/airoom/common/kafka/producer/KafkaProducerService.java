@@ -30,7 +30,7 @@ public class KafkaProducerService {
         try {
             String examNo = String.valueOf(logData.get("examNo"));
 
-            log.debug("📊 시험 로그 전송 시작: examNo={}", examNo);
+            log.info("📊 시험 로그 전송 시작: examNo={}", examNo);
 
             // exam-logs 토픽으로 전송 (logstash.conf에서 이미 설정됨)
             String topic = "exam-logs";
@@ -44,7 +44,7 @@ public class KafkaProducerService {
 
             future.whenComplete((result, ex) -> {
                 if (ex == null) {
-                    log.debug("시험 로그 전송 완료: examNo={}, offset={}",
+                    log.info("시험 로그 전송 완료: examNo={}, offset={}",
                             examNo, result.getRecordMetadata().offset());
                 } else {
                     log.error("시험 로그 전송 실패: examNo={}, error={}",
