@@ -32,7 +32,7 @@ public class LogService {
             Map<String, Object> logData = new HashMap<>();
 
             logData.put("examNo", request.examNo());
-            logData.put("studentNo", request.classroomStudentNo());
+            logData.put("classroomStudentNo", request.classroomStudentNo());
             logData.put("classroomNo", request.classroomNo());
             logData.put("problemNo", request.problemNo() != null ? request.problemNo() : 0L);
 
