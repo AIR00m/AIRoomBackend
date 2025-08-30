@@ -58,9 +58,11 @@ public class ChatRoomService {
 
     //메소드 추출
     private ChatRoomResponse buildChatRoomResponse(ChatRoom chatRoom) {
+        String studentName = chatRoom.getClassroomStudent().getStudent().getMemberName();
         return ChatRoomResponse.builder()
                 .crNo(chatRoom.getCrNo())
                 .unreadCount(chatReadService.getUnread(chatRoom.getCrNo(), MemberRole.TEACHER))
+                .studentName(studentName)
                 .lastMessage(chatRoom.getLastMessage())
                 .lastMessageTime(chatRoom.getLastMessageTime())
                 .build();

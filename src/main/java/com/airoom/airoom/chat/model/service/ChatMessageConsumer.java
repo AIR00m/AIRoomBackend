@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -41,8 +42,9 @@ public class ChatMessageConsumer {
 
     private static final String STREAM = "chat:stream";
     private static final String GROUP = "chat-group";
+    private final String consumerName = "consumer-" + UUID.randomUUID();
 
-    @PostConstruct
+    //@PostConstruct
     public void initConsumer() {
         // 1. 그룹이 없으면 생성
         try {
@@ -63,7 +65,7 @@ public class ChatMessageConsumer {
             while (true) {
                 try {
                     List<MapRecord<String, Object, Object>> records = redis.opsForStream().read(
-                            Consumer.from(GROUP, "consumer-1"),
+                            Consumer.from(GROUP, consumerName),
                             StreamReadOptions.empty().count(50).block(Duration.ofSeconds(2)),
                             StreamOffset.create(STREAM, ReadOffset.lastConsumed())
                     );
@@ -78,25 +80,27 @@ public class ChatMessageConsumer {
                                     objectMapper.convertValue(record.getValue(), ChatMessageRequest.class);
 
                             // 3. DB 저장
-                            Long msgId = messageService.saveMessage(
+                            /*Long msgId = messageService.saveMessage(
                                     req.getCrNo(),
                                     req.getContent(),
                                     req.getWriterRole(),
                                     req.getSentAt()
-                            );
+                            );*/
 
                             MemberRole receiver = (req.getWriterRole() == MemberRole.TEACHER) ? MemberRole.STUDENT : MemberRole.TEACHER;
+                            //안읽은 메시지수 카운트
                             readService.incrementUnread(req.getCrNo(), receiver);
 
                             // 4. 브로드캐스트
                             ChatMessageResponse dto = ChatMessageResponse.builder()
                                     .crNo(req.getCrNo())
-                                    .messageId(msgId)
+                                    //.messageId(msgId)
                                     .content(req.getContent())
                                     .writerRole(req.getWriterRole())
                                     .sentAt(req.getSentAt())
                                     .build();
                             messagingTemplate.convertAndSend("/topic/chat/" + req.getCrNo(), dto);
+                            // 알림 브로드캐스트
                             sendUnreadNotification(req.getCrNo(), req.getWriterRole());
                             // 5. ACK (정상 처리 시)
                             redis.opsForStream().acknowledge(STREAM, GROUP, record.getId());
@@ -116,7 +120,7 @@ public class ChatMessageConsumer {
         consumerThread.start();
     }
 
-    @PreDestroy
+    //@PreDestroy
     public void shutdown() {
         running = false;
         if (consumerThread != null && consumerThread.isAlive()) {
