@@ -3,13 +3,12 @@ package com.airoom.airoom.textbook.controller;
 import com.airoom.airoom.exam.model.dto.UnitResponse;
 import com.airoom.airoom.textbook.model.dto.UnitPdfUrl;
 import com.airoom.airoom.textbook.model.dto.UnitsResponse;
+import com.airoom.airoom.textbook.model.dto.UpdateProgress;
 import com.airoom.airoom.textbook.model.service.TextbookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 @Slf4j
@@ -31,5 +30,11 @@ public class TextbookController implements TextbookSwagger{
     public List<UnitPdfUrl> getUnitByUnitNo(@PathVariable("unitNo") Long unitNo) {
         log.info(">>>>> PDF URL 요청 수신 - unitNo: {}", unitNo);
         return textbookService.getUnitByUnitNo(unitNo);
+    }
+
+    @PutMapping("/progress/lastpage")
+    public ResponseEntity<Void> saveProgress(@RequestBody UpdateProgress request) {
+        textbookService.saveProgress(request);
+        return ResponseEntity.ok().build();
     }
 }
