@@ -4,10 +4,7 @@ import com.airoom.airoom.chat.model.dto.*;
 import com.airoom.airoom.classroom.model.dto.ClassroomStudentResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -48,4 +45,10 @@ public interface ChatRestSwagger {
             description = "읽지 않은 채팅 알림을 조회합니다."
     )@PostMapping("/unread/total")
     public UnreadResponse getTotalUnread(@RequestBody UnreadRequest unreadRequest);
+
+    @Operation(
+            summary = "채팅 삭제 API",
+            description = "선택한 메세지를 삭제합니다."
+    )@DeleteMapping("messages/{messageId}")
+    public void deleteOne(@PathVariable Long messageId);
 }
