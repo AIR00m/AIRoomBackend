@@ -1,9 +1,7 @@
 package com.airoom.airoom.textbook.controller;
 
 import com.airoom.airoom.exam.model.dto.UnitResponse;
-import com.airoom.airoom.textbook.model.dto.UnitPdfUrl;
-import com.airoom.airoom.textbook.model.dto.UnitsResponse;
-import com.airoom.airoom.textbook.model.dto.UpdateProgress;
+import com.airoom.airoom.textbook.model.dto.*;
 import com.airoom.airoom.textbook.model.service.TextbookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +30,24 @@ public class TextbookController implements TextbookSwagger{
         return textbookService.getUnitByUnitNo(unitNo);
     }
 
+    /* 단원 진도 저장 */
     @PutMapping("/progress/lastpage")
     public ResponseEntity<Void> saveProgress(@RequestBody UpdateProgress request) {
         textbookService.saveProgress(request);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/drawings/save")
+    public ResponseEntity<Void> save(@RequestBody SaveDrawingRequest req) {
+        textbookService.saveOrUpdate(req);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/drawings/load/{classRoomStudentNo}/{unitNo}")
+    public ResponseEntity<DrawingResponse> load(
+            @PathVariable Long classRoomStudentNo,
+            @PathVariable Long unitNo
+    ) {
+        return ResponseEntity.ok(textbookService.load(classRoomStudentNo, unitNo));
     }
 }
