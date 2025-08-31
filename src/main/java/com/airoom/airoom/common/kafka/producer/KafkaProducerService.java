@@ -24,7 +24,7 @@ public class KafkaProducerService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
     /**
-     * 시험 로그 전송 (기존 메서드 그대로 사용)
+     * 시험 로그 전송
      */
     public void sendExamLog(Map<String, Object> logData) {
         try {
@@ -58,4 +58,36 @@ public class KafkaProducerService {
         }
     }
 
+    public void sendClassLog(Map<String, Object> logData) {
+        try {
+            String unitNo = String.valueOf(logData.get("unitNo"));
+            String studentNo = String.valueOf(logData.get("classroomStudentNo"));
+
+            log.info("📚 학습 로그 전송 시작: unitNo={}, studentNo={}", unitNo, studentNo);
+
+            // class-logs 토픽으로 전송
+            String topic = "class-logs";
+            String key = "unit-" + unitNo + "-student-" + studentNo;
+
+            // JSON으로 변환
+            String message = objectMapper.writeValueAsString(logData);
+
+            // 비동기 전송
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, key, message);
+
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
+                    log.info("학습 로그 전송 완료: unitNo={}, studentNo={}, offset={}",
+                            unitNo, studentNo, result.getRecordMetadata().offset());
+                } else {
+                    log.error("학습 로그 전송 실패: unitNo={}, studentNo={}, error={}",
+                            unitNo, studentNo, ex.getMessage());
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("학습 로그 전송 예외 발생", e);
+            throw new RuntimeException("학습 로그 전송 실패", e);
+        }
+    }
 }
