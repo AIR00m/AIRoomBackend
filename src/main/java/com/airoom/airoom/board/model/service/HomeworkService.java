@@ -85,22 +85,18 @@ public class HomeworkService {
 
         int updated = homeworkRepository.updateContent(homeworkBoardNo, content);
 
-        Long classroomNo = classroomRepository.getClassroomNoByHomeworkBoardNo(homeworkBoardNo);
+        Long targetMemberNo = classroomTeacherRepository.getTeacherMemberNoByHomeworkBoardNo(homeworkBoardNo);
 
-        Long classroomTeacherNo = classroomTeacherRepository.getClassTeacherNoByClassRoomNo(classroomNo);
-
-        sendHomeworkNotification(classroomTeacherNo);
+        sendHomeworkNotification(targetMemberNo);
     }
 
-    private void sendHomeworkNotification(Long classroomTeacherNo) {
-
-        Long targetMemberNo = classroomTeacherRepository.getMemberNoByClassroomTeacherNo(classroomTeacherNo);
-
-        NotificationEventDto notificationEventDto = new NotificationEventDto(
-                NotificationType.ASSIGNMENT_SUBMITTED.getLocation(), NotificationType.ASSIGNMENT_SUBMITTED,List.of(targetMemberNo)
+    private void sendHomeworkNotification(Long targetMemberNo) {
+        NotificationEventDto dto = new NotificationEventDto(
+                NotificationType.ASSIGNMENT_SUBMITTED.getLocation(),
+                NotificationType.ASSIGNMENT_SUBMITTED,
+                List.of(targetMemberNo)
         );
-        publisher.publishNotification(notificationEventDto);
-
+        publisher.publishNotification(dto);
     }
 }
 

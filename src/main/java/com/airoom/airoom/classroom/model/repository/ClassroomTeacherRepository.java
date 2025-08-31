@@ -24,9 +24,11 @@ public interface ClassroomTeacherRepository extends CrudRepository<ClassroomTeac
     List<ClassroomTeacher> classroomTeacherNo(Long classroomTeacherNo);
 
     @Query("""
-            select ct.teacher.memberNo
-            from ClassroomTeacher ct
-            where ct.classroomTeacherNo= :classroomTeacherNo
-            """)
-    Long getMemberNoByClassroomTeacherNo(Long classroomTeacherNo);
+        select t.teacher.memberNo
+        from Homework h
+        join h.classroom c
+        join ClassroomTeacher t on t.classroom = c
+        where h.homeworkBoardNo = :homeworkBoardNo
+    """)
+    Long getTeacherMemberNoByHomeworkBoardNo(@Param("homeworkBoardNo") Long homeworkBoardNo);
 }
