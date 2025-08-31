@@ -1,15 +1,12 @@
 package com.airoom.airoom.common.log.model.service;
 
 import com.airoom.airoom.common.kafka.producer.KafkaProducerService;
+import com.airoom.airoom.common.log.model.dto.LogClassRequest;
 import com.airoom.airoom.common.log.model.dto.LogExamRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,23 +30,11 @@ public class LogService {
 
             logData.put("examNo", request.examNo());
             logData.put("classroomStudentNo", request.classroomStudentNo());
-            logData.put("classroomNo", request.classroomNo());
-            logData.put("problemNo", request.problemNo() != null ? request.problemNo() : 0L);
+            logData.put("llType", request.llType());
+            logData.put("llStartTime", request.llStartTime());
+            logData.put("llEndTime", request.llEndTime());
 
-            logData.put("solvingTime", request.solvingTime() != null ? request.solvingTime() : 0L);
-
-            // 타임스탬프 변환
-            String isoTimestamp = convertTimestampToISO(request.timestamp());
-            logData.put("timestamp", isoTimestamp);
-
-            // 이상행위 카운트
-            logData.put("controlVCount", request.controlVCount());
-            logData.put("controlCCount", request.controlCCount());
-            logData.put("afkCount", request.afkCount());
-            logData.put("devToolsCount", request.devToolsCount());
-            logData.put("rightClickCount", request.rightClickCount());
-            logData.put("focusLossCount", request.focusLossCount());
-            logData.put("tabSwitchCount", request.tabSwitchCount());
+            logData.put("problemsData", request.problemsData());
 
             // Kafka로 전송 (exam-logs 토픽)
             kafkaProducerService.sendExamLog(logData);
@@ -64,18 +49,37 @@ public class LogService {
         }
     }
 
-    /**
-     * milliseconds timestamp를 ISO 형식으로 변환
-     */
-    private String convertTimestampToISO(Long timestamp) {
-        if (timestamp == null) {
-            return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        }
+    public void processClassLog(LogClassRequest request) {
+        try {
+            if (request.unitNo() == null || request.classroomStudentNo() == null) {
+                log.error("🚨 필수 파라미터 누락: unitNo={}, classroomStudentNo={}",
+                        request.unitNo(), request.classroomStudentNo());
+                throw new IllegalArgumentException("unitNo와 classroomStudentNo는 필수 값입니다.");
+            }
 
-        return LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(timestamp),
-                ZoneId.systemDefault()
-        ).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            Map<String, Object> logData = new HashMap<>();
+
+            // 기본 정보
+            logData.put("unitNo", request.unitNo());
+            logData.put("classroomStudentNo", request.classroomStudentNo());
+            logData.put("llType", request.llType() != null ? request.llType() : "LEARN");
+
+            // 시간 정보
+            logData.put("llStartTime", request.llStartTime());
+            logData.put("llEndTime", request.llEndTime());
+            logData.put("llDurationSec", request.llDurationSec());
+
+            // class-logs 토픽으로 전송
+            kafkaProducerService.sendClassLog(logData);
+
+            log.info("학습 로그 처리 완료: unitNo={}, duration={}ms",
+                    request.unitNo(), request.llDurationSec());
+
+        } catch (Exception e) {
+            log.error("학습 로그 처리 실패: unitNo={}, error={}",
+                    request.unitNo(), e.getMessage(), e);
+            throw new RuntimeException("학습 로그 처리 실패", e);
+        }
     }
 
 }

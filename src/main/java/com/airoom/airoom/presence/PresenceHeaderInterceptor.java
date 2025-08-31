@@ -10,6 +10,7 @@ import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -19,6 +20,9 @@ public class PresenceHeaderInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor acc = StompHeaderAccessor.wrap(message);
         if (acc.getCommand() == StompCommand.CONNECT) {
+            Map<String, Object> sessionAttributes = acc.getSessionAttributes();
+            if(sessionAttributes == null) return message;
+
             // 문자열 헤더 저장
             putIfPresent(acc, "role");
             putIfPresent(acc, "userId");
@@ -26,20 +30,23 @@ public class PresenceHeaderInterceptor implements ChannelInterceptor {
             // classNo(Long) 저장 (legacy: classId 도 허용)
             Long classNo = parseLong(firstHeader(acc, "classNo", "classId"));
             if (classNo != null) {
-                acc.getSessionAttributes().put("classNo", classNo);
+                sessionAttributes.put("classNo", classNo);
             }
 
             log.debug("STOMP CONNECT - role={}, classNo={}, userId={}",
-                    acc.getSessionAttributes().get("role"),
-                    acc.getSessionAttributes().get("classNo"),
-                    acc.getSessionAttributes().get("userId"));
+                    sessionAttributes.get("role"),
+                    sessionAttributes.get("classNo"),
+                    sessionAttributes.get("userId"));
         }
         return message;
     }
 
     private void putIfPresent(StompHeaderAccessor acc, String name) {
+        Map<String, Object> sessionAttributes = acc.getSessionAttributes();
+        if(sessionAttributes == null) return;
+
         String val = firstHeader(acc, name);
-        if (val != null) acc.getSessionAttributes().put(name, val);
+        if (val != null) sessionAttributes.put(name, val);
     }
 
     @Nullable
