@@ -60,20 +60,20 @@ public class ExamService {
     }
 
     private void sendExamNotification(List<Long> classroomStudents){
-        // ClassroomStudent PK를 실제 Member의 memberNo로 변환
-        List<Long> targetMemberNos = classroomStudents.stream()
-                .map(classroomStudentNo -> {
-                    ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
-                            .orElseThrow(() -> new IllegalArgumentException("학생을 찾을 수 없습니다: " + classroomStudentNo));
-                    return student.getStudent().getMemberNo(); // 실제 Member의 memberNo 반환
-                })
-                .toList();
-        NotificationEventDto notificationEventDto = new NotificationEventDto(
-                NotificationType.NEW_EXAM.getLocation(),NotificationType.NEW_EXAM,targetMemberNos
-        );
-        publisher.publishNotification(notificationEventDto);
-    }
+        if (classroomStudents == null || classroomStudents.isEmpty()) return;
 
+        List<Long> targetMemberNos =
+                classroomStudentRepository.findMemberNosByClassroomStudentNos(classroomStudents);
+
+        if (targetMemberNos.isEmpty()) return;
+
+        NotificationEventDto dto = new NotificationEventDto(
+                NotificationType.NEW_EXAM.getLocation(),
+                NotificationType.NEW_EXAM,
+                targetMemberNos
+        );
+        publisher.publishNotification(dto);
+    }
     /**
      * 난이도, 단원별 랜덤 문제 출제
      */

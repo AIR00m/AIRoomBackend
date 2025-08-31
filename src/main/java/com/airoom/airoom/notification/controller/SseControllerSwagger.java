@@ -2,6 +2,7 @@ package com.airoom.airoom.notification.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,6 @@ public interface SseControllerSwagger {
             description = "SSE를 연결합니다."
     )
     @GetMapping(value = "/connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<SseEmitter> connect(@RequestParam("memberId") String memberId);
+    public ResponseEntity<SseEmitter> connect(@RequestParam("memberId") String memberId, HttpServletResponse response);
     
 }

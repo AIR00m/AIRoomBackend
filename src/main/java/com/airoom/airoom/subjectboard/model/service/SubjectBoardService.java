@@ -76,10 +76,10 @@ public class SubjectBoardService {
 
         SubjectBoard board = buildSubjectBoard(request, member, classroom);
 
-        List<Long> classroomStudents = classroomStudentRepository
-                .findClassroomStudentNosByClassroomNo(request.getClassroomNo());
+        List<Long> targetMemberNos =
+                classroomStudentRepository.findTargetMemberNosByClassroomNo(request.getClassroomNo());
 
-        sendBoardNotification(classroomStudents);
+        sendBoardNotification(targetMemberNos);
 
         SubjectBoard savedBoard = subjectBoardRepository.save(board);
 
@@ -87,19 +87,13 @@ public class SubjectBoardService {
 
     }
 
-    private void sendBoardNotification(List<Long> classroomStudents) {
-
-        List<Long> targetMemberNos = classroomStudents.stream()
-                .map(classroomStudentNo ->{
-                    ClassroomStudent student = classroomStudentRepository.findById(classroomStudentNo)
-                            .orElseThrow(()-> new IllegalArgumentException("학생을 찾을 수 없습니다."));
-                    return student.getStudent().getMemberNo();
-                }).toList();
-
-        NotificationEventDto notificationEventDto = new NotificationEventDto(
-                NotificationType.NEW_MATERIAL.getLocation(), NotificationType.NEW_MATERIAL,targetMemberNos);
-        publisher.publishNotification(notificationEventDto);
-
+    private void sendBoardNotification(List<Long> targetMemberNos) {
+        NotificationEventDto dto = new NotificationEventDto(
+                NotificationType.NEW_MATERIAL.getLocation(),
+                NotificationType.NEW_MATERIAL,
+                targetMemberNos
+        );
+        publisher.publishNotification(dto);
     }
 
 
