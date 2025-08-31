@@ -3,11 +3,13 @@ package com.airoom.airoom.common.redis;
 import com.airoom.airoom.notification.model.dto.NotificationEventDto;
 import com.airoom.airoom.notification.model.service.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.lettuce.core.RedisBusyException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
@@ -96,11 +98,11 @@ public class RedisStreamListener {
                     RedisStreamKey.CONSUMER_GROUP.getKey()
             );
             log.info("✅ Consumer Group '{}' 생성 완료", RedisStreamKey.CONSUMER_GROUP.getKey());
-        } catch (Exception e) {
-            if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
-                log.info("⚠️ Consumer Group '{}' 이미 존재", RedisStreamKey.CONSUMER_GROUP.getKey());
-            } else {
-                log.error("❌ Consumer Group '{}' 생성 실패: {}", RedisStreamKey.CONSUMER_GROUP.getKey(), e.getMessage(), e);
+        } catch (RedisSystemException ex) {
+            if (ex.getCause() instanceof RedisBusyException) {
+                log.info("ℹ️ Consumer Group '{}' 이미 존재함", RedisStreamKey.CONSUMER_GROUP.getKey());
+            }else {
+                log.error("❌ Consumer Group '{}' 생성 실패: {}", RedisStreamKey.CONSUMER_GROUP.getKey(), ex.getMessage(), ex);
             }
         }
     }

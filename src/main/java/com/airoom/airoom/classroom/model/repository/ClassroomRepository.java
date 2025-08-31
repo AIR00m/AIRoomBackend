@@ -64,4 +64,9 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
            where c.classroomNo = :classroomNo
                                                 """)
     ClassroomResponse getClassroomByClassroomNo (Long classroomNo);
+
+    @Query("""
+            SELECT h.classroom.classroomNo FROM Homework h WHERE h.homeworkBoardNo = :homeworkBoardNo
+            """)
+    Long getClassroomNoByHomeworkBoardNo(Long homeworkBoardNo);
 }

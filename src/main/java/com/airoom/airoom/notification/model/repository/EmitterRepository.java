@@ -50,8 +50,11 @@ public class EmitterRepository {
     public void deleteEmitter(Long memberNo) {
         SseEmitter emitter = sseEmitterMap.remove(memberNo);
         if (emitter != null) {
-            emitter.complete();
-            //연결을 정상적으로 종료시켜주는 메소드
+            try {
+                emitter.complete();
+            } catch (IllegalStateException e) {
+                log.warn("emitter.complete() 호출 중 예외 발생 - 이미 응답이 종료된 상태: {}", memberNo);
+            }
             log.info("SSE 연결 제거 - memberNo: {}", memberNo);
         }
     }
