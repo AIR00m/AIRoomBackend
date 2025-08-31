@@ -27,7 +27,7 @@ public class AiProps {
         @NotBlank
         private String url;              // http://qdrant:6333 (운영), http://localhost:6333 (로컬)
         private String collection = "ai_career_ko_v1";
-        private int topK = 5;
+        private int topK = 3;
     }
 }
 
