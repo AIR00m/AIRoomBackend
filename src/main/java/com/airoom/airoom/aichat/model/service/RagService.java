@@ -5,10 +5,12 @@ import com.airoom.airoom.aichat.model.dto.AskRequest;
 import com.airoom.airoom.aichat.model.dto.AskResponse;
 import com.airoom.airoom.aichat.model.dto.SourceDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RagService {
@@ -27,15 +29,32 @@ public class RagService {
         Map<String, Object> ctxMap = Optional.ofNullable(req.getContext()).orElseGet(Map::of);
         String studentProfile = buildStudentProfile(ctxMap);
 
-        // 1) 질문 모더레이션
-        if (openAiService.isFlagged(user)) {
-            return new AskResponse("안전하지 않은 내용이 감지되어 답변할 수 없어요. 다른 질문을 해주세요.", List.of(), List.of());
+        if (!ctxMap.isEmpty() && user.matches(".*(학교 이름|몇 ?반|학급|클래스).*")) {
+            String school = String.valueOf(ctxMap.getOrDefault("school", ""));
+            Object clazz = ctxMap.get("class");
+            String klass = (clazz == null ? "" : (clazz + "반"));
+            String direct = (school.isBlank() && klass.isBlank())
+                    ? "등록된 학교/반 정보를 찾지 못했어요. 마이페이지에서 프로필을 확인해 주세요."
+                    : String.format("%s %s이에요. 😊", school, klass).trim();
+            return new AskResponse(direct, List.of(), List.of());
         }
 
         try {
-            // 2) 임베딩 → 3) Qdrant 검색
+            // 1) 질문 모더레이션
+            log.info("Starting moderation check for: {}", user);
+            if (openAiService.isFlagged(user)) {
+                return new AskResponse("안전하지 않은 내용이 감지되어 답변할 수 없어요. 다른 질문을 해주세요.", List.of(), List.of());
+            }
+
+            // 2) 임베딩
+            log.info("Starting embedding for: {}", user);
             List<Double> qvec = openAiService.embed(user);
+            log.info("Embedding completed, vector size: {}", qvec.size());
+
+            // 3) Qdrant 검색
+            log.info("Starting Qdrant search");
             List<SourceDto> top = qdrantClient.search(qvec, props.getQdrant().getTopK(), 0.2);
+            log.info("Qdrant search completed, found {} results", top != null ? top.size() : 0);
 
             // 4) 컨텍스트 & 인덱스 매핑
             String ctx = buildContextBlock(top);
@@ -68,16 +87,22 @@ public class RagService {
             return new AskResponse(answer, (top == null ? List.of() : top), List.of());
 
         } catch (Exception e) {
-            // Qdrant/네트워크 등 예외 시에도 폴백
-            List<Map<String, String>> fb = List.of(
-                    Map.of("role","system","content", systemPromptFallback(studentProfile)),
-                    Map.of("role","user","content", user)
-            );
-            String answer = openAiService.chat(fb);
-            if (openAiService.isFlagged(answer)) {
-                answer = "안전하지 않은 내용이 포함될 가능성이 있어 답변을 수정했어요. 다른 방식으로 질문을 시도해 주세요.";
+            log.error("Error in RAG service for question: {}", user, e);
+            // 폴백 처리
+            try {
+                List<Map<String, String>> fb = List.of(
+                        Map.of("role","system","content", systemPromptFallback(studentProfile)),
+                        Map.of("role","user","content", user)
+                );
+                String answer = openAiService.chat(fb);
+                if (openAiService.isFlagged(answer)) {
+                    answer = "안전하지 않은 내용이 포함될 가능성이 있어 답변을 수정했어요. 다른 방식으로 질문을 시도해 주세요.";
+                }
+                return new AskResponse(answer, List.of(), List.of());
+            } catch (Exception fallbackException) {
+                log.error("Fallback also failed for question: {}", user, fallbackException);
+                return new AskResponse("죄송해요, 지금 답변을 드릴 수 없어요. 잠시 후 다시 시도해 주세요.", List.of(), List.of());
             }
-            return new AskResponse(answer, List.of(), List.of());
         }
     }
 
@@ -90,7 +115,6 @@ public class RagService {
                 이모지는 너무 많이 쓰지 말고 ✨, 😊 정도만 가끔 사용해.
                 문장은 짧고, 핵심을 불릿으로 정리하고, 아주 간단한 예시(생활 속 비유)를 1개 정도 포함해.
                 먼저 '컨텍스트'에서 근거를 찾아 답하고, 부족하면 일반 교과 상식으로 보충하되 추측은 하지 않아.
-                컨텍스트를 사용했다면 마지막에 '출처 요약: 문서 1, 3'처럼 사용한 문서 번호만 적어.
                 
                 [학생 프로필]
                 %s
@@ -129,11 +153,14 @@ public class RagService {
         if (ctx == null || ctx.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
         appendIfPresent(sb, ctx, "memberNo", "회원번호");
+        appendIfPresent(sb, ctx, "name", "이름");
+        appendIfPresent(sb, ctx, "gender", "성별");
+        appendIfPresent(sb, ctx, "school", "학교");
         appendIfPresent(sb, ctx, "grade", "학년");
-        appendIfPresent(sb, ctx, "readingLevel", "읽기 수준");
-        appendIfPresent(sb, ctx, "strengths", "학습 강점");
-        appendIfPresent(sb, ctx, "weaknesses", "보완 필요");
-        appendIfPresent(sb, ctx, "interests", "관심사");
+        appendIfPresent(sb, ctx, "class", "반");
+        appendIfPresent(sb, ctx, "classroomGrade", "클래스 학년");
+        appendIfPresent(sb, ctx, "classroomNo", "클래스 번호");
+
         Object scores = ctx.get("recentScores");
         if (scores != null) sb.append("- 최근 점수: ").append(scores).append("\n");
         return sb.toString().trim();

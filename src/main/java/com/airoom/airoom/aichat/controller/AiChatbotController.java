@@ -8,6 +8,7 @@ import com.airoom.airoom.aichat.model.service.*;
 import com.airoom.airoom.common.token.CustomUserDetails;
 import com.airoom.airoom.member.entity.Member;
 import com.airoom.airoom.member.model.repository.MemberRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/aichat")
 public class AiChatbotController implements AiChatbotControllerSwagger {
@@ -205,10 +208,48 @@ public class AiChatbotController implements AiChatbotControllerSwagger {
         return scs.build(me.getMemberNo());
     }
 
+    @GetMapping("/health/qdrant-detailed")
+    public Map<String, Object> qdrantDetailed() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            // 컬렉션 존재 확인
+            Map<String, Object> collections = qdrantWebClient.get()
+                    .uri("/collections")
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(Duration.ofSeconds(10))
+                    .block();
+            result.put("collections_response", collections);
+
+            // 컬렉션 정보 확인
+            Map<String, Object> collectionInfo = qdrantWebClient.get()
+                    .uri("/collections/{col}", props.getQdrant().getCollection())
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(Duration.ofSeconds(10))
+                    .block();
+            result.put("collection_info", collectionInfo);
+
+            // 포인트 수 확인
+            int count = qdrant.count();
+            result.put("point_count", count);
+
+            result.put("status", "OK");
+        } catch (Exception e) {
+            result.put("status", "ERROR");
+            result.put("error", e.getMessage());
+            log.error("Qdrant detailed health check failed", e);
+        }
+        return result;
+    }
+
+
     // ===== Helper 메서드 =====
 
     private CustomUserDetails me() {
         return (CustomUserDetails) SecurityContextHolder
                 .getContext().getAuthentication().getPrincipal();
     }
+
+
 }

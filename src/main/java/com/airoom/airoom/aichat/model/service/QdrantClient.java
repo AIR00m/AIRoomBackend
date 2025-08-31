@@ -171,19 +171,28 @@ public class QdrantClient {
         // 필터(lang=ko AND grade any of [1,2])
         Map<String,Object> langMust = Map.of("key","lang", "match", Map.of("value","ko"));
 
-        // payload.grade 가 [1,2] 배열이므로 any 사용 (대안: must+should로 1 or 2)
-        Map<String,Object> gradeAny = Map.of("key","grade", "match", Map.of("any", List.of(1,2)));
+        // grade=1 OR grade=2  (any 대신 should로 안전하게)
+        Map<String,Object> grade1 = Map.of("key","grade", "match", Map.of("value", 1));
+        Map<String,Object> grade2 = Map.of("key","grade", "match", Map.of("value", 2));
 
-        Map<String,Object> filter = Map.of("must", List.of(langMust, gradeAny));
+        Map<String,Object> filter = new HashMap<>();
+        filter.put("must", List.of(langMust));
+        filter.put("should", List.of(grade1, grade2));
         req.put("filter", filter);
 
-        Map<String, Object> res = qdrantWebClient.post()
-                .uri("/collections/{col}/points/search", props.getQdrant().getCollection())
-                .bodyValue(req)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .timeout(Duration.ofSeconds(15))
-                .block();
+        Map<String, Object> res;
+        try {
+            res = qdrantWebClient.post()
+                    .uri("/collections/{col}/points/search", props.getQdrant().getCollection())
+                    .bodyValue(req)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(Duration.ofSeconds(15))
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.error("[Qdrant] search 5xx/4xx body={}", e.getResponseBodyAsString()); // ✅ 에러바디 로깅
+            throw e;
+        }
 
         List<Map<String, Object>> rs = (List<Map<String, Object>>) res.get("result");
         List<SourceDto> out = new ArrayList<>();
