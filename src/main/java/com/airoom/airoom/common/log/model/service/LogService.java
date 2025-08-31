@@ -33,23 +33,11 @@ public class LogService {
 
             logData.put("examNo", request.examNo());
             logData.put("classroomStudentNo", request.classroomStudentNo());
-            logData.put("classroomNo", request.classroomNo());
-            logData.put("problemNo", request.problemNo() != null ? request.problemNo() : 0L);
+            logData.put("llType", request.llType());
+            logData.put("llStartTime", request.llStartTime());
+            logData.put("llEndTime", request.llEndTime());
 
-            logData.put("solvingTime", request.solvingTime() != null ? request.solvingTime() : 0L);
-
-            // 타임스탬프 변환
-            String isoTimestamp = convertTimestampToISO(request.timestamp());
-            logData.put("timestamp", isoTimestamp);
-
-            // 이상행위 카운트
-            logData.put("controlVCount", request.controlVCount());
-            logData.put("controlCCount", request.controlCCount());
-            logData.put("afkCount", request.afkCount());
-            logData.put("devToolsCount", request.devToolsCount());
-            logData.put("rightClickCount", request.rightClickCount());
-            logData.put("focusLossCount", request.focusLossCount());
-            logData.put("tabSwitchCount", request.tabSwitchCount());
+            logData.put("problemsData", request.problemsData());
 
             // Kafka로 전송 (exam-logs 토픽)
             kafkaProducerService.sendExamLog(logData);
