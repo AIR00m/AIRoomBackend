@@ -7,6 +7,8 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 
 @Repository
 public interface ClassroomTeacherRepository extends CrudRepository<ClassroomTeacher,Long> {
@@ -19,4 +21,12 @@ public interface ClassroomTeacherRepository extends CrudRepository<ClassroomTeac
            """)
     Long getClassTeacherNoByClassRoomNo (@Param("classroomNo") Long classroomNo);
 
+    List<ClassroomTeacher> classroomTeacherNo(Long classroomTeacherNo);
+
+    @Query("""
+            select ct.teacher.memberNo
+            from ClassroomTeacher ct
+            where ct.classroomTeacherNo= :classroomTeacherNo
+            """)
+    Long getMemberNoByClassroomTeacherNo(Long classroomTeacherNo);
 }

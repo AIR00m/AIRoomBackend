@@ -29,7 +29,7 @@ public interface SubjectBoardSwagger {
 
     @Operation(
             summary = "SubjectBoard 등록 API",
-            description = "SubjectBoard를 등록합니다."
+            description = "SubjectBoard 및 첨부파일을 등록합니다."
     )
     public ResponseEntity<Long> insertSubjectBoard(
             @RequestBody SubjectBoardRequest request
@@ -37,14 +37,14 @@ public interface SubjectBoardSwagger {
 
     @Operation(
             summary = "SubjectBoard 수정 API",
-            description = "SubjectBoard를 수정합니다."
+            description = "SubjectBoard 및 첨부파일을 수정합니다."
     )
     public ResponseEntity<Void> updateSubjectBoard(@RequestBody SubjectBoardRequest request,
                                                    @PathVariable Long subjectBoardNo);
 
     @Operation(
             summary = "SubjectBoard 삭제 API",
-            description = "SubjectBoard를 삭제합니다."
+            description = "SubjectBoard 및 첨부파일을 삭제합니다."
     )
     public ResponseEntity<Void> deleteSubjectBoard(@PathVariable Long subjectBoardNo);
 

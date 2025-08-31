@@ -41,5 +41,12 @@ public interface ClassroomStudentRepository extends JpaRepository<ClassroomStude
 
     Optional<ClassroomStudent> findTopByStudent_MemberNoOrderByCreatedAtDesc(Long memberNo);
 
+
+    @Query("""
+           select cs.classRoomStudentNo
+           from ClassroomStudent cs
+           where cs.classRoom.classroomNo = :classroomNo
+           """)
+    List<Long> findClassroomStudentNosByClassroomNo(@Param("classroomNo") Long classroomNo);
 }
 

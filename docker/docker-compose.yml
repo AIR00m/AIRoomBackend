@@ -70,6 +70,12 @@ services:
       - "9200:9200"
     networks:
       - core-services-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.13.4
@@ -82,9 +88,11 @@ services:
     environment:
       LS_JAVA_OPTS: "-Xms512m -Xmx512m"
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     networks:
       - core-services-net
+    restart: unless-stopped
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.13.4

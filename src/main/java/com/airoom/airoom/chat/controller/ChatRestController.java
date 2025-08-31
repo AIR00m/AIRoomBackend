@@ -67,13 +67,8 @@ public class ChatRestController implements ChatRestSwagger {
         return UnreadResponse.builder().totalUnread(count).build();
     }
 
-    /*@GetMapping("/student-name")
-    public String getStudentName() {
-
+    @DeleteMapping("messages/{messageId}")
+    public void deleteOne(@PathVariable Long messageId) {
+        messageService.deleteOne(messageId);
     }
-
-    @GetMapping("/teacher-name")
-    public String getTeacherName(){
-
-    }*/
 }
