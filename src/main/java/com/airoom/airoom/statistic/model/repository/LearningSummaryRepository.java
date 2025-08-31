@@ -41,30 +41,41 @@ public interface LearningSummaryRepository extends JpaRepository<LearningSummary
 
     @Query("""
                 select new com.airoom.airoom.statistic.model.dto.ClassroomLearningSummaryAllResponse(
-                        ls.id.lsClassroomStudentNo,
-                        cs.student.memberName,
-                        cast(coalesce(SUM(ls.lsTotalLearningTimeMs),0) as long),
-                        cast(coalesce(SUM(ls.lsTotalProblemsSolved),0) as long),
-                        cast(coalesce(SUM(ls.lsTotalCorrectProblems),0) as long),
-                        cast(coalesce(SUM(p.progressLastPage),0) as long),
-                        cast(coalesce(SUM(h.homeworkScore),0) as long),
-                        cast(coalesce(COUNT(h.homeworkScore),0) as long)
-                    )
-                    from LearningSummary ls
-                    left join ClassroomStudent cs
-                           on cs.classRoomStudentNo = ls.id.lsClassroomStudentNo
-                    left join Homework h
-                           on h.assignTarget.targetNo = cs.classRoomStudentNo
-                          and h.assignTarget.groupAssignType = false
-                    left join Progress p
-                           on p.classroomStudent.classRoomStudentNo = ls.id.lsClassroomStudentNo
-                    left join Unit u
-                           on u = p.unit
-                    where ls.id.lsClassroomStudentNo in :studentNos
-                    group by cs.classRoomStudentNo, cs.student.memberName
-                    order by cs.student.memberName
+                    cs.classRoomStudentNo,
+                    cs.student.memberName,
+            
+                    (select coalesce(sum(ls.lsTotalLearningTimeMs),0)
+                     from LearningSummary ls
+                     where ls.id.lsClassroomStudentNo = cs.classRoomStudentNo),
+            
+                    (select coalesce(sum(ls.lsTotalProblemsSolved),0)
+                     from LearningSummary ls
+                     where ls.id.lsClassroomStudentNo = cs.classRoomStudentNo),
+            
+                    (select coalesce(sum(ls.lsTotalCorrectProblems),0)
+                     from LearningSummary ls
+                     where ls.id.lsClassroomStudentNo = cs.classRoomStudentNo),
+            
+                    (select coalesce(sum(p.progressLastPage),0)
+                     from Progress p
+                     where p.classroomStudent.classRoomStudentNo = cs.classRoomStudentNo),
+            
+                    (select coalesce(sum(h.homeworkScore),0)
+                     from Homework h
+                     where h.assignTarget.targetNo = cs.classRoomStudentNo
+                       and h.assignTarget.groupAssignType = false),
+            
+                    (select coalesce(count(h.homeworkScore),0)
+                     from Homework h
+                     where h.assignTarget.targetNo = cs.classRoomStudentNo
+                       and h.assignTarget.groupAssignType = false)
+                )
+                from ClassroomStudent cs
+                where cs.classRoomStudentNo in :studentNos
+                order by cs.student.memberName
             """)
     List<ClassroomLearningSummaryAllResponse> findByClassroomStudentAll(List<Long> studentNos);
+
 
     Optional<LearningSummary> findTopById_LsClassroomStudentNoOrderByCreatedAtDesc(Long csNo);
 }
