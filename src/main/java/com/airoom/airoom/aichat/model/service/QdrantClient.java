@@ -159,26 +159,40 @@ public class QdrantClient {
                 .block();
     }
 
-    @SuppressWarnings("unchecked")
     public List<SourceDto> search(List<Double> queryVec, int topK, Double threshold) {
+        List<SourceDto> out = searchOnce(queryVec, topK, (threshold == null ? 0.20 : threshold), true);
+        if (out.isEmpty()) {
+            log.warn("[Qdrant] no hits with lang filter; retrying without filter (lower threshold)");
+            out = searchOnce(queryVec, topK, 0.10, false);
+        }
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<SourceDto> searchOnce(List<Double> queryVec, int topK, double threshold, boolean useLangFilter) {
+        var schema = describeCollection();
+
         Map<String, Object> req = new HashMap<>();
         req.put("vector", queryVec);
         req.put("limit", topK);
         req.put("with_payload", true);
         req.put("with_vector", false);
-        if (threshold != null) req.put("score_threshold", threshold);
+        req.put("score_threshold", threshold);
 
-        // 필터(lang=ko AND grade any of [1,2])
-        Map<String,Object> langMust = Map.of("key","lang", "match", Map.of("value","ko"));
+        // named vector 컬렉션 대비
+        if (schema.isNamed()) {
+            req.put("using", schema.firstVectorName());
+        }
 
-        // grade=1 OR grade=2  (any 대신 should로 안전하게)
-        Map<String,Object> grade1 = Map.of("key","grade", "match", Map.of("value", 1));
-        Map<String,Object> grade2 = Map.of("key","grade", "match", Map.of("value", 2));
-
-        Map<String,Object> filter = new HashMap<>();
-        filter.put("must", List.of(langMust));
-        filter.put("should", List.of(grade1, grade2));
-        req.put("filter", filter);
+        if (useLangFilter) {
+            Map<String,Object> langMust = Map.of("key","lang", "match", Map.of("value","ko"));
+            Map<String,Object> grade1 = Map.of("key","grade", "match", Map.of("value", 1));
+            Map<String,Object> grade2 = Map.of("key","grade", "match", Map.of("value", 2));
+            Map<String,Object> filter = new HashMap<>();
+            filter.put("must", List.of(langMust));
+            filter.put("should", List.of(grade1, grade2)); // 1 또는 2
+            req.put("filter", filter);
+        }
 
         Map<String, Object> res;
         try {
@@ -190,7 +204,7 @@ public class QdrantClient {
                     .timeout(Duration.ofSeconds(15))
                     .block();
         } catch (WebClientResponseException e) {
-            log.error("[Qdrant] search 5xx/4xx body={}", e.getResponseBodyAsString()); // ✅ 에러바디 로깅
+            log.error("[Qdrant] search 5xx/4xx body={}", e.getResponseBodyAsString());
             throw e;
         }
 
@@ -207,6 +221,7 @@ public class QdrantClient {
         return out;
     }
 
+
     @SuppressWarnings("unchecked")
     public int count() {
         Map<String,Object> body = Map.of("filter", Map.of()); // 전체 카운트
@@ -218,6 +233,20 @@ public class QdrantClient {
                 .timeout(Duration.ofSeconds(10))
                 .block();
 
+        Map<String,Object> result = (Map<String,Object>) res.get("result");
+        return result == null ? 0 : ((Number) result.get("count")).intValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    public int countByFilter(Map<String, Object> filter) {
+        Map<String,Object> body = Map.of("filter", filter == null ? Map.of() : filter);
+        Map<String,Object> res = qdrantWebClient.post()
+                .uri("/collections/{col}/points/count?exact=true", props.getQdrant().getCollection())
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofSeconds(10))
+                .block();
         Map<String,Object> result = (Map<String,Object>) res.get("result");
         return result == null ? 0 : ((Number) result.get("count")).intValue();
     }
