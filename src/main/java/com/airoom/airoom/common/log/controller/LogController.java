@@ -1,5 +1,6 @@
 package com.airoom.airoom.common.log.controller;
 
+import com.airoom.airoom.common.log.model.dto.LogClassRequest;
 import com.airoom.airoom.common.log.model.dto.LogExamRequest;
 import com.airoom.airoom.common.log.model.service.LogService;
 import jakarta.validation.Valid;
@@ -29,6 +30,21 @@ public class LogController implements LogControllerSwagger{
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("시험 로그 처리 실패: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/class")
+    public ResponseEntity<Void> logClassActivity(@Valid @RequestBody LogClassRequest request) {
+        try {
+            log.info("학습 로그 수신: unitNo={}, classroomStudentNo={}, duration={}ms",
+                    request.unitNo(), request.classroomStudentNo(), request.llDurationSec());
+
+            logService.processClassLog(request);
+
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("학습 로그 처리 실패: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }

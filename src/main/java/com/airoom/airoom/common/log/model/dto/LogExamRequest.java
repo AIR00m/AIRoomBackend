@@ -1,18 +1,14 @@
 package com.airoom.airoom.common.log.model.dto;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 public record LogExamRequest(
-    Long examNo, //시험 번호
-    Long classroomNo,
-    Long classroomStudentNo, //학생 번호
-    Long timestamp, // 현재 시간
-    Long solvingTime, // 문제 풀이 시간
-    Integer problemNo, //문제 번호
-    Integer controlVCount,
-    Integer controlCCount,
-    Integer afkCount,
-    Integer devToolsCount,
-    Integer rightClickCount,
-    Integer focusLossCount,
-    Integer tabSwitchCount
+        Long examNo, //시험 번호
+        Long classroomStudentNo, //학생 번호
+        String llType,
+        LocalDateTime llStartTime,
+        LocalDateTime llEndTime,
+        List<ProblemsLogDataRequest> problemsData
 ) {
     }
