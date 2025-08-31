@@ -2,6 +2,7 @@ package com.airoom.airoom.notification.controller;
 
 import com.airoom.airoom.member.model.service.MemberService;
 import com.airoom.airoom.notification.model.service.EmitterService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,9 @@ public class SseController implements SseControllerSwagger {
     private final MemberService memberService;
 
     @GetMapping(value = "/connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<SseEmitter> connect(@RequestParam("memberId") String memberId) {
+    public ResponseEntity<SseEmitter> connect(@RequestParam("memberId") String memberId, HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("X-Accel-Buffering", "no"); // nginx 버퍼링 방지
         try {
             // memberId로 실제 memberNo 조회
             Long memberNo = memberService.findMemberNoByMemberId(memberId);
