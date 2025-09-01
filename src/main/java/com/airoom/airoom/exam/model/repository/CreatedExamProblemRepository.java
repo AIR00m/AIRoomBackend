@@ -14,7 +14,7 @@ public interface CreatedExamProblemRepository extends JpaRepository<CreatedExamP
                 select new com.airoom.airoom.exam.model.dto.ExamProblemDetailResponse(
                     cep.cepQuestionOrder, cep.cepNo, ep.epNo, ep.epLevel,
                     ep.epQuestion, ep.epImageUrl, ep.epParagraph, ep.epExample,
-                    ep.epAnswer, ep.epComment
+                    ep.epAnswer, ep.epComment, ep.unit.unitNo
                 )
                 from CreatedExamProblem cep
                 join cep.examProblem ep
