@@ -12,6 +12,7 @@ public record ExamProblemDetailResponse(
         String epParagraph, //시험문제 지문
         String epExample, //시험문제 보기
         String epAnswer, //시험문제 정답
-        String epComment //시험문제 해설
+        String epComment, //시험문제 해설
+        Long unitNo //시험문제 단원
 ) {
 }
