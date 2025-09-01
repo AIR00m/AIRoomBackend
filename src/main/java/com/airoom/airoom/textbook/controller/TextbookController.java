@@ -49,6 +49,7 @@ public class    TextbookController implements TextbookSwagger{
     ) {
         return ResponseEntity.ok(textbookService.load(classRoomStudentNo, unitNo));
     }
+
     @GetMapping("/progress/latest/{classroomStudentNo}")
     public ResponseEntity<UnitProgressResponseDto> getLatestProgress(@PathVariable Long classroomStudentNo) {
         UnitProgressResponseDto latestProgress = textbookService.getLatestProgressByClassroomStudentNo(classroomStudentNo);
