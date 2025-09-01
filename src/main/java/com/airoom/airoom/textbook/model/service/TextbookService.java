@@ -1,7 +1,6 @@
 package com.airoom.airoom.textbook.model.service;
 
 import com.airoom.airoom.classroom.entity.ClassroomStudent;
-import com.airoom.airoom.classroom.model.repository.ClassroomStudentRepository;
 import com.airoom.airoom.textbook.entity.Drawing;
 import com.airoom.airoom.textbook.entity.Progress;
 import com.airoom.airoom.textbook.entity.Textbook;
@@ -12,7 +11,6 @@ import com.airoom.airoom.textbook.model.repository.ProgressRepository;
 import com.airoom.airoom.textbook.model.repository.TextbookRepository;
 import com.airoom.airoom.textbook.model.repository.UnitRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -51,7 +49,6 @@ public class TextbookService {
         return unitRepository.findUnitPdfUrlByUnitNo(unitNo);
     }
 
-    @Transactional
     public void saveProgress(UpdateProgress req) {
         if (req == null || req.classRoomStudentNo() == null
                 || req.unitNo() == null || req.progressLastPage() == null) return;

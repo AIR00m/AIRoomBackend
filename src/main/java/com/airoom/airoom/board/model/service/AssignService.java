@@ -274,6 +274,7 @@ public class AssignService {
     /**
      * 학생용 과제 목록 조회
      */
+    @Transactional(readOnly = true)
     public List<AssignListResponse> getAssignmentsForClassUser(
             Long classroomNo,
             Long classroomStudentNo,
@@ -341,6 +342,7 @@ public class AssignService {
     }
 
     // 학생 쪽 과제를 클릭했을때 나오는 것
+    @Transactional(readOnly = true)
     public AssignHomeworkAllResponse getAssignBoardByBoardNo(Long assignBoardNo,Long classroomStudentNo) {
         // 과제 게시판 제목 이름 그것에 해당하는 숙제 -> 첨부파일 제외
         AssignResponse board
@@ -355,6 +357,7 @@ public class AssignService {
     }
 
     // 선생님 쪽 과제를 클릭했을 때 나오는 것
+    @Transactional(readOnly = true)
     public AssignWithHomeworksResponse getAssignBoardWithSubmissions(Long assignBoardNo) {
         AssignBoard board = assignBoardRepository.findById(assignBoardNo)
                 .orElseThrow(() -> new NotFoundException("해당하는 번호의 과제를 찾지 못했습니다 :("));

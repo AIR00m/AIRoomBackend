@@ -1,9 +1,7 @@
 package com.airoom.airoom.statistic.entity;
 
 import com.airoom.airoom.common.Entity.BaseEntity;
-import com.airoom.airoom.exam.entity.CreatedExamProblem;
 import com.airoom.airoom.statistic.entity.value.LogType;
-import com.airoom.airoom.textbook.entity.Unit;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
@@ -46,7 +44,7 @@ public class LearningLog extends BaseEntity {
     private LocalDateTime llEndTime; //학습종료 시간
 
     @Column(nullable = false)
-    private Duration llDurationSec; //학습시간
+    private Duration llDurationMs; //학습시간(밀리초)
 
     private String selectedAnswer; //선택한 답
     

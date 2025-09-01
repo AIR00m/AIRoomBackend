@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -85,6 +86,7 @@ public class PresenceService {
         broadcast(classNo, userId, false, now);
     }
 
+    @Transactional(readOnly = true)
     public List<PresenceListItem> snapshot(long classNo) {
         List<ClassroomStudentResponse> allStudentsInClass = classroomStudentRepository.findClassroomStudentsByClassroomNo(classNo);
         return allStudentsInClass.stream()
