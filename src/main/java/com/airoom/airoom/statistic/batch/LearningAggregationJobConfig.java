@@ -18,15 +18,25 @@ public class LearningAggregationJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
 
+    private static final String STEP_CORRECT = "updateCorrectAnswerStep";
     private static final String STEP_SUMMARY = "aggregateLearningSummaryStep";
     private static final String STEP_UNIT    = "aggregateUnitSummaryStep";
 
     @Bean(name = JOB_NAME)
-    public Job learningAggregationJob(Step aggregateLearningSummaryStep,
+    public Job learningAggregationJob(Step updateCorrectAnswerStep,
+                                      Step aggregateLearningSummaryStep,
                                       Step aggregateUnitSummaryStep) {
         return new JobBuilder(JOB_NAME, jobRepository)
-                .start(aggregateLearningSummaryStep)
+                .start(updateCorrectAnswerStep)
+                .next(aggregateLearningSummaryStep)
                 .next(aggregateUnitSummaryStep)
+                .build();
+    }
+
+    @Bean
+    public Step updateCorrectAnswerStep(CorrectAnswerUpdateTasklet tasklet) {
+        return new StepBuilder(STEP_CORRECT, jobRepository)
+                .tasklet(tasklet, transactionManager)
                 .build();
     }
 
