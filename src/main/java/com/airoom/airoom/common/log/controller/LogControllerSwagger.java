@@ -1,5 +1,6 @@
 package com.airoom.airoom.common.log.controller;
 
+import com.airoom.airoom.common.log.model.dto.LogClassRequest;
 import com.airoom.airoom.common.log.model.dto.LogExamRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,4 +16,10 @@ public interface LogControllerSwagger {
             description = "시험 중 발생하는 모든 활동과 이상행위를 로그로 전송합니다."
     )
     public ResponseEntity<Void> logExamActivity(@Valid @RequestBody LogExamRequest request);
+
+    @Operation(
+            summary = "학습 활동 로그 전송",
+            description = "학습 중 발생하는 모든 활동과 이상행위를 로그로 전송합니다."
+    )
+    public ResponseEntity<Void> logClassActivity(@Valid @RequestBody LogClassRequest request);
 }
