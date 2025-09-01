@@ -93,6 +93,7 @@ public class SubjectBoardService {
                 NotificationType.NEW_MATERIAL,
                 targetMemberNos
         );
+
         publisher.publishNotification(dto);
     }
 

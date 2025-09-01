@@ -1,6 +1,5 @@
 package com.airoom.airoom.textbook.controller;
 
-import com.airoom.airoom.exam.model.dto.UnitResponse;
 import com.airoom.airoom.textbook.model.dto.*;
 import com.airoom.airoom.textbook.model.service.TextbookService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/textbooks")
-public class TextbookController implements TextbookSwagger{
+public class    TextbookController implements TextbookSwagger{
 
     private final TextbookService textbookService;
 
@@ -49,5 +48,10 @@ public class TextbookController implements TextbookSwagger{
             @PathVariable Long unitNo
     ) {
         return ResponseEntity.ok(textbookService.load(classRoomStudentNo, unitNo));
+    }
+    @GetMapping("/progress/latest/{classroomStudentNo}")
+    public ResponseEntity<UnitProgressResponseDto> getLatestProgress(@PathVariable Long classroomStudentNo) {
+        UnitProgressResponseDto latestProgress = textbookService.getLatestProgressByClassroomStudentNo(classroomStudentNo);
+        return ResponseEntity.ok(latestProgress);
     }
 }
