@@ -106,4 +106,10 @@ public class TextbookService {
                 .map(e -> new DrawingResponse(e.getDrawingData()))
                 .orElse(new DrawingResponse(null));
     }
+
+
+    public UnitProgressResponseDto getLatestProgressByClassroomStudentNo(Long classroomStudentNo) {
+        return progressRepository.findLatestProgressByClassroomStudentNo(classroomStudentNo)
+                .orElse(null); // 진도가 없으면 기본 단원 반환
+    }
 }

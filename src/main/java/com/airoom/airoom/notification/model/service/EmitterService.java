@@ -3,22 +3,16 @@ package com.airoom.airoom.notification.model.service;
 import com.airoom.airoom.member.model.repository.MemberRepository;
 import com.airoom.airoom.notification.model.dto.NotificationDto;
 import com.airoom.airoom.notification.model.repository.EmitterRepository;
-import com.airoom.airoom.notification.model.repository.StoredEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -26,109 +20,116 @@ import java.util.concurrent.atomic.AtomicLong;
 public class EmitterService {
 
     private final EmitterRepository emitterRepository;
-    private final AtomicLong idGen = new AtomicLong(System.currentTimeMillis());
+    private final MemberRepository memberRepository;
 
-    public SseEmitter connectEmitter(Long memberNo, @Nullable Long lastEventId) {
-        SseEmitter emitter = new SseEmitter(5 * 60 * 1000L);
+    // keep-alive 전송용 스케줄러 (전역, 데몬스레드로 관리)
+//    private static final ScheduledExecutorService  scheduler =
+//            Executors.newScheduledThreadPool(1, r -> {
+//                Thread t = new Thread(r);
+//                t.setDaemon(true);
+//                t.setName("sse-keepalive");
+//                return t;
+//            });
 
+    //이건 화면에서 보내는 연결 신청
+    public SseEmitter connectEmitter(Long memberNo) {
+
+        //emitter는 연결 시켜주는 통로
+
+        //emitter객체생성, 생성자를 통해 만료시간 5분 설정
+        SseEmitter emitter = new SseEmitter(5*60*1000L);
+        //만료시간이 되면 자동으로 브라우저에서 서버에 재연결을 요청
+
+        //사용자별 연결 저장을 위한 사용자 정보 받아서 Map에 주입
+        emitterRepository.saveEmitter(memberNo,emitter);
+        //emitter가 만료되고 자동으로 재연결해줄때 기존의 emitter는 제거해줘야함
+
+        //SSE 연결이 종료되었을때 서버에서 리소스 정리를 위한 코드 = 생명주기관리
         emitter.onCompletion(() -> {
-            emitterRepository.removeEmitter(memberNo);
-            log.info("SSE onCompletion - memberNo: {}", memberNo);
-        });
+            emitterRepository.deleteEmitter(memberNo);
+            log.info("SSE 연결 완료 - memberNo: {}", memberNo);
+        });//정상적으로 종료되었을때
 
         emitter.onTimeout(() -> {
-            emitterRepository.removeEmitter(memberNo);
-            log.info("SSE onTimeout - memberNo: {}", memberNo);
-        });
+            emitterRepository.deleteEmitter(memberNo);
+            emitter.complete();
+            log.info("SSE 연결 타임아웃 - memberNo: {}", memberNo);
+        });//시간이 만료됐을때? 근데 재요청한다매
 
-        emitter.onError(e -> {
-            emitterRepository.removeEmitter(memberNo);
-            log.warn("SSE onError - memberNo: {}", memberNo, e);
-            try { emitter.completeWithError(e); } catch (IllegalStateException ignore) {}
-        });
+        emitter.onError((e) -> {
+            emitterRepository.deleteEmitter(memberNo);
+            log.warn("SSE 연결 에러 - memberNo: {}", memberNo, e);
+        });//연결중 네트워크 오류 등 에러가 발생했을때
 
-        emitterRepository.saveEmitter(memberNo, emitter);
+        //heartbit설정하기
+        ScheduledExecutorService ses =
+                Executors.newSingleThreadScheduledExecutor();
 
-        // 1) 초기 연결 이벤트
+        ScheduledFuture<?> hb = ses.scheduleAtFixedRate(() -> {
+            try {
+                emitter.send(
+                        SseEmitter.event()
+                                .name("ping")
+                                .data("ok")
+                                .reconnectTime(3000) // 클라 재연결 지연 제안
+                );
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+        }, 0, 15, TimeUnit.SECONDS);
+        //미전송 알림 재전송
+
+        //emitter생성후 만료시간까지 데이터 안보내면
+        // 재연결요청시에 506오류가 뜨니까 더미를 줘야함
+
         try {
+            //더미 이벤트 스펙 작성 후 Emitter에 전송
             emitter.send(SseEmitter.event()
                     .name("connect")
-                    .data("Connected successfully")
-                    .reconnectTime(3000));
+                    .data("Connected successfully"));
+
+            //지금은 send()호출시 바로 이벤트를 빌드하는 방법
+            //이벤트를 재사용해야할때는 SseEventBuilder에 담아서 재사용하게 구현할수있음
+            //SseEmitter.SseEventBuilder event = SseEmitter.event().name().data()
+
+            //이때 작성한 이벤트의 이름은 클라이언트가 이벤트를 불러올때 사용할 수 있음
+            //connection이 끊기면 emitter만료
+
+
         } catch (IOException e) {
-            emitterRepository.removeEmitter(memberNo);
-            try { emitter.completeWithError(e); } catch (IllegalStateException ignore) {}
+            emitterRepository.deleteEmitter(memberNo);
             log.warn("SSE 초기 연결 실패 - memberNo: {}", memberNo, e);
-            return emitter;
         }
 
-        // 2) 끊긴 사이의 이벤트 재전송
-        if (lastEventId != null && lastEventId >= 0) {
-            List<StoredEvent> missed = emitterRepository.getEventsAfter(memberNo, lastEventId);
-            if (!missed.isEmpty()) {
-                log.info("미전송 {}건 재전송 - memberNo: {}, lastEventId: {}", missed.size(), memberNo, lastEventId);
-                for (StoredEvent ev : missed) {
-                    try {
-                        emitter.send(SseEmitter.event()
-                                .id(String.valueOf(ev.id()))
-                                .name(ev.name())
-                                .data(ev.data(), MediaType.APPLICATION_JSON));
-                    } catch (IOException e) {
-                        log.warn("재전송 실패 - memberNo: {}, eventId: {}", memberNo, ev.id(), e);
-                        break; // 연결 상태 불안정 -> 콜백에서 정리됨
-                    }
-                }
-            }
-        }
-
-        return emitter;
+        return emitter; // 🔥 complete() 호출하지 말 것!
     }
 
+    //이건 백엔드에서 보내는 알림 전송 신청
     public void sendNotificationToMember(Long memberNo, NotificationDto notification) {
-        if (notification == null) {
-            log.warn("null Notification 전달 시도 - memberNo: {}", memberNo);
-            return;
-        }
 
-        // 1) 이벤트 ID 부여 & 버퍼 선기록(연결 없어도 유실 방지)
-        long eid = idGen.incrementAndGet();
-        emitterRepository.appendEvent(memberNo, new StoredEvent(eid, "notification", notification));
+        log.info("sendNotificationToMember 호출 - memberNo: {}, 알림타입: {}",memberNo, notification.getNotificationType());
 
-        // 2) 현재 연결에 즉시 전송
         SseEmitter emitter = emitterRepository.getEmitter(memberNo);
-        if (emitter == null) {
-            log.debug("SSE 연결 없음(버퍼에 저장됨) - memberNo: {}", memberNo);
-            return;
-        }
 
-        try {
-            emitter.send(SseEmitter.event()
-                    .id(String.valueOf(eid))
-                    .name("notification")
-                    .data(notification, MediaType.APPLICATION_JSON));
-            log.info("SSE 알림 전송 성공 - memberNo: {}, eventId: {}", memberNo, eid);
-        } catch (IOException e) {
-            log.warn("SSE 알림 전송 실패 - memberNo: {}, eventId: {}", memberNo, eid, e);
-            emitterRepository.removeEmitter(memberNo);
-            try { emitter.completeWithError(e); } catch (IllegalStateException ignore) {}
-        }
-    }
-
-    // -------- 하트비트(주석 이벤트) --------
-    // @EnableScheduling 필요
-    @Scheduled(fixedDelay = 25000)
-    public void heartbeat() {
-        for (Map.Entry<Long, SseEmitter> entry : emitterRepository.allEmitters()) {
-            Long memberNo = entry.getKey();
-            SseEmitter emitter = entry.getValue();
+        if (emitter != null) {
+            log.info("[sendNotificationToMember] Emitter 발견 - memberNo: {}", memberNo);
             try {
-                // 주석(: hb) 전송 -> 프론트 리스너 발동 안 함
-                emitter.send(SseEmitter.event().comment("hb"));
+
+                emitter.send(SseEmitter.event()
+                        .name("notification")  // 이벤트 타입
+                        .data(notification));  // 알림 데이터
+
+                log.info("SSE 알림 전송 성공 - memberNo: {}, type: {}",
+                        memberNo, notification.getNotificationType());
+
             } catch (IOException e) {
-                log.warn("하트비트 실패 - memberNo: {}", memberNo, e);
-                emitterRepository.removeEmitter(memberNo);
-                try { emitter.completeWithError(e); } catch (IllegalStateException ignore) {}
+                log.warn("SSE 알림 전송 실패 - memberNo: {}", memberNo, e);
+                emitterRepository.deleteEmitter(memberNo); // 실패 시 연결 정리
+                log.info("에러로 인해 emitter 삭제됨 - memberNo: {}", memberNo);
             }
+        } else {
+            log.debug("SSE 연결 없음 - memberNo: {}", memberNo);
         }
     }
+
 }

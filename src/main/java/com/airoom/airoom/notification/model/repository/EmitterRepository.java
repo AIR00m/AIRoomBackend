@@ -4,59 +4,64 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Slf4j
 @Component
 public class EmitterRepository {
 
-    private static final int MAX_BUFFER = 500;
-
+    //private final Map<Long, Object> lastEventCache = new ConcurrentHashMap<>();
+    //브라우저가 연결이 끊겼다가 다시 연결되었을때 놓친 알림을 재전송하려고 마지막에 보낸 알림을 백업하는 map
     private final Map<Long, SseEmitter> sseEmitterMap = new ConcurrentHashMap<>();
 
-    // 사용자별 최근 이벤트 버퍼
-    private final Map<Long, Deque<StoredEvent>> eventBuffers = new ConcurrentHashMap<>();
 
+    //SSE는 이벤트 발생시 전송을 위해 저장해놔야함. SSE는 쉽게 끊기고 생명주기가 짧아서 DB에 저장하기 부적합함
+    //네트워크 불안정, 서버 재시작 등으로 끊길수있음
+    //Map을 사용하는 것 자체도 서버 재시작시 emitter가 날아가고 서버가 여러대가 되면 Map이 따로 놀게 됨
+    //따라서 redis를 사용하는 것이 권장
+    //Map으론 현재 연결 관리, 이벤트 데이터는 redis에서 공유할수도있음
+
+    //ConcurrentHashMap은 멀티스레드 환경에서 안전한 동시성 보장
+    //=> 동시에 여러 사용자가 같은 자료구조에 연결 요청을 보내므로, 멀티스레드 환경에서 안전하게 접근할 수 있는 Map이 필요
+    //ConcurrentHashMap은 락 분할 구조로 되어 있어 성능도 좋고 병렬성도 보장
+
+
+
+    //!!!사용자가 여러 탭에서 동시 연결을 시도할때 기존 연결이 강제로 deleteEmitter되는 현상 발생
+    //한사람당 하나의 emitter만 생성된다는 뜻
+    //    public String makeEmitterId(Long memberNo) {
+    //         currentTimeMilis뭐시기 해서 emitter아이디 생성하는 방법
+    //    }
+
+    //!!! 사용자가 브라우저 강제종료나 PC가 강제종료되거나 네트워크가 끊어지면 Map에 emitter가 사라지지않고 메모리 누수 문제 발생
+    // 1. 하트비트를 통한 연결상태 확인방법 2. 정기적인 죽은 연결 정리 3. 아님 그냥 기존 연결 정리?
+
+
+    //emitter를 저장하고 기존 연결이 있다면 제거 후 저장
     public void saveEmitter(Long memberNo, SseEmitter emitter) {
-        SseEmitter prev = sseEmitterMap.put(memberNo, emitter);
-        if (prev != null) {
-            log.info("SSE 기존 연결 교체 - memberNo: {}", memberNo);
-        } else {
-            log.info("SSE 연결 저장 - memberNo: {}", memberNo);
-        }
+        deleteEmitter(memberNo);//emitter 제거 메소드 , 기존 연결 정리
+        //이렇게 하면 여러 탭에서 브라우저를 열면 한쪽 연결이 끊어짐
+        sseEmitterMap.put(memberNo,emitter);
+        log.info("SSE 연결 저장 - memberNo: {}", memberNo);
     }
 
-    public void removeEmitter(Long memberNo) {
-        SseEmitter removed = sseEmitterMap.remove(memberNo);
-        if (removed != null) {
-            log.info("SSE 연결 제거(참조만) - memberNo: {}", memberNo);
+    //emitter 제거 메소드
+    public void deleteEmitter(Long memberNo) {
+        SseEmitter emitter = sseEmitterMap.remove(memberNo);
+        if (emitter != null) {
+            try {
+                emitter.complete();
+            } catch (IllegalStateException e) {
+                log.warn("emitter.complete() 호출 중 예외 발생 - 이미 응답이 종료된 상태: {}", memberNo);
+            }
+            log.info("SSE 연결 제거 - memberNo: {}", memberNo);
         }
     }
-
     public SseEmitter getEmitter(Long memberNo) {
         return sseEmitterMap.get(memberNo);
     }
-
-    public Collection<Map.Entry<Long, SseEmitter>> allEmitters() {
-        return Collections.unmodifiableSet(sseEmitterMap.entrySet());
-    }
-
-    // ----- 이벤트 버퍼 -----
-    public void appendEvent(Long memberNo, StoredEvent ev) {
-        Deque<StoredEvent> q = eventBuffers.computeIfAbsent(memberNo, k -> new ConcurrentLinkedDeque<>());
-        q.addLast(ev);
-        while (q.size() > MAX_BUFFER) q.pollFirst();
-    }
-
-    public List<StoredEvent> getEventsAfter(Long memberNo, long lastEventId) {
-        Deque<StoredEvent> q = eventBuffers.get(memberNo);
-        if (q == null || q.isEmpty()) return Collections.emptyList();
-        List<StoredEvent> out = new ArrayList<>();
-        for (StoredEvent e : q) {
-            if (e.id() > lastEventId) out.add(e);
-        }
-        return out;
+    public int getConnectedCount() {
+        return sseEmitterMap.size();
     }
 }
