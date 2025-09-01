@@ -22,6 +22,8 @@ public class Drawing extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long drawingNo; //그림판 고유번호
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String drawingData; //그림정보
 
     private String drawingPage; //단원 페이지번호
