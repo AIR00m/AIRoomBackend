@@ -1,6 +1,5 @@
 package com.airoom.airoom.statistic.entity;
 
-import com.airoom.airoom.classroom.entity.ClassroomStudent;
 import com.airoom.airoom.common.Entity.BaseEntity;
 import com.airoom.airoom.exam.entity.CreatedExamProblem;
 import com.airoom.airoom.statistic.entity.value.LogType;
@@ -50,6 +49,14 @@ public class LearningLog extends BaseEntity {
     private Duration llDurationSec; //학습시간
 
     private String selectedAnswer; //선택한 답
+    
+    private Integer anomalyCount; //이상현상 횟수
+    
+    private Long classroomStudentNo; //클래스룸 학생 고유번호
+
+    private Long unitNo; //단원 고유번호
+    
+    private Long cepNo; //시험출제문제 고유번호
 
     @Builder.Default
     //정답여부 (시험의 경우에만 필요하며 바로 값을 넣어주는게 아닌 RDB insert 시점에 선택한 답과 ExamProblem의 답을 비교해서 정답여부 지정)
@@ -61,16 +68,4 @@ public class LearningLog extends BaseEntity {
             llIsCorrect = false;
         }
     }
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "classroom_student_no")
-    private ClassroomStudent classroomStudent; //클래스룸 학생
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_no")
-    private Unit unit; //단원
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cep_no")
-    private CreatedExamProblem createdExamProblem; //시험출제문제
 }

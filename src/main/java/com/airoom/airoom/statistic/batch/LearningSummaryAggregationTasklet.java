@@ -48,7 +48,7 @@ public class LearningSummaryAggregationTasklet implements Tasklet {
         String sql = """
                 INSERT INTO airoom.learning_summary
                 (ls_classroom_student_no, ls_type, ls_start_date, ls_end_date,
-                 ls_total_learning_days, ls_total_learning_time, 
+                 ls_total_learning_days, ls_total_learning_time,
                  ls_total_problems_solved, ls_total_correct_problems, ls_accuracy_rate,
                  created_at, updated_at)
                 SELECT
