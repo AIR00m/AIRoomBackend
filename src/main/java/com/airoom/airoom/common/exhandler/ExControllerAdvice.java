@@ -1,5 +1,6 @@
 package com.airoom.airoom.common.exhandler;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,12 @@ public class ExControllerAdvice {
 
     // 예상 못한 모든 예외 처리 (fallback)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResult> handleException(Exception e) {
+    public ResponseEntity<ErrorResult> handleException(HttpServletRequest request, Exception e) {
+        String ct = request.getHeader("Accept");
+        if (ct != null && ct.contains("text/event-stream")) {
+            return null;
+        }
+
         log.error("[Unexpected Exception] {}", e.getMessage(), e);
 
         ErrorResult errorResult = new ErrorResult(
