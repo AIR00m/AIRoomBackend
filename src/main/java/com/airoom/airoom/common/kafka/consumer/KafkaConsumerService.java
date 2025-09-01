@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -27,26 +26,40 @@ public class KafkaConsumerService {
     private final List<LearningLog> buffer = Collections.synchronizedList(new ArrayList<>());
 
     private static final int BATCH_SIZE = 100;
+    private static final long FLUSH_INTERVAL_MS = 60_000; // 1분마다 강제 flush
+    private long lastFlushTime = System.currentTimeMillis();
 
-    @KafkaListener(topics = {"exam-logs", "class-logs"}, groupId = "learning-log-consumer", containerFactory = "kafkaBatchFactory")
+    @KafkaListener(
+            topics = {"exam-logs", "class-logs"},
+            groupId = "learning-log-consumer",
+            containerFactory = "kafkaBatchFactory"
+    )
     public void consume(List<String> messages, Acknowledgment ack) {
-        for (String message : messages) {
-            buffer.addAll(mapToEntities(message));
-        }
-        if (buffer.size() >= BATCH_SIZE) {
-            flush();
-            ack.acknowledge();
+        try {
+            for (String message : messages) {
+                try {
+                    buffer.addAll(mapToEntities(message));
+                } catch (Exception e) {
+                    log.error("메시지 변환 실패 → 무시: {}", message, e);
+                }
+            }
+
+            long now = System.currentTimeMillis();
+            if (buffer.size() >= BATCH_SIZE || now - lastFlushTime >= FLUSH_INTERVAL_MS) {
+                flush();
+                ack.acknowledge();
+                lastFlushTime = now;
+            }
+
+        } catch (Exception e) {
+            log.error("consume() 처리 중 오류 발생 → 배치 전체 재시도", e);
         }
     }
 
-    @Scheduled(fixedRate = 60000) // 1분마다 배치 처리
-    public void flushByTime() {
-        if (!buffer.isEmpty()) {
-            flush();
-        }
-    }
 
     private void flush() {
+        if (buffer.isEmpty()) return;
+
         List<LearningLog> toSave = new ArrayList<>(buffer);
         buffer.clear();
         learningLogRepository.saveAll(toSave); // JPA batch insert
@@ -58,10 +71,14 @@ public class KafkaConsumerService {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode node = mapper.readTree(message);
 
-            String llType = node.get("llType").asText();
-            LocalDateTime startTime = LocalDateTime.parse(node.get("llStartTime").asText());
-            LocalDateTime endTime   = LocalDateTime.parse(node.get("llEndTime").asText());
+            if (!node.hasNonNull("llType")) {
+                log.warn("llType이 null인 로그 무시: {}", message);
+                return List.of();
+            }
 
+            String llType = node.get("llType").asText();
+            LocalDateTime startTime = LocalDateTime.parse(node.get("llStartTime").asText().replace("Z", ""));
+            LocalDateTime endTime   = LocalDateTime.parse(node.get("llEndTime").asText().replace("Z", ""));
             Long classroomStudentNo = node.get("classroomStudentNo").asLong();
 
             List<LearningLog> logs = new ArrayList<>();
@@ -82,8 +99,7 @@ public class KafkaConsumerService {
                             .llIsCorrect(false)
                             .build());
                 }
-            }
-            else {
+            } else {
                 // class-logs
                 logs.add(LearningLog.builder()
                         .llType(LogType.valueOf(llType))
@@ -101,7 +117,8 @@ public class KafkaConsumerService {
 
             return logs;
         } catch (Exception e) {
-            throw new RuntimeException("Kafka 메시지 매핑 실패: " + message, e);
+            log.error("Kafka 메시지 매핑 실패: {}", message, e);
+            return List.of(); // 실패한 메시지는 무시
         }
     }
 }
