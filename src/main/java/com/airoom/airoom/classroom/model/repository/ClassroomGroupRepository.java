@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ClassroomGroupRepository extends JpaRepository<ClassroomGroup, Long> {
@@ -26,4 +27,11 @@ public interface ClassroomGroupRepository extends JpaRepository<ClassroomGroup, 
             select cs from ClassroomStudent  cs where cs.classroomGroup.groupNo = :groupNo
             """)
     List<ClassroomStudent> findByGroupNo(Long groupNo);
+
+    @Query("""
+    SELECT cs.classroomGroup
+    FROM ClassroomStudent cs
+    WHERE cs.classRoomStudentNo = :classroomStudentNo
+""")
+    Optional<ClassroomGroup> findGroupByClassroomStudentNo(@Param("classroomStudentNo") Long classroomStudentNo);
 }

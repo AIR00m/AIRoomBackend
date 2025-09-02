@@ -12,6 +12,9 @@ import com.airoom.airoom.member.model.dto.TokenRequest;
 import com.airoom.airoom.member.model.service.AuthService;
 import com.airoom.airoom.textbook.entity.Textbook;
 import com.airoom.airoom.textbook.model.service.TextbookService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -113,10 +116,55 @@ public class AuthController implements AuthControllerSwagger {
                 .body(Map.of("Access_Token", accessToken));
 
     }
+
     @PostMapping("/logout")
     public ResponseEntity<ResponseCookie> deleteToken() {
         return ResponseEntity.ok(cookieUtility.deleteTokenCookie());
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(
+            @CookieValue(value = "Refresh_Token", required = false) String refreshToken) {
 
+        try {
+            if (refreshToken == null || refreshToken.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "Refresh_Token이 존재하지 않습니다."));
+            }
+
+
+            Claims claims = JWTTokenUtility.verifyRefreshToken(refreshToken);
+            String userId = claims.getSubject();
+            String role = claims.get("role", String.class);
+
+
+            Member member = authService.searchById(userId);
+            boolean isTeacher = "teacher".equals(role);
+
+            // 기본적인 클래임만 왜냐하면 localStorage 안에 영구히 저장 되는 형태이기 때문에 그걸 사용한다.
+            Map<String, Object> basicClaims = new HashMap<>();
+            basicClaims.put("memberName", member.getMemberName());
+            basicClaims.put("memberNo", member.getMemberNo());
+
+
+            String newAccessToken = jwtUtility.createAccessToken(member, isTeacher, basicClaims);
+
+
+//            새로 발급하는 것이 보안에 더욱 적절함 탈취 시 1회만 사용 가능
+//            문제점 : 동시 요청시 문제 / 서버 부하
+
+//            String newRefreshToken = jwtUtility.createRefreshToken(userId, isTeacher);
+//            ResponseCookie newCookie = cookieUtility.refreshTokenCookie(newRefreshToken);
+
+            return ResponseEntity.ok()
+                    .body(Map.of("Access_Token", newAccessToken));
+
+        } catch (JwtException e) {
+            ResponseCookie deleteCookie = cookieUtility.deleteTokenCookie();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                    .body(Map.of("message", "Refresh Token이 만료되었습니다."));
+        }
+    }
 }
+

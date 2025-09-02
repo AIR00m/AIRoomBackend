@@ -345,12 +345,33 @@ public class AssignService {
     @Transactional(readOnly = true)
     public AssignHomeworkAllResponse getAssignBoardByBoardNo(Long assignBoardNo,Long classroomStudentNo) {
         // 과제 게시판 제목 이름 그것에 해당하는 숙제 -> 첨부파일 제외
-        AssignResponse board
-                = assignBoardRepository.getAssignBoardByBoardNo(assignBoardNo,classroomStudentNo);
+        AssignBoard assignBoard =
+                assignBoardRepository.findById(assignBoardNo)
+                        .orElseThrow(()->new NotFoundException("해당하는 번호의 과제 게시판이 존재하지 않습니다."));
+
+        List<AssignTarget> targets = assignTargetRepository.findByAssignBoard(assignBoard);
+        boolean isGroup = targets.get(1).isGroupAssignType();
+
+
+
+        AssignResponse board;
         List<Attachment> teacherAttachment
                 = attachmentRepository.findByBoardNoAndBoardType(assignBoardNo,BoardType.ASSIGN);
         List<Attachment> studentAttachment
                 = attachmentRepository.findByBoardNoAndBoardType(assignBoardNo,BoardType.HOMEWORK);
+
+
+
+        if (isGroup) {
+            ClassroomGroup group = classroomGroupRepository.
+                    findGroupByClassroomStudentNo(classroomStudentNo)
+                    .orElseThrow(()->new NotFoundException("모둠이 존재 하지 않습니다."));
+            board = assignBoardRepository.getAssignBoardByBoardNo(assignBoardNo,group.getGroupNo());
+        }else{
+            board = assignBoardRepository.getAssignBoardByBoardNo(assignBoardNo,classroomStudentNo);
+        }
+
+
 
         return new AssignHomeworkAllResponse(board,teacherAttachment,studentAttachment);
 

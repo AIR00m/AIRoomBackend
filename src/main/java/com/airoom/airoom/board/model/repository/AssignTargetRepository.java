@@ -87,4 +87,6 @@ public interface AssignTargetRepository extends JpaRepository<AssignTarget, Long
         """
     )
     List<AssignTarget> findAssignTargetByAssignBoardNo(Long assignBoardNo);
+
+    List<AssignTarget> findByAssignBoard(AssignBoard assignBoard);
 }
