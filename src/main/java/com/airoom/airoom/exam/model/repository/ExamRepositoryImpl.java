@@ -93,38 +93,75 @@ public class ExamRepositoryImpl implements ExamRepositoryCustom {
         Map<Long, List<UnitResponse>> unitMap = unitResponseList.stream()
                 .collect(Collectors.groupingBy(UnitResponse::examNo));
 
-        // 메인 시험 목록 조회
-        List<ExamListResponse> examList = queryFactory
-                .select(Projections.constructor(ExamListResponse.class,
-                        exam.examNo,
-                        exam.examName,
-                        statusCase,
-                        exam.examProblemCount,
+        // ✅ 메인 수정 부분: 역할별로 다른 조인 전략 적용
+        List<ExamListResponse> examList;
 
-                        // 총 응시자 수
-                        JPAExpressions.select(studentExam.count())
-                                .from(studentExam)
-                                .where(studentExam.exam.eq(exam)),
+        if (memberRole == MemberRole.STUDENT) {
+            // 🎯 학생: innerJoin으로 출제된 시험만 조회
+            examList = queryFactory
+                    .select(Projections.constructor(ExamListResponse.class,
+                            exam.examNo,
+                            exam.examName,
+                            statusCase,
+                            exam.examProblemCount,
 
-                        // 응시 완료자 수
-                        JPAExpressions.select(studentExam.count())
-                                .from(studentExam)
-                                .where(studentExam.exam.eq(exam)
-                                        .and(studentExam.seIsDone.isTrue())),
+                            // 총 응시자 수
+                            JPAExpressions.select(studentExam.count())
+                                    .from(studentExam)
+                                    .where(studentExam.exam.eq(exam)),
 
-                        // 평균 점수
-                        JPAExpressions.select(studentExam.seScore.avg().round().intValue())
-                                .from(studentExam)
-                                .where(studentExam.exam.eq(exam)),
-                        exam.examStartTime,
-                        exam.examEndTime,
-                        studentExam.seIsDone
-                ))
-                .from(exam)
-                .leftJoin(studentExam).on(studentExam.exam.eq(exam)
-                        .and(studentExam.classroomStudent.classRoomStudentNo.eq(classroomMemberNo)))
-                .where(builder)
-                .fetch();
+                            // 응시 완료자 수
+                            JPAExpressions.select(studentExam.count())
+                                    .from(studentExam)
+                                    .where(studentExam.exam.eq(exam)
+                                            .and(studentExam.seIsDone.isTrue())),
+
+                            // 평균 점수
+                            JPAExpressions.select(studentExam.seScore.avg().round().intValue())
+                                    .from(studentExam)
+                                    .where(studentExam.exam.eq(exam)),
+                            exam.examStartTime,
+                            exam.examEndTime,
+                            studentExam.seIsDone
+                    ))
+                    .from(exam)
+                    .innerJoin(studentExam).on(studentExam.exam.eq(exam)
+                            .and(studentExam.classroomStudent.classRoomStudentNo.eq(classroomMemberNo)))
+                    .where(builder)
+                    .fetch();
+        } else {
+            // 👨‍🏫 교사: leftJoin으로 모든 시험 조회 (기존 로직 유지)
+            examList = queryFactory
+                    .select(Projections.constructor(ExamListResponse.class,
+                            exam.examNo,
+                            exam.examName,
+                            statusCase,
+                            exam.examProblemCount,
+
+                            // 총 응시자 수
+                            JPAExpressions.select(studentExam.count())
+                                    .from(studentExam)
+                                    .where(studentExam.exam.eq(exam)),
+
+                            // 응시 완료자 수
+                            JPAExpressions.select(studentExam.count())
+                                    .from(studentExam)
+                                    .where(studentExam.exam.eq(exam)
+                                            .and(studentExam.seIsDone.isTrue())),
+
+                            // 평균 점수
+                            JPAExpressions.select(studentExam.seScore.avg().round().intValue())
+                                    .from(studentExam)
+                                    .where(studentExam.exam.eq(exam)),
+                            exam.examStartTime,
+                            exam.examEndTime,
+                            constant(false) // 교사는 seIsDone을 사용하지 않으므로 false로 고정
+                    ))
+                    .from(exam)
+                    .leftJoin(studentExam).on(studentExam.exam.eq(exam))
+                    .where(builder)
+                    .fetch();
+        }
 
         // 단원 리스트 추가 주입
         for (ExamListResponse response : examList) {
