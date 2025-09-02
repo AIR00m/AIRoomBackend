@@ -35,7 +35,7 @@ public class JWTTokenUtility {
     // 컴퓨터는 문자를 이해못함 -> 바이트 배열로 형태로 변환(UTF_8방식으로 변환)
     // 이런 순수 바이트 배열 사용 X -> JJWT 는 HMAC-SHA 알고리즘을 사용해서 알고리즘에 맞는 객체로 반환해준다.
     private static final String ISSUER = "http://43.200.2.244:8080/airoom";
-    private static final Long ACCESS_TOKEN_EXPIRATION_TIME = TimeUnit.MINUTES.toMillis(3);
+    private static final Long ACCESS_TOKEN_EXPIRATION_TIME = TimeUnit.MINUTES.toMillis(30);
     private static final Long REFRESH_TOKEN_EXPIRATION_TIME = TimeUnit.DAYS.toMillis(7);
 
     public String createAccessToken(String userId, boolean isTeacher) {
