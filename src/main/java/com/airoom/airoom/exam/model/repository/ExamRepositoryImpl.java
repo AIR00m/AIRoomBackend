@@ -97,7 +97,6 @@ public class ExamRepositoryImpl implements ExamRepositoryCustom {
         List<ExamListResponse> examList;
 
         if (memberRole == MemberRole.STUDENT) {
-            // 🎯 학생: innerJoin으로 출제된 시험만 조회
             examList = queryFactory
                     .select(Projections.constructor(ExamListResponse.class,
                             exam.examNo,
@@ -130,7 +129,6 @@ public class ExamRepositoryImpl implements ExamRepositoryCustom {
                     .where(builder)
                     .fetch();
         } else {
-            // 👨‍🏫 교사: leftJoin으로 모든 시험 조회 (기존 로직 유지)
             examList = queryFactory
                     .select(Projections.constructor(ExamListResponse.class,
                             exam.examNo,
@@ -155,10 +153,9 @@ public class ExamRepositoryImpl implements ExamRepositoryCustom {
                                     .where(studentExam.exam.eq(exam)),
                             exam.examStartTime,
                             exam.examEndTime,
-                            constant(false) // 교사는 seIsDone을 사용하지 않으므로 false로 고정
+                            constant(false)
                     ))
                     .from(exam)
-                    .leftJoin(studentExam).on(studentExam.exam.eq(exam))
                     .where(builder)
                     .fetch();
         }

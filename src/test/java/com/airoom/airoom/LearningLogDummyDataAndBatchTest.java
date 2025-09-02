@@ -95,7 +95,7 @@ public class LearningLogDummyDataAndBatchTest {
                         cepNo,
                         unitNo,
                         pickSelectedAnswer(),
-                        0
+                        ThreadLocalRandom.current().nextInt(0, 4) // 0~3 랜덤
                 );
 
                 // ====== EXAM 로그 ======
@@ -122,7 +122,7 @@ public class LearningLogDummyDataAndBatchTest {
                         cepNo,
                         unitNo,
                         pickSelectedAnswer(),
-                        0
+                        ThreadLocalRandom.current().nextInt(0, 4)
                 );
             }
             cur = cur.plusDays(1);

@@ -39,6 +39,7 @@ public interface LearningSummaryRepository extends JpaRepository<LearningSummary
             """)
     StudentLearningSummaryResponse findByClassroomStudentAndTypeAndRange(List<Long> studentNos, SummaryType summaryType, LocalDate lsStartDate, LocalDate lsEndDate);
 
+
     @Query("""
             select new com.airoom.airoom.statistic.model.dto.ClassroomLearningSummaryAllResponse(
                 cs.classRoomStudentNo,
@@ -71,14 +72,18 @@ public interface LearningSummaryRepository extends JpaRepository<LearningSummary
                 (select coalesce(count(h.homeworkScore),0)
                  from Homework h
                  where h.assignTarget.targetNo = cs.classRoomStudentNo
-                   and h.assignTarget.groupAssignType = false)
+                   and h.assignTarget.groupAssignType = false),
+
+                (select coalesce(sum(ls.lsAnomalyTotalCount),0)
+                 from LearningSummary ls
+                 where ls.id.lsClassroomStudentNo = cs.classRoomStudentNo
+                   and ls.id.lsType = com.airoom.airoom.statistic.entity.value.SummaryType.DAILY)
             )
             from ClassroomStudent cs
             where cs.classRoomStudentNo in :studentNos
             order by cs.student.memberName
             """)
     List<ClassroomLearningSummaryAllResponse> findByClassroomStudentAll(List<Long> studentNos);
-
 
 
     Optional<LearningSummary> findTopById_LsClassroomStudentNoOrderByCreatedAtDesc(Long csNo);

@@ -26,8 +26,9 @@ public class ClassroomLearningSummaryAllResponse {
     private Long studentTotalSubmitAssign; //학생 과제제출 수 총합
     private BigDecimal studentAvgExamScore; //학생 평균시험 점수(필수)
     private BigDecimal studentAvgAssignScore; //학생 평균과제 점수(필수)
+    private Long studentAnomalyTotalCount; //학생 이상현황 총 횟수(필수)
 
-    public ClassroomLearningSummaryAllResponse(Long studentNo, String studentName, Long studentTotalLearningTime, Long studentTotalProblemSolved, Long studentTotalCorrectProblems, Long studentTotalProgressPages, Long studentTotalAssignScore, Long studentTotalSubmitAssign) {
+    public ClassroomLearningSummaryAllResponse(Long studentNo, String studentName, Long studentTotalLearningTime, Long studentTotalProblemSolved, Long studentTotalCorrectProblems, Long studentTotalProgressPages, Long studentTotalAssignScore, Long studentTotalSubmitAssign, Long studentAnomalyTotalCount) {
         this.studentNo = studentNo;
         this.studentName = studentName;
         this.studentTotalLearningTime = studentTotalLearningTime;
@@ -36,6 +37,7 @@ public class ClassroomLearningSummaryAllResponse {
         this.studentTotalProgressPages = studentTotalProgressPages;
         this.studentTotalAssignScore = studentTotalAssignScore;
         this.studentTotalSubmitAssign = studentTotalSubmitAssign;
+        this.studentAnomalyTotalCount = studentAnomalyTotalCount;
     }
 
     public void calcAvgAll() {

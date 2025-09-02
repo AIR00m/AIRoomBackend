@@ -50,7 +50,7 @@ public class LearningSummaryAggregationTasklet implements Tasklet {
                 (ls_classroom_student_no, ls_type, ls_start_date, ls_end_date,
                  ls_total_learning_days, ls_total_learning_time,
                  ls_total_problems_solved, ls_total_correct_problems, ls_accuracy_rate,
-                 created_at, updated_at)
+                 ls_anomaly_total_count, created_at, updated_at)
                 SELECT
                     l.classroom_student_no                                   AS cs_no,
                     ?                                                        AS ls_type,
@@ -68,6 +68,7 @@ public class LearningSummaryAggregationTasklet implements Tasklet {
                         )
                         ELSE 0
                     END                                                      AS accuracy,
+                    SUM(l.anomaly_count)                                     AS anomaly_total,
                     NOW(), NOW()
                 FROM airoom.learning_log l
                 WHERE l.ll_start_time >= ?
@@ -80,8 +81,10 @@ public class LearningSummaryAggregationTasklet implements Tasklet {
                     ls_total_problems_solved  = VALUES(ls_total_problems_solved),
                     ls_total_correct_problems = VALUES(ls_total_correct_problems),
                     ls_accuracy_rate          = VALUES(ls_accuracy_rate),
+                    ls_anomaly_total_count    = VALUES(ls_anomaly_total_count),
                     updated_at                = VALUES(updated_at);
                 """;
+
 
         jdbc.update(
                 sql,

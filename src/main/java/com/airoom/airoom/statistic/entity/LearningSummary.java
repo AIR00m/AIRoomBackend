@@ -51,4 +51,6 @@ public class LearningSummary extends BaseEntity {
 
     @Column(precision = 5, scale = 2)
     private BigDecimal lsAccuracyRate; //정답률
+
+    private Integer lsAnomalyTotalCount; //이상현상 횟수
 }
