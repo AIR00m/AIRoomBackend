@@ -57,7 +57,7 @@ public class LearningSummaryAggregationTasklet implements Tasklet {
                     ?                                                        AS ls_start_date,
                     ?                                                        AS ls_end_date,
                     COUNT(DISTINCT DATE(l.ll_start_time))                    AS days,
-                    SUM(l.ll_duration_sec) * 1000                            AS total_time_ms,
+                    SUM(l.ll_duration_ms) * 1000                            AS total_time_ms,
                     SUM(CASE WHEN l.ll_is_correct IS NOT NULL THEN 1 ELSE 0 END) AS solved,
                     SUM(CASE WHEN l.ll_is_correct = b'1' THEN 1 ELSE 0 END)  AS correct,
                     CASE 
