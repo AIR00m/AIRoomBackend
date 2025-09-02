@@ -1,5 +1,6 @@
 package com.airoom.airoom;
 
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -8,7 +9,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -29,7 +29,7 @@ public class LearningLogDummyDataAndBatchTest {
     JobLauncher jobLauncher;
 
     @Autowired
-    @Qualifier("learningAggregationJob") // 잡 빈 이름이 다르면 여기만 변경
+    @Qualifier("learningAggregationJob")
     Job learningAggregationJob;
 
     // ====== 시딩(더미) 설정 ======
@@ -37,24 +37,23 @@ public class LearningLogDummyDataAndBatchTest {
     private final LocalDate fromDate = LocalDate.now().minusDays(40);
     private final LocalDate toDate   = LocalDate.now().minusDays(1);
 
-    // 하루에 학생 1명당 생성할 로그 개수 범위
-    private final int minLogsPerDayPerStudent = 5;
-    private final int maxLogsPerDayPerStudent = 12;
+    // FK 범위 설정
+    private long pickClassroomStudentNo() { return ThreadLocalRandom.current().nextLong(1, 6 + 1); } // 1~6
+    private long pickUnitNo()             { return ThreadLocalRandom.current().nextLong(1, 5 + 1); } // 1~5
+    private long pickCepNo()              { return ThreadLocalRandom.current().nextLong(1, 71 + 1);} // 1~71
 
-    // 고정 조건: classroom_student_no ∈ [1..2], unit_no ∈ [1..5], cep_no ∈ [1..71]
-    private long pickClassroomStudentNo() { return ThreadLocalRandom.current().nextLong(1, 2 + 1); }
-    private long pickUnitNo()             { return ThreadLocalRandom.current().nextLong(1, 5 + 1); }
-    private long pickCepNo()              { return ThreadLocalRandom.current().nextLong(1, 71 + 1); }
-
-    // 시작 시각: 06:00 ~ 22:59, 학습 길이: 5~120분
+    // 시작 시각: 06:00 ~ 22:59
     private LocalDateTime pickStart(LocalDate day) {
         int plusMinutes = ThreadLocalRandom.current().nextInt(0, (17 * 60)); // 06:00 + [0..1019]분
         return LocalDateTime.of(day, LocalTime.of(6, 0)).plusMinutes(plusMinutes);
     }
-    private int pickDurationMinutes() { return ThreadLocalRandom.current().nextInt(5, 120 + 1); }
 
-    // 타입 & 선택지
-    private String pickType() { return ThreadLocalRandom.current().nextBoolean() ? "EXAM" : "LEARN"; } // ENUM('EXAM','LEARN')
+    // 학습 길이: 15~60분
+    private int pickDurationMinutes() {
+        return ThreadLocalRandom.current().nextInt(15, 61);
+    }
+
+    // 선택지
     private String pickSelectedAnswer() {
         char[] c = {'A','B','C','D'};
         return String.valueOf(c[ThreadLocalRandom.current().nextInt(c.length)]);
@@ -67,98 +66,100 @@ public class LearningLogDummyDataAndBatchTest {
         // =========================
         // 1) 더미 데이터 시딩
         // =========================
-        // FK 주의: 아래 ID 범위의 레코드가 실제로 존재해야 INSERT 성공함
-        //  - airoom.classroom_student.class_room_student_no: 1,2
-        //  - airoom.unit.unit_no: 1..5
-        //  - airoom.created_exam_problem.cep_no: 1..71
-        // 필요시 안전하게 비우고 시작하려면 아래 주석 해제 (운영 DB 금지)
-        // jdbc.update("DELETE FROM airoom.learning_log");
+        jdbc.update("DELETE FROM airoom.learning_log");
 
         LocalDate cur = fromDate;
         while (!cur.isAfter(toDate)) {
-            for (long csNo = 1; csNo <= 2; csNo++) {
-                int logsToday = ThreadLocalRandom.current()
-                        .nextInt(minLogsPerDayPerStudent, maxLogsPerDayPerStudent + 1);
+            for (long csNo = 1; csNo <= 6; csNo++) {
+                // ====== LEARN 로그 ======
+                long unitNo = pickUnitNo();
+                long cepNo  = pickCepNo();
 
-                for (int i = 0; i < logsToday; i++) {
-                    long unitNo = pickUnitNo();
-                    long cepNo  = pickCepNo();
+                LocalDateTime start = pickStart(cur);
+                int durationMin = pickDurationMinutes();
+                LocalDateTime end = start.plusMinutes(durationMin);
+                long durationMs = ChronoUnit.MILLIS.between(start, end);
 
-                    LocalDateTime start = pickStart(cur);
-                    int durationMin = pickDurationMinutes();
-                    LocalDateTime end = start.plusMinutes(durationMin);
+                jdbc.update("""
+                    INSERT INTO airoom.learning_log
+                      (ll_duration_ms, ll_end_time, ll_is_correct, ll_start_time, ll_type,
+                       classroom_student_no, cep_no, unit_no, selected_answer, anomaly_count)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                        durationMs,
+                        Timestamp.valueOf(end),
+                        ThreadLocalRandom.current().nextBoolean() ? 1 : 0,
+                        Timestamp.valueOf(start),
+                        "LEARN",
+                        csNo,
+                        cepNo,
+                        unitNo,
+                        pickSelectedAnswer(),
+                        0
+                );
 
-                    long durationSec = ChronoUnit.SECONDS.between(start, end);
-                    String type = pickType();
+                // ====== EXAM 로그 ======
+                unitNo = pickUnitNo();
+                cepNo  = pickCepNo();
 
-                    // ll_is_correct: EXAM은 true/false 랜덤, LEARN은 70% 확률로 값, 30% NULL
-                    Integer isCorrectBit = null; // 0/1/NULL (MySQL BIT 컬럼)
-                    String selectedAnswer = null;
+                start = pickStart(cur).plusMinutes(1); // 겹치지 않게 살짝 밀어줌
+                durationMin = pickDurationMinutes();
+                end = start.plusMinutes(durationMin);
+                durationMs = ChronoUnit.MILLIS.between(start, end);
 
-                    if ("EXAM".equals(type)) {
-                        boolean correct = ThreadLocalRandom.current().nextBoolean();
-                        isCorrectBit = correct ? 1 : 0;
-                        selectedAnswer = pickSelectedAnswer();
-                    } else {
-                        if (ThreadLocalRandom.current().nextDouble() < 0.7) {
-                            isCorrectBit = ThreadLocalRandom.current().nextBoolean() ? 1 : 0;
-                            selectedAnswer = pickSelectedAnswer();
-                        } else {
-                            isCorrectBit = null;
-                            selectedAnswer = null;
-                        }
-                    }
-
-                    // DDL에 정확히 맞춘 INSERT
-                    jdbc.update("""
-                        INSERT INTO airoom.learning_log
-                          (ll_duration_sec, ll_end_time, ll_is_correct, ll_start_time, ll_type,
-                           classroom_student_no, cep_no, unit_no, selected_answer)
-                        VALUES
-                          (?, ?, ?, ?, ?,
-                           ?, ?, ?, ?)
-                    """,
-                            durationSec,
-                            Timestamp.valueOf(end),
-                            isCorrectBit, // BIT: 0/1/NULL
-                            Timestamp.valueOf(start),
-                            type,         // ENUM('EXAM','LEARN')
-                            csNo,
-                            cepNo,
-                            unitNo,
-                            selectedAnswer
-                    );
-                }
+                jdbc.update("""
+                    INSERT INTO airoom.learning_log
+                      (ll_duration_ms, ll_end_time, ll_is_correct, ll_start_time, ll_type,
+                       classroom_student_no, cep_no, unit_no, selected_answer, anomaly_count)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                        durationMs,
+                        Timestamp.valueOf(end),
+                        ThreadLocalRandom.current().nextBoolean() ? 1 : 0,
+                        Timestamp.valueOf(start),
+                        "EXAM",
+                        csNo,
+                        cepNo,
+                        unitNo,
+                        pickSelectedAnswer(),
+                        0
+                );
             }
             cur = cur.plusDays(1);
         }
 
         // =========================
-        // 2) 스프링 배치 - 일일 집계
+        // 2) DAILY 집계 (fromDate ~ toDate)
         // =========================
-        LocalDate dailyTarget = toDate; // 어제
-        JobParameters dailyParams = new JobParametersBuilder()
-                .addString("summaryType", "DAILY")
-                .addString("targetDate", dailyTarget.toString())
-                .addLong("run.id", System.currentTimeMillis())
-                .toJobParameters();
+        LocalDate dailyCur = fromDate;
+        while (!dailyCur.isAfter(toDate)) {
+            JobParameters dailyParams = new JobParametersBuilder()
+                    .addString("summaryType", "DAILY")
+                    .addString("targetDate", dailyCur.toString())
+                    .addLong("run.id", System.nanoTime())
+                    .toJobParameters();
 
-        JobExecution dailyExec = jobLauncher.run(learningAggregationJob, dailyParams);
-        assertThat(dailyExec.getExitStatus()).as("DAILY aggregation should complete")
-                .isEqualTo(ExitStatus.COMPLETED);
+            JobExecution dailyExec = jobLauncher.run(learningAggregationJob, dailyParams);
+            assertThat(dailyExec.getExitStatus()).isEqualTo(ExitStatus.COMPLETED);
+
+            dailyCur = dailyCur.plusDays(1);
+        }
 
         // =========================
-        // 3) 스프링 배치 - 월간 집계
+        // 3) MONTHLY 집계 (fromDate ~ toDate)
         // =========================
-        LocalDate monthlyAnyDayOfLastMonth = LocalDate.now().minusMonths(1).withDayOfMonth(15);
-        JobParameters monthlyParams = new JobParametersBuilder()
-                .addString("summaryType", "MONTHLY")
-                .addString("targetDate", monthlyAnyDayOfLastMonth.toString())
-                .addLong("run.id", System.currentTimeMillis() + 1) // run.id 다르게
-                .toJobParameters();
+        LocalDate monthlyTarget = fromDate.withDayOfMonth(1);
+        while (!monthlyTarget.isAfter(toDate)) {
+            JobParameters monthlyParams = new JobParametersBuilder()
+                    .addString("summaryType", "MONTHLY")
+                    .addString("targetDate", monthlyTarget.toString())
+                    .addLong("run.id", System.nanoTime())
+                    .toJobParameters();
 
-        JobExecution monthlyExec = jobLauncher.run(learningAggregationJob, monthlyParams);
-        assertThat(monthlyExec.getExitStatus()).as("MONTHLY aggregation should complete")
-                .isEqualTo(ExitStatus.COMPLETED);
+            JobExecution monthlyExec = jobLauncher.run(learningAggregationJob, monthlyParams);
+            assertThat(monthlyExec.getExitStatus()).isEqualTo(ExitStatus.COMPLETED);
+
+            monthlyTarget = monthlyTarget.plusMonths(1);
+        }
     }
 }
