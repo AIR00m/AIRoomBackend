@@ -16,11 +16,11 @@ scrape_configs:
   - job_name: 'springboot-green'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: [ '43.200.2.244:8082' ]
+      - targets: ['springboot-green:8080']
   - job_name: 'springboot-blue'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: [ '43.200.2.244:8081' ]
+      - targets: ['springboot-blue:8080']
 
   - job_name: 'node_exporter'
     static_configs:
