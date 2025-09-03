@@ -106,7 +106,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/presence/**").permitAll()
                         .requestMatchers("/api/agent/**").permitAll()
                         .requestMatchers("/auth/**").permitAll() // 인증
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 모니터링
+                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll() // 모니터링
                         .requestMatchers(
                                 "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()// Swagger API
                         .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
