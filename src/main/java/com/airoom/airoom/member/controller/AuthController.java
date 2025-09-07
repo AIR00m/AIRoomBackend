@@ -106,7 +106,7 @@ public class AuthController implements AuthControllerSwagger {
         String refreshToken = jwtUtility.createRefreshToken(tokenRequest.memberId(), isTeacher);
 
 
-        //3-1 Redis에는 (Time To Live)기능이 존재하여
+        // 레디스 블랙리스트 만들기!
 
         ResponseCookie cookie = cookieUtility.refreshTokenCookie(refreshToken);
         // 쿠키에 담는 것도 좋지만 프론트에서 localstorage에 담는것도 생각해보는 것을 추천
